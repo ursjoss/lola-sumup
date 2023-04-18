@@ -1,9 +1,22 @@
 [package]
 name = "lola-sumup"
 version = "0.1.0"
+authors = ["Urs Joss <urs.joss@gmx.ch>"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 csv = "1.2.1"
+clap = { version = "4.2", features = ["derive"] }
+
+[dev-dependencies]
+rstest = "0.17.0"
+
+[profile.dev]
+opt-level=1
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
