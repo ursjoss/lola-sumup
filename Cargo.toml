@@ -9,6 +9,7 @@ edition = "2021"
 [dependencies]
 csv = "1.2.1"
 clap = { version = "4.2", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
 rstest = "0.17.0"
