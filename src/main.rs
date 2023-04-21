@@ -129,3 +129,38 @@ fn main() {
         process::exit(1);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    fn test() {
+        let csv = "\
+Account,Date,Time,Type,Transaction ID,Receipt Number,Payment Method,Quantity,Description,Currency,Price (Gross),Price (Net),Tax,Tax rate,Transaction refunded
+test@org.org,15.03.23,11:53,Sales,TD4KP497FR,S20230000001,Cash,2,Kaffee ,CHF,7.00,7.00,0.00,0%,
+";
+        let mut reader = csv::Reader::from_reader(csv.as_bytes());
+        let ri: RecordIn = reader.deserialize().next().unwrap().unwrap();
+        let ro: RecordOut = From::from(ri);
+
+        assert_eq!("test@org.org", ro.account);
+        assert_eq!("15.03.23", ro.date);
+        assert_eq!("11:53:00", ro.time);
+        assert_eq!("Sales", ro.type_);
+        assert_eq!("TD4KP497FR", ro.transaction_id);
+        assert_eq!("S20230000001", ro.receipt_number);
+        assert_eq!("Cash", ro.payment_method);
+        assert_eq!(2, ro.quantity.unwrap());
+        assert_eq!("Kaffee", ro.description);
+        assert_eq!("CHF", ro.currency);
+        assert_eq!(7.00, ro.price_gross);
+        assert_eq!(7.00, ro.price_net.unwrap());
+        assert_eq!(0.00, ro.tax.unwrap());
+        assert_eq!("0%", ro.tax_rate.unwrap());
+        assert_eq!("", ro.transaction_refunded);
+        assert_eq!("TODO", ro.topic);
+    }
+}
