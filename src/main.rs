@@ -1,17 +1,40 @@
-use std::fmt::Debug;
-use std::{env, error::Error, ffi::OsString, io, process};
+use std::fmt::{Debug, Formatter};
+use std::{env, error::Error, ffi::OsString, fmt, io, process};
 
 use chrono::{NaiveDate, NaiveTime};
 use serde::{Deserialize, Serialize};
 
 /*
 * TODO
-* - Enum for type (Sales, Refund), payment method (Cash, Card)
 * - Derive topic
 * - write header
 * - remove Refunds
 # - aggregate per day
 */
+
+#[derive(Debug, Deserialize, Serialize)]
+enum RecordType {
+    Sales,
+    Refund,
+}
+
+impl fmt::Display for RecordType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+enum PaymentMethod {
+    Cash,
+    Card,
+}
+
+impl fmt::Display for PaymentMethod {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -21,13 +44,14 @@ struct RecordIn {
     date: NaiveDate,
     #[serde(with = "parse_time")]
     time: NaiveTime,
-    type_: String,
+    #[serde(rename = "Type")]
+    record_type: RecordType,
     #[serde(rename = "Transaction ID")]
     transaction_id: String,
     #[serde(rename = "Receipt Number")]
     receipt_number: String,
     #[serde(rename = "Payment Method")]
-    payment_method: String,
+    payment_method: Option<PaymentMethod>,
     quantity: Option<u64>,
     description: String,
     currency: String,
@@ -50,13 +74,14 @@ struct RecordOut {
     date: NaiveDate,
     #[serde(with = "parse_time")]
     time: NaiveTime,
-    type_: String,
+    #[serde(rename = "Type")]
+    record_type: RecordType,
     #[serde(rename = "Transaction ID")]
     transaction_id: String,
     #[serde(rename = "Receipt Number")]
     receipt_number: String,
     #[serde(rename = "Payment Method")]
-    payment_method: String,
+    payment_method: Option<PaymentMethod>,
     quantity: Option<u64>,
     description: String,
     currency: String,
@@ -78,7 +103,7 @@ impl From<RecordIn> for RecordOut {
             account: ri.account,
             date: ri.date,
             time: ri.time,
-            type_: ri.type_,
+            record_type: ri.record_type,
             transaction_id: ri.transaction_id,
             receipt_number: ri.receipt_number,
             payment_method: ri.payment_method,
@@ -97,10 +122,10 @@ impl From<RecordIn> for RecordOut {
 
 fn run() -> Result<(), Box<dyn Error>> {
     let file_path = get_first_arg()?;
-    let query = match env::args().nth(2) {
-        None => return Err(From::from("expected 2 arguments, but got less")),
-        Some(query) => query,
-    };
+    // let query = match env::args().nth(2) {
+    //     None => return Err(From::from("expected 2 arguments, but got less")),
+    //     Some(query) => query,
+    // };
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(true)
         .from_path(file_path)?;
@@ -111,9 +136,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     for result in rdr.deserialize() {
         let record_in: RecordIn = result?;
         let record_out: RecordOut = From::from(record_in);
-        if record_out.payment_method == query {
-            wtr.serialize(&record_out)?;
-        }
+        wtr.serialize(&record_out)?;
     }
     wtr.flush()?;
     Ok(())
@@ -196,10 +219,10 @@ test@org.org,15.03.23,11:53,Sales,TD4KP497FR,S20230000001,Cash,2,Kaffee ,CHF,7.0
         assert_eq!("test@org.org", ro.account);
         assert_eq!("15.03.2023", format!("{}", ro.date.format("%d.%m.%Y")));
         assert_eq!("11:53:00", format!("{}", ro.time.format("%H:%M:%S")));
-        assert_eq!("Sales", ro.type_);
+        assert_eq!("Sales", ro.record_type.to_string());
         assert_eq!("TD4KP497FR", ro.transaction_id);
         assert_eq!("S20230000001", ro.receipt_number);
-        assert_eq!("Cash", ro.payment_method);
+        assert_eq!("Cash", ro.payment_method.unwrap().to_string());
         assert_eq!(2, ro.quantity.unwrap());
         assert_eq!("Kaffee", ro.description);
         assert_eq!("CHF", ro.currency);
