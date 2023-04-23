@@ -1,10 +1,11 @@
+use std::fmt::Debug;
 use std::{env, error::Error, ffi::OsString, io, process};
 
+use chrono::{NaiveDate, NaiveTime};
 use serde::{Deserialize, Serialize};
 
 /*
 * TODO
-* - Typed date, time
 * - Enum for type (Sales, Refund), payment method (Cash, Card)
 * - Derive topic
 * - write header
@@ -16,8 +17,10 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "PascalCase")]
 struct RecordIn {
     account: String,
-    date: String,
-    time: String,
+    #[serde(with = "parse_date")]
+    date: NaiveDate,
+    #[serde(with = "parse_time")]
+    time: NaiveTime,
     type_: String,
     #[serde(rename = "Transaction ID")]
     transaction_id: String,
@@ -43,8 +46,10 @@ struct RecordIn {
 #[serde(rename_all = "PascalCase")]
 struct RecordOut {
     account: String,
-    date: String,
-    time: String,
+    #[serde(with = "parse_date")]
+    date: NaiveDate,
+    #[serde(with = "parse_time")]
+    time: NaiveTime,
     type_: String,
     #[serde(rename = "Transaction ID")]
     transaction_id: String,
@@ -72,7 +77,7 @@ impl From<RecordIn> for RecordOut {
         RecordOut {
             account: ri.account,
             date: ri.date,
-            time: ri.time + ":00",
+            time: ri.time,
             type_: ri.type_,
             transaction_id: ri.transaction_id,
             receipt_number: ri.receipt_number,
@@ -123,6 +128,48 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     }
 }
 
+mod parse_date {
+    use chrono::NaiveDate;
+    use serde::{self, Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S>(date: &NaiveDate, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = format!("{}", date.format("%d.%m.%Y"));
+        serializer.serialize_str(&s)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<NaiveDate, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        NaiveDate::parse_from_str(&s, "%d.%m.%y").map_err(serde::de::Error::custom)
+    }
+}
+
+mod parse_time {
+    use chrono::NaiveTime;
+    use serde::{self, Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S>(date: &NaiveTime, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = format!("{}", date.format("%H:%M:%S"));
+        serializer.serialize_str(&s)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<NaiveTime, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        NaiveTime::parse_from_str(&s, "%H:%M").map_err(serde::de::Error::custom)
+    }
+}
+
 fn main() {
     if let Err(err) = run() {
         println!("{}", err);
@@ -147,8 +194,8 @@ test@org.org,15.03.23,11:53,Sales,TD4KP497FR,S20230000001,Cash,2,Kaffee ,CHF,7.0
         let ro: RecordOut = From::from(ri);
 
         assert_eq!("test@org.org", ro.account);
-        assert_eq!("15.03.23", ro.date);
-        assert_eq!("11:53:00", ro.time);
+        assert_eq!("15.03.2023", format!("{}", ro.date.format("%d.%m.%Y")));
+        assert_eq!("11:53:00", format!("{}", ro.time.format("%H:%M:%S")));
         assert_eq!("Sales", ro.type_);
         assert_eq!("TD4KP497FR", ro.transaction_id);
         assert_eq!("S20230000001", ro.receipt_number);
