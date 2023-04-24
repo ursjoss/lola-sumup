@@ -36,6 +36,19 @@ impl fmt::Display for PaymentMethod {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+enum Topic {
+    LoLa,
+    MiTi,
+    Vermietung,
+}
+
+impl fmt::Display for Topic {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 struct RecordIn {
@@ -94,7 +107,7 @@ struct RecordOut {
     tax_rate: Option<String>,
     #[serde(rename = "Transaction refunded")]
     transaction_refunded: String,
-    topic: String,
+    topic: Topic,
 }
 
 impl From<RecordIn> for RecordOut {
@@ -115,8 +128,20 @@ impl From<RecordIn> for RecordOut {
             tax: ri.tax,
             tax_rate: ri.tax_rate,
             transaction_refunded: ri.transaction_refunded,
-            topic: From::from("TODO"),
+            topic: infer_topic(ri.time),
         }
+    }
+}
+
+fn infer_topic(time: NaiveTime) -> Topic {
+    let th1 = NaiveTime::from_hms_opt(15, 0, 0).unwrap();
+    let th2 = NaiveTime::from_hms_opt(18, 0, 0).unwrap();
+    if time < th1 {
+        Topic::MiTi
+    } else if time > th2 {
+        Topic::Vermietung
+    } else {
+        Topic::LoLa
     }
 }
 
@@ -231,6 +256,6 @@ test@org.org,15.03.23,11:53,Sales,TD4KP497FR,S20230000001,Cash,2,Kaffee ,CHF,7.0
         assert_eq!(0.00, ro.tax.unwrap());
         assert_eq!("0%", ro.tax_rate.unwrap());
         assert_eq!("", ro.transaction_refunded);
-        assert_eq!("TODO", ro.topic);
+        assert_eq!("MiTi", ro.topic.to_string());
     }
 }
