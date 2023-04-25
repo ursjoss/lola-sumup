@@ -49,6 +49,18 @@ impl fmt::Display for Topic {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+enum Purpose {
+    Consumption,
+    Tip,
+}
+
+impl fmt::Display for Purpose {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 struct RecordIn {
@@ -108,6 +120,8 @@ struct RecordOut {
     #[serde(rename = "Transaction refunded")]
     transaction_refunded: String,
     topic: Topic,
+    purpose: Purpose,
+    comment: String,
 }
 
 impl From<RecordIn> for RecordOut {
@@ -129,6 +143,8 @@ impl From<RecordIn> for RecordOut {
             tax_rate: ri.tax_rate,
             transaction_refunded: ri.transaction_refunded,
             topic: infer_topic(ri.time),
+            purpose: infer_purpose(ri.description.trim().to_string()),
+            comment: "".into(),
         }
     }
 }
@@ -142,6 +158,14 @@ fn infer_topic(time: NaiveTime) -> Topic {
         Topic::Vermietung
     } else {
         Topic::LoLa
+    }
+}
+
+fn infer_purpose(description: String) -> Purpose {
+    if description == "Trinkgeld" {
+        Purpose::Tip
+    } else {
+        Purpose::Consumption
     }
 }
 
@@ -257,5 +281,7 @@ test@org.org,15.03.23,11:53,Sales,TD4KP497FR,S20230000001,Cash,2,Kaffee ,CHF,7.0
         assert_eq!("0%", ro.tax_rate.unwrap());
         assert_eq!("", ro.transaction_refunded);
         assert_eq!("MiTi", ro.topic.to_string());
+        assert_eq!("Consumption", ro.purpose.to_string());
+        assert_eq!("", ro.comment);
     }
 }
