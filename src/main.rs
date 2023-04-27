@@ -6,9 +6,7 @@ use serde::{Deserialize, Serialize};
 
 /*
 * TODO
-* - Derive topic
 * - write header
-* - remove Refunds
 # - aggregate per day
 */
 
@@ -175,20 +173,50 @@ fn run() -> Result<(), Box<dyn Error>> {
     //     None => return Err(From::from("expected 2 arguments, but got less")),
     //     Some(query) => query,
     // };
+    let mut wtr = csv::Writer::from_writer(io::stdout());
+    // wtr.write_record(rdr.headers()?)?;
+
+    let mut all_trx: Vec<RecordOut> = Vec::new();
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(true)
         .from_path(file_path)?;
-    let mut wtr = csv::Writer::from_writer(io::stdout());
-
-    // wtr.write_record(rdr.headers()?)?;
-
     for result in rdr.deserialize() {
         let record_in: RecordIn = result?;
-        let record_out: RecordOut = From::from(record_in);
-        wtr.serialize(&record_out)?;
+        all_trx.push(From::from(record_in));
+    }
+
+    let ids_of_refunded = get_ids_of_refunds(&all_trx);
+
+    for trx in all_trx {
+        if is_not_refunded(&ids_of_refunded, &trx) {
+            wtr.serialize(&trx)?;
+        }
     }
     wtr.flush()?;
     Ok(())
+}
+
+fn get_ids_of_refunds(records: &[RecordOut]) -> Vec<String> {
+    records
+        .iter()
+        .map(|r| r.transaction_refunded.clone())
+        .filter(|id| !id.is_empty())
+        .filter(|id| contains_id(records, id))
+        .collect()
+}
+
+fn contains_id(records: &[RecordOut], id: &String) -> bool {
+    records
+        .iter()
+        .filter(|r| r.transaction_id == *id)
+        .peekable()
+        .peek()
+        .is_some()
+}
+
+fn is_not_refunded(refunded: &[String], record_out: &RecordOut) -> bool {
+    !refunded.contains(&record_out.transaction_id)
+        && !refunded.contains(&record_out.transaction_refunded)
 }
 
 /// Returns the first positional argument sent to this process. If there are no
@@ -251,6 +279,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use csv::Reader;
     use rstest::rstest;
 
     use super::*;
@@ -261,7 +290,7 @@ mod tests {
 Account,Date,Time,Type,Transaction ID,Receipt Number,Payment Method,Quantity,Description,Currency,Price (Gross),Price (Net),Tax,Tax rate,Transaction refunded
 test@org.org,15.03.23,11:53,Sales,TD4KP497FR,S20230000001,Cash,2,Kaffee ,CHF,7.00,7.00,0.00,0%,
 ";
-        let mut reader = csv::Reader::from_reader(csv.as_bytes());
+        let mut reader = Reader::from_reader(csv.as_bytes());
         let ri: RecordIn = reader.deserialize().next().unwrap().unwrap();
         let ro: RecordOut = From::from(ri);
 
