@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 # - aggregate per day
 */
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 enum RecordType {
     Sales,
     Refund,
@@ -47,7 +47,7 @@ impl fmt::Display for Topic {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 enum Purpose {
     Consumption,
     Tip,
@@ -89,7 +89,7 @@ struct RecordIn {
     transaction_refunded: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 struct RecordOut {
     account: String,
@@ -279,38 +279,68 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use chrono::{NaiveDate, NaiveTime};
     use csv::Reader;
     use rstest::rstest;
+
+    use crate::PaymentMethod::Cash;
 
     use super::*;
 
     #[rstest]
-    fn test() {
-        let csv = "\
-Account,Date,Time,Type,Transaction ID,Receipt Number,Payment Method,Quantity,Description,Currency,Price (Gross),Price (Net),Tax,Tax rate,Transaction refunded
-test@org.org,15.03.23,11:53,Sales,TD4KP497FR,S20230000001,Cash,2,Kaffee ,CHF,7.00,7.00,0.00,0%,
-";
+    #[case("09:15", "Kaffee ", Topic::MiTi, Purpose::Consumption)]
+    #[case("11:53", "Tee", Topic::MiTi, Purpose::Consumption)]
+    #[case("15:01", "Tee", Topic::LoLa, Purpose::Consumption)]
+    #[case("18:01", "Bier", Topic::Vermietung, Purpose::Consumption)]
+    #[case("22:59", "Trinkgeld", Topic::Vermietung, Purpose::Tip)]
+    fn test(
+        #[case] time: &str,
+        #[case] description: &str,
+        #[case] topic: Topic,
+        #[case] purpose: Purpose,
+    ) {
+        let csv = new_csv(time, description);
+        let expected = new_record(
+            format!("{}:00", time).as_str(),
+            description.trim(),
+            topic,
+            purpose,
+        );
+
         let mut reader = Reader::from_reader(csv.as_bytes());
         let ri: RecordIn = reader.deserialize().next().unwrap().unwrap();
         let ro: RecordOut = From::from(ri);
 
-        assert_eq!("test@org.org", ro.account);
-        assert_eq!("15.03.2023", format!("{}", ro.date.format("%d.%m.%Y")));
-        assert_eq!("11:53:00", format!("{}", ro.time.format("%H:%M:%S")));
-        assert_eq!("Sales", ro.record_type.to_string());
-        assert_eq!("TD4KP497FR", ro.transaction_id);
-        assert_eq!("S20230000001", ro.receipt_number);
-        assert_eq!("Cash", ro.payment_method.unwrap().to_string());
-        assert_eq!(2, ro.quantity.unwrap());
-        assert_eq!("Kaffee", ro.description);
-        assert_eq!("CHF", ro.currency);
-        assert_eq!(7.00, ro.price_gross);
-        assert_eq!(7.00, ro.price_net.unwrap());
-        assert_eq!(0.00, ro.tax.unwrap());
-        assert_eq!("0%", ro.tax_rate.unwrap());
-        assert_eq!("", ro.transaction_refunded);
-        assert_eq!("MiTi", ro.topic.to_string());
-        assert_eq!("Consumption", ro.purpose.to_string());
-        assert_eq!("", ro.comment);
+        assert_eq!(expected, ro);
+    }
+
+    fn new_csv(time: &str, description: &str) -> String {
+        format!("\
+Account,Date,Time,Type,Transaction ID,Receipt Number,Payment Method,Quantity,Description,Currency,Price (Gross),Price (Net),Tax,Tax rate,Transaction refunded
+test@org.org,15.03.23,{},Sales,TD4KP497FR,S20230000001,Cash,2,{},CHF,7.00,7.00,0.00,0%,
+", time, description)
+    }
+
+    fn new_record(time: &str, description: &str, topic: Topic, purpose: Purpose) -> RecordOut {
+        RecordOut {
+            account: "test@org.org".into(),
+            date: NaiveDate::from_ymd_opt(2023, 3, 15).unwrap(),
+            time: NaiveTime::parse_from_str(time, "%H:%M:%S").unwrap(),
+            record_type: RecordType::Sales,
+            transaction_id: "TD4KP497FR".into(),
+            receipt_number: "S20230000001".into(),
+            payment_method: Some(Cash),
+            quantity: Some(2),
+            description: description.into(),
+            currency: "CHF".into(),
+            price_gross: 7.0,
+            price_net: Some(7.0),
+            tax: Some(0.0),
+            tax_rate: Some("0%".into()),
+            transaction_refunded: "".into(),
+            topic,
+            purpose,
+            comment: "".into(),
+        }
     }
 }
