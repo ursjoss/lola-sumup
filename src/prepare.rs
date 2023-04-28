@@ -1,17 +1,18 @@
 use std::fmt::{Debug, Formatter};
-use std::{error::Error, ffi::OsString, fmt, io};
+use std::path::Path;
+use std::{error::Error, fmt, io};
 
 use chrono::{NaiveDate, NaiveTime};
 use serde::{Deserialize, Serialize};
 
-pub fn prepare(file_path: OsString) -> Result<(), Box<dyn Error>> {
+pub fn prepare(source_path: &Path) -> Result<(), Box<dyn Error>> {
     let mut wtr = csv::Writer::from_writer(io::stdout());
     // wtr.write_record(rdr.headers()?)?;
 
     let mut all_trx: Vec<RecordOut> = Vec::new();
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(true)
-        .from_path(file_path)?;
+        .from_path(source_path)?;
     for result in rdr.deserialize() {
         let record_in: RecordIn = result?;
         all_trx.push(From::from(record_in));
