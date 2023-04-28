@@ -55,6 +55,7 @@ mod parse_date {
     use chrono::NaiveDate;
     use serde::{self, Deserialize, Deserializer, Serializer};
 
+    #[allow(clippy::trivially_copy_pass_by_ref)]
     pub fn serialize<S>(date: &NaiveDate, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -76,6 +77,7 @@ mod parse_time {
     use chrono::NaiveTime;
     use serde::{self, Deserialize, Deserializer, Serializer};
 
+    #[allow(clippy::trivially_copy_pass_by_ref)]
     pub fn serialize<S>(date: &NaiveTime, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -101,7 +103,7 @@ enum RecordType {
 
 impl fmt::Display for RecordType {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -113,7 +115,7 @@ pub enum PaymentMethod {
 
 impl fmt::Display for PaymentMethod {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -126,7 +128,7 @@ enum Topic {
 
 impl fmt::Display for Topic {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -138,7 +140,7 @@ enum Purpose {
 
 impl fmt::Display for Purpose {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -224,8 +226,8 @@ impl From<RecordIn> for RecordOut {
             tax_rate: ri.tax_rate,
             transaction_refunded: ri.transaction_refunded,
             topic: infer_topic(ri.time),
-            purpose: infer_purpose(ri.description.trim().to_string()),
-            comment: "".into(),
+            purpose: infer_purpose(ri.description.trim()),
+            comment: String::new(),
         }
     }
 }
@@ -242,7 +244,7 @@ fn infer_topic(time: NaiveTime) -> Topic {
     }
 }
 
-fn infer_purpose(description: String) -> Purpose {
+fn infer_purpose(description: &str) -> Purpose {
     if description == "Trinkgeld" {
         Purpose::Tip
     } else {
@@ -252,10 +254,11 @@ fn infer_purpose(description: String) -> Purpose {
 
 #[cfg(test)]
 mod tests {
-    use crate::prepare::PaymentMethod::Cash;
     use chrono::{NaiveDate, NaiveTime};
     use csv::Reader;
     use rstest::rstest;
+
+    use crate::prepare::PaymentMethod::Cash;
 
     use super::*;
 
@@ -273,7 +276,7 @@ mod tests {
     ) {
         let csv = new_csv(time, description);
         let expected = new_record(
-            format!("{}:00", time).as_str(),
+            format!("{time}:00").as_str(),
             description.trim(),
             topic,
             purpose,
@@ -289,8 +292,8 @@ mod tests {
     fn new_csv(time: &str, description: &str) -> String {
         format!("\
 Account,Date,Time,Type,Transaction ID,Receipt Number,Payment Method,Quantity,Description,Currency,Price (Gross),Price (Net),Tax,Tax rate,Transaction refunded
-test@org.org,15.03.23,{},Sales,TD4KP497FR,S20230000001,Cash,2,{},CHF,7.00,7.00,0.00,0%,
-", time, description)
+test@org.org,15.03.23,{time},Sales,TD4KP497FR,S20230000001,Cash,2,{description},CHF,7.00,7.00,0.00,0%,
+")
     }
 
     fn new_record(time: &str, description: &str, topic: Topic, purpose: Purpose) -> RecordOut {
@@ -309,10 +312,10 @@ test@org.org,15.03.23,{},Sales,TD4KP497FR,S20230000001,Cash,2,{},CHF,7.00,7.00,0
             price_net: Some(7.0),
             tax: Some(0.0),
             tax_rate: Some("0%".into()),
-            transaction_refunded: "".into(),
+            transaction_refunded: String::new(),
             topic,
             purpose,
-            comment: "".into(),
+            comment: String::new(),
         }
     }
 }
