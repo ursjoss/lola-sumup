@@ -19,13 +19,13 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Prepares an enriched working copy from the original sumup CSV export
+    /// Prepares an enriched working copy from the original sumup sales report CSV file
     Prepare {
         /// the input file to process
         #[arg(short, long)]
         input_file: PathBuf,
 
-        /// the output file
+        /// the output file in intermediate format
         #[arg(short, long)]
         output_file: Option<PathBuf>,
     },

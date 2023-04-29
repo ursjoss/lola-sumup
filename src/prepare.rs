@@ -20,9 +20,9 @@ pub fn prepare(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), B
         .has_headers(true)
         .from_path(input_path)?;
 
-    let mut all_trx: Vec<RecordOut> = Vec::new();
+    let mut all_trx: Vec<Intermediate> = Vec::new();
     for result in rdr.deserialize() {
-        let record_in: RecordIn = result?;
+        let record_in: SalesReport = result?;
         all_trx.push(From::from(record_in));
     }
 
@@ -37,7 +37,7 @@ pub fn prepare(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), B
     Ok(())
 }
 
-fn get_ids_of_refunds(records: &[RecordOut]) -> Vec<String> {
+fn get_ids_of_refunds(records: &[Intermediate]) -> Vec<String> {
     records
         .iter()
         .map(|r| r.transaction_refunded.clone())
@@ -46,7 +46,7 @@ fn get_ids_of_refunds(records: &[RecordOut]) -> Vec<String> {
         .collect()
 }
 
-fn contains_id(records: &[RecordOut], id: &String) -> bool {
+fn contains_id(records: &[Intermediate], id: &String) -> bool {
     records
         .iter()
         .filter(|r| r.transaction_id == *id)
@@ -55,7 +55,7 @@ fn contains_id(records: &[RecordOut], id: &String) -> bool {
         .is_some()
 }
 
-fn is_not_refunded(refunded: &[String], record_out: &RecordOut) -> bool {
+fn is_not_refunded(refunded: &[String], record_out: &Intermediate) -> bool {
     !refunded.contains(&record_out.transaction_id)
         && !refunded.contains(&record_out.transaction_refunded)
 }
@@ -153,9 +153,10 @@ impl fmt::Display for Purpose {
     }
 }
 
+/// The file format for the `Intermediate` file
 #[derive(Debug, Serialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
-pub struct RecordOut {
+pub struct Intermediate {
     account: String,
     #[serde(with = "parse_date")]
     date: NaiveDate,
@@ -186,9 +187,11 @@ pub struct RecordOut {
     comment: String,
 }
 
+/// The struct matching the Sumup `SalesReport` export,
+/// e.g. 20230315-0000_20230331-2359-sales_report.csv
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-struct RecordIn {
+struct SalesReport {
     account: String,
     #[serde(with = "parse_date")]
     date: NaiveDate,
@@ -216,9 +219,9 @@ struct RecordIn {
     transaction_refunded: String,
 }
 
-impl From<RecordIn> for RecordOut {
-    fn from(ri: RecordIn) -> Self {
-        RecordOut {
+impl From<SalesReport> for Intermediate {
+    fn from(ri: SalesReport) -> Self {
+        Intermediate {
             account: ri.account,
             date: ri.date,
             time: ri.time,
@@ -292,8 +295,8 @@ mod tests {
         );
 
         let mut reader = Reader::from_reader(csv.as_bytes());
-        let ri: RecordIn = reader.deserialize().next().unwrap().unwrap();
-        let ro: RecordOut = From::from(ri);
+        let ri: SalesReport = reader.deserialize().next().unwrap().unwrap();
+        let ro: Intermediate = From::from(ri);
 
         assert_eq!(expected, ro);
     }
@@ -305,8 +308,8 @@ test@org.org,15.03.23,{time},Sales,TD4KP497FR,S20230000001,Cash,2,{description},
 ")
     }
 
-    fn new_record(time: &str, description: &str, topic: Topic, purpose: Purpose) -> RecordOut {
-        RecordOut {
+    fn new_record(time: &str, description: &str, topic: Topic, purpose: Purpose) -> Intermediate {
+        Intermediate {
             account: "test@org.org".into(),
             date: NaiveDate::from_ymd_opt(2023, 3, 15).unwrap(),
             time: NaiveTime::parse_from_str(time, "%H:%M:%S").unwrap(),
