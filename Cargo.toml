@@ -3,6 +3,8 @@ name = "lola-sumup"
 version = "0.1.0"
 authors = ["Urs Joss <urs.joss@gmx.ch>"]
 edition = "2021"
+description = "A cli program to create exports from sumup transactions exported in CSV format"
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

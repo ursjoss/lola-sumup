@@ -1,18 +1,26 @@
 use std::fmt::{Debug, Formatter};
-use std::path::Path;
+use std::fs::File;
+use std::io::Write;
+use std::path::{Path, PathBuf};
 use std::{error::Error, fmt, io};
 
 use chrono::{NaiveDate, NaiveTime};
 use serde::{Deserialize, Serialize};
 
-pub fn prepare(source_path: &Path) -> Result<(), Box<dyn Error>> {
-    let mut wtr = csv::Writer::from_writer(io::stdout());
-    // wtr.write_record(rdr.headers()?)?;
-
-    let mut all_trx: Vec<RecordOut> = Vec::new();
+/// Prepares the intermediate working copy of the original file.
+/// Some derived fields are prepared in a best-effort approach.
+/// The values can optionally be tweaked until it matches the expectations.
+pub fn prepare(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Box<dyn Error>> {
+    let iowtr: Box<dyn Write> = match output_path {
+        Some(path) => Box::new(File::create(path)?),
+        None => Box::new(io::stdout()),
+    };
+    let mut wtr = csv::Writer::from_writer(iowtr);
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(true)
-        .from_path(source_path)?;
+        .from_path(input_path)?;
+
+    let mut all_trx: Vec<RecordOut> = Vec::new();
     for result in rdr.deserialize() {
         let record_in: RecordIn = result?;
         all_trx.push(From::from(record_in));
