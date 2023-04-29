@@ -5,8 +5,10 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 
+use crate::export::export;
 use crate::prepare::prepare;
 
+mod export;
 mod prepare;
 
 #[derive(Parser)]
@@ -29,6 +31,16 @@ enum Commands {
         #[arg(short, long)]
         output_file: Option<PathBuf>,
     },
+    // Exports
+    Export {
+        /// the intermediate input file to process
+        #[arg(short, long)]
+        input_file: PathBuf,
+
+        /// the exported
+        #[arg(short, long)]
+        output_file: Option<PathBuf>,
+    },
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -39,6 +51,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             input_file,
             output_file,
         } => prepare(input_file, output_file),
+        Commands::Export {
+            input_file,
+            output_file,
+        } => export(input_file, output_file),
     }
 }
 
