@@ -8,10 +8,6 @@ use polars::prelude::*;
 use crate::prepare::{PaymentMethod, Topic};
 
 pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Box<dyn Error>> {
-    let _iowtr: Box<dyn Write> = match output_path {
-        Some(path) => Box::new(File::create(path)?),
-        None => Box::new(io::stdout()),
-    };
     let dt_options = StrpTimeOptions {
         date_dtype: DataType::Date,
         fmt: Some("%d.%m.%Y".into()),
@@ -70,9 +66,11 @@ pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Bo
     let comb6 = comb5.join(verm_card, [col("Date")], [col("Date")], JoinType::Left);
     let mut combined = comb6.collect()?;
 
-    let mut file = File::create("overview.csv")?;
-
-    CsvWriter::new(&mut file)
+    let iowtr: Box<dyn Write> = match output_path {
+        Some(path) => Box::new(File::create(path)?),
+        None => Box::new(io::stdout()),
+    };
+    CsvWriter::new(iowtr)
         .has_header(true)
         .with_delimiter(b',')
         .finish(&mut combined)?;
