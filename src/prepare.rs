@@ -129,7 +129,7 @@ impl fmt::Display for PaymentMethod {
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
-enum Topic {
+pub enum Topic {
     LoLa,
     MiTi,
     Vermietung,
