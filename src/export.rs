@@ -64,7 +64,35 @@ pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Bo
     let comb4 = comb3.join(miti_card, [col("Date")], [col("Date")], JoinType::Left);
     let comb5 = comb4.join(verm_cash, [col("Date")], [col("Date")], JoinType::Left);
     let comb6 = comb5.join(verm_card, [col("Date")], [col("Date")], JoinType::Left);
-    let mut combined = comb6.collect()?;
+    let mut combined = comb6
+        .with_column((col("LoLa_Cash") + col("LoLa_Card")).alias("LoLa_Total"))
+        .with_column((col("MiTi_Cash") + col("MiTi_Card")).alias("MiTi_Total"))
+        .with_column((col("Vermietung_Cash") + col("Vermietung_Card")).alias("Vermietung_Total"))
+        .with_column(
+            (col("LoLa_Cash") + col("MiTi_Cash") + col("Vermietung_Cash")).alias("Cash_Total"),
+        )
+        .with_column(
+            (col("LoLa_Card") + col("MiTi_Card") + col("Vermietung_Card")).alias("Card_Total"),
+        )
+        .with_column(
+            (col("LoLa_Total") + col("MiTi_Total") + col("Vermietung_Total")).alias("Total"),
+        )
+        .select([
+            col("Date"),
+            col("LoLa_Cash"),
+            col("LoLa_Card"),
+            col("LoLa_Total"),
+            col("MiTi_Cash"),
+            col("MiTi_Card"),
+            col("MiTi_Total"),
+            col("Vermietung_Cash"),
+            col("Vermietung_Card"),
+            col("Vermietung_Total"),
+            col("Cash_Total"),
+            col("Card_Total"),
+            col("Total"),
+        ])
+        .collect()?;
 
     let iowtr: Box<dyn Write> = match output_path {
         Some(path) => Box::new(File::create(path)?),
