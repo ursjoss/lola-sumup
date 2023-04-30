@@ -7,11 +7,7 @@ use polars::prelude::*;
 
 use crate::prepare::{PaymentMethod, Topic};
 
-pub fn export(
-    input_path: &Path,
-    output_path: &Option<PathBuf>,
-    verbose: bool,
-) -> Result<(), Box<dyn Error>> {
+pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Box<dyn Error>> {
     let _iowtr: Box<dyn Write> = match output_path {
         Some(path) => Box::new(File::create(path)?),
         None => Box::new(io::stdout()),
@@ -27,13 +23,11 @@ pub fn export(
         .has_header(true)
         .with_try_parse_dates(true)
         .finish()?;
-    let df = raw_df
+    let ldf = raw_df
         .lazy()
-        .with_column(col("Date").str().strptime(dt_options))
-        .collect()?;
-    let all_dates = df
+        .with_column(col("Date").str().strptime(dt_options));
+    let all_dates = ldf
         .clone()
-        .lazy()
         .select([col("Date")])
         .unique(None, UniqueKeepStrategy::First)
         .sort(
@@ -43,39 +37,38 @@ pub fn export(
                 nulls_last: false,
                 multithreaded: false,
             },
-        )
-        .collect()?;
-    let lola_cash = collect_by(&df, predicate_and_alias(&Topic::LoLa, &PaymentMethod::Cash))?;
-    let lola_card = collect_by(&df, predicate_and_alias(&Topic::LoLa, &PaymentMethod::Card))?;
-    let miti_cash = collect_by(&df, predicate_and_alias(&Topic::MiTi, &PaymentMethod::Cash))?;
-    let miti_card = collect_by(&df, predicate_and_alias(&Topic::MiTi, &PaymentMethod::Card))?;
+        );
+    let lola_cash = collect_by(
+        ldf.clone(),
+        predicate_and_alias(&Topic::LoLa, &PaymentMethod::Cash),
+    );
+    let lola_card = collect_by(
+        ldf.clone(),
+        predicate_and_alias(&Topic::LoLa, &PaymentMethod::Card),
+    );
+    let miti_cash = collect_by(
+        ldf.clone(),
+        predicate_and_alias(&Topic::MiTi, &PaymentMethod::Cash),
+    );
+    let miti_card = collect_by(
+        ldf.clone(),
+        predicate_and_alias(&Topic::MiTi, &PaymentMethod::Card),
+    );
     let verm_cash = collect_by(
-        &df,
+        ldf.clone(),
         predicate_and_alias(&Topic::Vermietung, &PaymentMethod::Cash),
-    )?;
+    );
     let verm_card = collect_by(
-        &df,
+        ldf,
         predicate_and_alias(&Topic::Vermietung, &PaymentMethod::Card),
-    )?;
-    let comb1 = all_dates.join(&lola_cash, ["Date"], ["Date"], JoinType::Left, None)?;
-    let comb2 = comb1.join(&lola_card, ["Date"], ["Date"], JoinType::Left, None)?;
-    let comb3 = comb2.join(&miti_cash, ["Date"], ["Date"], JoinType::Left, None)?;
-    let comb4 = comb3.join(&miti_card, ["Date"], ["Date"], JoinType::Left, None)?;
-    let comb5 = comb4.join(&verm_cash, ["Date"], ["Date"], JoinType::Left, None)?;
-    let comb6 = comb5.join(&verm_card, ["Date"], ["Date"], JoinType::Left, None)?;
-    let mut combined = comb6.lazy().collect()?;
-
-    if verbose {
-        println!("{df}");
-        println!("{all_dates}");
-        println!("{lola_cash}");
-        println!("{lola_card}");
-        println!("{miti_cash}");
-        println!("{miti_card}");
-        println!("{verm_cash}");
-        println!("{verm_card}");
-        println!("{combined}");
-    }
+    );
+    let comb1 = all_dates.join(lola_cash, [col("Date")], [col("Date")], JoinType::Left);
+    let comb2 = comb1.join(lola_card, [col("Date")], [col("Date")], JoinType::Left);
+    let comb3 = comb2.join(miti_cash, [col("Date")], [col("Date")], JoinType::Left);
+    let comb4 = comb3.join(miti_card, [col("Date")], [col("Date")], JoinType::Left);
+    let comb5 = comb4.join(verm_cash, [col("Date")], [col("Date")], JoinType::Left);
+    let comb6 = comb5.join(verm_card, [col("Date")], [col("Date")], JoinType::Left);
+    let mut combined = comb6.collect()?;
 
     let mut file = File::create("overview.csv")?;
 
@@ -93,11 +86,9 @@ fn predicate_and_alias(topic: &Topic, payment_method: &PaymentMethod) -> (Expr, 
     (expr, alias)
 }
 
-fn collect_by(df: &DataFrame, predicate_and_alias: (Expr, String)) -> PolarsResult<DataFrame> {
+fn collect_by(ldf: LazyFrame, predicate_and_alias: (Expr, String)) -> LazyFrame {
     let (predicate, alias) = predicate_and_alias;
-    df.clone()
-        .lazy()
-        .filter(predicate)
+    ldf.filter(predicate)
         .groupby(["Date"])
         .agg([col("Price (Gross)").sum()])
         .select([col("Date"), col("Price (Gross)").alias(alias.as_str())])
@@ -109,5 +100,4 @@ fn collect_by(df: &DataFrame, predicate_and_alias: (Expr, String)) -> PolarsResu
                 multithreaded: false,
             },
         )
-        .collect()
 }

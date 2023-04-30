@@ -17,8 +17,6 @@ mod prepare;
 struct Cli {
     #[command(subcommand)]
     command: Commands,
-    #[arg(short, long)]
-    verbose: bool,
 }
 
 #[derive(Subcommand)]
@@ -56,7 +54,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Commands::Export {
             input_file,
             output_file,
-        } => export(input_file, output_file, cli.verbose),
+        } => export(input_file, output_file),
     }
 }
 
