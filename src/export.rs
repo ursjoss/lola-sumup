@@ -8,6 +8,24 @@ use polars::prelude::*;
 use crate::prepare::{PaymentMethod, Topic};
 
 pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Box<dyn Error>> {
+    let raw_df = CsvReader::from_path(input_path)?
+        .has_header(true)
+        .with_try_parse_dates(true)
+        .finish()?;
+    let mut df = collect_data(raw_df)?;
+
+    let iowtr: Box<dyn Write> = match output_path {
+        Some(path) => Box::new(File::create(path)?),
+        None => Box::new(io::stdout()),
+    };
+    CsvWriter::new(iowtr)
+        .has_header(true)
+        .with_delimiter(b',')
+        .finish(&mut df)?;
+    Ok(())
+}
+
+fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     let dt_options = StrpTimeOptions {
         date_dtype: DataType::Date,
         fmt: Some("%d.%m.%Y".into()),
@@ -15,10 +33,6 @@ pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Bo
         exact: true,
         ..Default::default()
     };
-    let raw_df = CsvReader::from_path(input_path)?
-        .has_header(true)
-        .with_try_parse_dates(true)
-        .finish()?;
     let ldf = raw_df
         .lazy()
         .with_column(col("Date").str().strptime(dt_options));
@@ -64,7 +78,7 @@ pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Bo
     let comb4 = comb3.join(miti_card, [col("Date")], [col("Date")], JoinType::Left);
     let comb5 = comb4.join(verm_cash, [col("Date")], [col("Date")], JoinType::Left);
     let comb6 = comb5.join(verm_card, [col("Date")], [col("Date")], JoinType::Left);
-    let mut combined = comb6
+    comb6
         .with_column(
             (col("LoLa_Cash").fill_null(0.0) + col("LoLa_Card").fill_null(0.0)).alias("LoLa_Total"),
         )
@@ -108,17 +122,7 @@ pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Bo
             col("Card_Total"),
             col("Total"),
         ])
-        .collect()?;
-
-    let iowtr: Box<dyn Write> = match output_path {
-        Some(path) => Box::new(File::create(path)?),
-        None => Box::new(io::stdout()),
-    };
-    CsvWriter::new(iowtr)
-        .has_header(true)
-        .with_delimiter(b',')
-        .finish(&mut combined)?;
-    Ok(())
+        .collect()
 }
 
 fn predicate_and_alias(topic: &Topic, payment_method: &PaymentMethod) -> (Expr, String) {
