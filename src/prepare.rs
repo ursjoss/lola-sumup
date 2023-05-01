@@ -245,7 +245,7 @@ impl From<SalesReport> for Intermediate {
 }
 
 fn infer_topic(time: NaiveTime) -> Topic {
-    let th1 = NaiveTime::from_hms_opt(15, 0, 0).unwrap();
+    let th1 = NaiveTime::from_hms_opt(14, 15, 0).unwrap();
     let th2 = NaiveTime::from_hms_opt(18, 0, 0).unwrap();
     if time < th1 {
         Topic::MiTi
@@ -277,7 +277,7 @@ mod tests {
     #[rstest]
     #[case("09:15", "Kaffee ", Topic::MiTi, Purpose::Consumption)]
     #[case("11:53", "Tee", Topic::MiTi, Purpose::Consumption)]
-    #[case("15:01", "Tee", Topic::LoLa, Purpose::Consumption)]
+    #[case("14:16", "Tee", Topic::LoLa, Purpose::Consumption)]
     #[case("18:01", "Bier", Topic::Verm, Purpose::Consumption)]
     #[case("22:59", "Trinkgeld", Topic::Verm, Purpose::Tip)]
     fn test(
