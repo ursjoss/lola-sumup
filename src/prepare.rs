@@ -129,10 +129,10 @@ impl fmt::Display for PaymentMethod {
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
-enum Topic {
+pub enum Topic {
     LoLa,
     MiTi,
-    Vermietung,
+    Verm,
 }
 
 impl fmt::Display for Topic {
@@ -142,7 +142,7 @@ impl fmt::Display for Topic {
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
-enum Purpose {
+pub enum Purpose {
     Consumption,
     Tip,
 }
@@ -245,12 +245,12 @@ impl From<SalesReport> for Intermediate {
 }
 
 fn infer_topic(time: NaiveTime) -> Topic {
-    let th1 = NaiveTime::from_hms_opt(15, 0, 0).unwrap();
+    let th1 = NaiveTime::from_hms_opt(14, 15, 0).unwrap();
     let th2 = NaiveTime::from_hms_opt(18, 0, 0).unwrap();
     if time < th1 {
         Topic::MiTi
     } else if time > th2 {
-        Topic::Vermietung
+        Topic::Verm
     } else {
         Topic::LoLa
     }
@@ -277,9 +277,9 @@ mod tests {
     #[rstest]
     #[case("09:15", "Kaffee ", Topic::MiTi, Purpose::Consumption)]
     #[case("11:53", "Tee", Topic::MiTi, Purpose::Consumption)]
-    #[case("15:01", "Tee", Topic::LoLa, Purpose::Consumption)]
-    #[case("18:01", "Bier", Topic::Vermietung, Purpose::Consumption)]
-    #[case("22:59", "Trinkgeld", Topic::Vermietung, Purpose::Tip)]
+    #[case("14:16", "Tee", Topic::LoLa, Purpose::Consumption)]
+    #[case("18:01", "Bier", Topic::Verm, Purpose::Consumption)]
+    #[case("22:59", "Trinkgeld", Topic::Verm, Purpose::Tip)]
     fn test(
         #[case] time: &str,
         #[case] description: &str,
