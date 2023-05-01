@@ -13,6 +13,7 @@ pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Bo
         .with_try_parse_dates(true)
         .finish()?;
     let mut df = collect_data(raw_df)?;
+    df.extend(&df.sum())?;
 
     let iowtr: Box<dyn Write> = match output_path {
         Some(path) => Box::new(File::create(path)?),
