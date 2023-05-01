@@ -142,7 +142,7 @@ impl fmt::Display for Topic {
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
-enum Purpose {
+pub enum Purpose {
     Consumption,
     Tip,
 }

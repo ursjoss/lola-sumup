@@ -5,7 +5,7 @@ use std::{error::Error, io};
 
 use polars::prelude::*;
 
-use crate::prepare::{PaymentMethod, Topic};
+use crate::prepare::{PaymentMethod, Purpose, Topic};
 
 pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Box<dyn Error>> {
     let raw_df = CsvReader::from_path(input_path)?
@@ -26,6 +26,7 @@ pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Bo
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     let dt_options = StrpTimeOptions {
         date_dtype: DataType::Date,
@@ -51,85 +52,117 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         );
     let lola_cash = collect_by(
         ldf.clone(),
-        predicate_and_alias(&Topic::LoLa, &PaymentMethod::Cash),
+        cons_pred_and_alias(&Topic::LoLa, &PaymentMethod::Cash),
     );
     let lola_card = collect_by(
         ldf.clone(),
-        predicate_and_alias(&Topic::LoLa, &PaymentMethod::Card),
+        cons_pred_and_alias(&Topic::LoLa, &PaymentMethod::Card),
     );
     let miti_cash = collect_by(
         ldf.clone(),
-        predicate_and_alias(&Topic::MiTi, &PaymentMethod::Cash),
+        cons_pred_and_alias(&Topic::MiTi, &PaymentMethod::Cash),
     );
     let miti_card = collect_by(
         ldf.clone(),
-        predicate_and_alias(&Topic::MiTi, &PaymentMethod::Card),
+        cons_pred_and_alias(&Topic::MiTi, &PaymentMethod::Card),
     );
     let verm_cash = collect_by(
         ldf.clone(),
-        predicate_and_alias(&Topic::Vermietung, &PaymentMethod::Cash),
+        cons_pred_and_alias(&Topic::Vermietung, &PaymentMethod::Cash),
     );
     let verm_card = collect_by(
-        ldf,
-        predicate_and_alias(&Topic::Vermietung, &PaymentMethod::Card),
+        ldf.clone(),
+        cons_pred_and_alias(&Topic::Vermietung, &PaymentMethod::Card),
     );
+    let lola_tips = collect_by(ldf.clone(), tip_pred_and_alias(&Topic::LoLa));
+    let miti_tips = collect_by(ldf.clone(), tip_pred_and_alias(&Topic::MiTi));
+    let verm_tips = collect_by(ldf, tip_pred_and_alias(&Topic::Vermietung));
     let comb1 = all_dates.join(lola_cash, [col("Date")], [col("Date")], JoinType::Left);
     let comb2 = comb1.join(lola_card, [col("Date")], [col("Date")], JoinType::Left);
     let comb3 = comb2.join(miti_cash, [col("Date")], [col("Date")], JoinType::Left);
     let comb4 = comb3.join(miti_card, [col("Date")], [col("Date")], JoinType::Left);
     let comb5 = comb4.join(verm_cash, [col("Date")], [col("Date")], JoinType::Left);
     let comb6 = comb5.join(verm_card, [col("Date")], [col("Date")], JoinType::Left);
-    comb6
+    let comb7 = comb6.join(lola_tips, [col("Date")], [col("Date")], JoinType::Left);
+    let comb8 = comb7.join(miti_tips, [col("Date")], [col("Date")], JoinType::Left);
+    let comb9 = comb8.join(verm_tips, [col("Date")], [col("Date")], JoinType::Left);
+    comb9
         .with_column(
-            (col("LoLa_Cash").fill_null(0.0) + col("LoLa_Card").fill_null(0.0)).alias("LoLa_Total"),
+            (col("LoLa_Cash").fill_null(0.0) + col("LoLa_Card").fill_null(0.0)).alias("LoLa Total"),
         )
         .with_column(
-            (col("MiTi_Cash").fill_null(0.0) + col("MiTi_Card").fill_null(0.0)).alias("MiTi_Total"),
+            (col("MiTi_Cash").fill_null(0.0) + col("MiTi_Card").fill_null(0.0)).alias("MiTi Total"),
         )
         .with_column(
             (col("Vermietung_Cash").fill_null(0.0) + col("Vermietung_Card").fill_null(0.0))
-                .alias("Vermietung_Total"),
+                .alias("Vermietung Total"),
         )
         .with_column(
             (col("LoLa_Cash").fill_null(0.0)
                 + col("MiTi_Cash").fill_null(0.0)
                 + col("Vermietung_Cash").fill_null(0.0))
-            .alias("Cash_Total"),
+            .alias("Cash Total"),
         )
         .with_column(
             (col("LoLa_Card").fill_null(0.0)
                 + col("MiTi_Card").fill_null(0.0)
                 + col("Vermietung_Card").fill_null(0.0))
-            .alias("Card_Total"),
+            .alias("Card Total"),
         )
         .with_column(
-            (col("LoLa_Total").fill_null(0.0)
-                + col("MiTi_Total").fill_null(0.0)
-                + col("Vermietung_Total").fill_null(0.0))
+            (col("LoLa Total").fill_null(0.0)
+                + col("MiTi Total").fill_null(0.0)
+                + col("Vermietung Total").fill_null(0.0))
+            .alias("Total Consumption"),
+        )
+        .with_column(
+            (col("LoLa_Tips").fill_null(0.0)
+                + col("MiTi_Tips").fill_null(0.0)
+                + col("Vermietung_Tips").fill_null(0.0))
+            .alias("Total Tips"),
+        )
+        .with_column(
+            (col("LoLa Total").fill_null(0.0)
+                + col("MiTi Total").fill_null(0.0)
+                + col("Vermietung Total").fill_null(0.0)
+                + col("Total Tips").fill_null(0.0))
             .alias("Total"),
         )
         .select([
             col("Date"),
             col("LoLa_Cash"),
             col("LoLa_Card"),
-            col("LoLa_Total"),
+            col("LoLa Total"),
             col("MiTi_Cash"),
             col("MiTi_Card"),
-            col("MiTi_Total"),
+            col("MiTi Total"),
             col("Vermietung_Cash"),
             col("Vermietung_Card"),
-            col("Vermietung_Total"),
-            col("Cash_Total"),
-            col("Card_Total"),
+            col("Vermietung Total"),
+            col("Cash Total"),
+            col("Card Total"),
+            col("Total Consumption"),
+            col("LoLa_Tips"),
+            col("MiTi_Tips"),
+            col("Vermietung_Tips"),
+            col("Total Tips"),
             col("Total"),
         ])
         .collect()
 }
 
-fn predicate_and_alias(topic: &Topic, payment_method: &PaymentMethod) -> (Expr, String) {
+fn cons_pred_and_alias(topic: &Topic, payment_method: &PaymentMethod) -> (Expr, String) {
     let expr = (col("Topic").eq(lit(topic.to_string())))
-        .and(col("Payment Method").eq(lit(payment_method.to_string())));
+        .and(col("Payment Method").eq(lit(payment_method.to_string())))
+        .and(col("Purpose").neq(lit(Purpose::Tip.to_string())));
     let alias = format!("{topic}_{payment_method}");
+    (expr, alias)
+}
+
+fn tip_pred_and_alias(topic: &Topic) -> (Expr, String) {
+    let expr = (col("Topic").eq(lit(topic.to_string())))
+        .and(col("Purpose").eq(lit(Purpose::Tip.to_string())));
+    let alias = format!("{topic}_Tips");
     (expr, alias)
 }
 
@@ -159,37 +192,48 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case(Topic::LoLa, PaymentMethod::Card,
+    #[case(Topic::LoLa, PaymentMethod::Card, Purpose::Consumption,
         df!(
             "Date" => &["14.03.2023", "16.03.2023", "28.03.2023"],
             "LoLa_Card" => &[1.3, 0.0, 3.6]),
         )
     ]
-    #[case(Topic::LoLa, PaymentMethod::Cash,
+    #[case(Topic::LoLa, PaymentMethod::Cash, Purpose::Consumption,
         df!(
             "Date" => &["20.03.2023"],
             "LoLa_Cash" => &[4.7]),
         )
     ]
-    #[case(Topic::MiTi, PaymentMethod::Card,
+    #[case(Topic::MiTi, PaymentMethod::Card, Purpose::Consumption,
         df!(
             "Date" => &["15.03.2023"],
             "MiTi_Card" => &[5.2]),
         )
     ]
+    #[case(Topic::LoLa, PaymentMethod::Cash, Purpose::Tip,
+        df!(
+            "Date" => &["14.03.2023"],
+            "LoLa_Tips" => &[0.5]),
+        )
+    ]
     fn test(
         #[case] topic: Topic,
         #[case] payment_method: PaymentMethod,
+        #[case] purpose: Purpose,
         #[case] expected: PolarsResult<DataFrame>,
     ) {
         let df_in = df!(
-            "Date" => &["16.03.2023", "14.03.2023", "15.03.2023", "28.03.2023", "20.03.2023"],
-            "Price (Gross)" => &[None, Some(1.3), Some(5.2), Some(3.6), Some(4.7)],
-            "Topic" => &["LoLa", "LoLa", "MiTi", "LoLa", "LoLa"],
-            "Payment Method" => &["Card", "Card", "Card", "Card", "Cash"]
+            "Date" => &["16.03.2023", "14.03.2023", "15.03.2023", "28.03.2023", "20.03.2023", "14.03.2023"],
+            "Price (Gross)" => &[None, Some(1.3), Some(5.2), Some(3.6), Some(4.7), Some(0.5)],
+            "Topic" => &["LoLa", "LoLa", "MiTi", "LoLa", "LoLa", "LoLa"],
+            "Payment Method" => &["Card", "Card", "Card", "Card", "Cash", "Cash"],
+            "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Tip"],
         )
         .expect("Misconfigured dataframe");
-        let paa = predicate_and_alias(&topic, &payment_method);
+        let paa = match purpose {
+            Purpose::Consumption => cons_pred_and_alias(&topic, &payment_method),
+            Purpose::Tip => tip_pred_and_alias(&topic),
+        };
         let out = collect_by(df_in.lazy(), paa)
             .collect()
             .expect("Unable to collect result");
