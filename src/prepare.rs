@@ -132,7 +132,7 @@ impl fmt::Display for PaymentMethod {
 pub enum Topic {
     LoLa,
     MiTi,
-    Vermietung,
+    Verm,
 }
 
 impl fmt::Display for Topic {
@@ -250,7 +250,7 @@ fn infer_topic(time: NaiveTime) -> Topic {
     if time < th1 {
         Topic::MiTi
     } else if time > th2 {
-        Topic::Vermietung
+        Topic::Verm
     } else {
         Topic::LoLa
     }
@@ -278,8 +278,8 @@ mod tests {
     #[case("09:15", "Kaffee ", Topic::MiTi, Purpose::Consumption)]
     #[case("11:53", "Tee", Topic::MiTi, Purpose::Consumption)]
     #[case("15:01", "Tee", Topic::LoLa, Purpose::Consumption)]
-    #[case("18:01", "Bier", Topic::Vermietung, Purpose::Consumption)]
-    #[case("22:59", "Trinkgeld", Topic::Vermietung, Purpose::Tip)]
+    #[case("18:01", "Bier", Topic::Verm, Purpose::Consumption)]
+    #[case("22:59", "Trinkgeld", Topic::Verm, Purpose::Tip)]
     fn test(
         #[case] time: &str,
         #[case] description: &str,

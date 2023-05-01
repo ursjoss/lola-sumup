@@ -68,15 +68,15 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     );
     let verm_cash = collect_by(
         ldf.clone(),
-        cons_pred_and_alias(&Topic::Vermietung, &PaymentMethod::Cash),
+        cons_pred_and_alias(&Topic::Verm, &PaymentMethod::Cash),
     );
     let verm_card = collect_by(
         ldf.clone(),
-        cons_pred_and_alias(&Topic::Vermietung, &PaymentMethod::Card),
+        cons_pred_and_alias(&Topic::Verm, &PaymentMethod::Card),
     );
     let lola_tips = collect_by(ldf.clone(), tip_pred_and_alias(&Topic::LoLa));
     let miti_tips = collect_by(ldf.clone(), tip_pred_and_alias(&Topic::MiTi));
-    let verm_tips = collect_by(ldf, tip_pred_and_alias(&Topic::Vermietung));
+    let verm_tips = collect_by(ldf, tip_pred_and_alias(&Topic::Verm));
     let comb1 = all_dates.join(lola_cash, [col("Date")], [col("Date")], JoinType::Left);
     let comb2 = comb1.join(lola_card, [col("Date")], [col("Date")], JoinType::Left);
     let comb3 = comb2.join(miti_cash, [col("Date")], [col("Date")], JoinType::Left);
@@ -88,65 +88,64 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     let comb9 = comb8.join(verm_tips, [col("Date")], [col("Date")], JoinType::Left);
     comb9
         .with_column(
-            (col("LoLa_Cash").fill_null(0.0) + col("LoLa_Card").fill_null(0.0)).alias("LoLa Total"),
+            (col("LoLa_Bar").fill_null(0.0) + col("LoLa_Card").fill_null(0.0)).alias("LoLa Total"),
         )
         .with_column(
-            (col("MiTi_Cash").fill_null(0.0) + col("MiTi_Card").fill_null(0.0)).alias("MiTi Total"),
+            (col("MiTi_Bar").fill_null(0.0) + col("MiTi_Card").fill_null(0.0)).alias("MiTi Total"),
         )
         .with_column(
-            (col("Vermietung_Cash").fill_null(0.0) + col("Vermietung_Card").fill_null(0.0))
-                .alias("Vermietung Total"),
+            (col("Verm_Bar").fill_null(0.0) + col("Verm_Card").fill_null(0.0)).alias("Verm Total"),
         )
         .with_column(
-            (col("LoLa_Cash").fill_null(0.0)
-                + col("MiTi_Cash").fill_null(0.0)
-                + col("Vermietung_Cash").fill_null(0.0))
+            (col("LoLa_Bar").fill_null(0.0)
+                + col("MiTi_Bar").fill_null(0.0)
+                + col("Verm_Bar").fill_null(0.0))
             .alias("Cash Total"),
         )
         .with_column(
             (col("LoLa_Card").fill_null(0.0)
                 + col("MiTi_Card").fill_null(0.0)
-                + col("Vermietung_Card").fill_null(0.0))
+                + col("Verm_Card").fill_null(0.0))
             .alias("Card Total"),
         )
         .with_column(
             (col("LoLa Total").fill_null(0.0)
                 + col("MiTi Total").fill_null(0.0)
-                + col("Vermietung Total").fill_null(0.0))
-            .alias("Total Consumption"),
+                + col("Verm Total").fill_null(0.0))
+            .alias("Total"),
         )
         .with_column(
             (col("LoLa_Tips").fill_null(0.0)
                 + col("MiTi_Tips").fill_null(0.0)
-                + col("Vermietung_Tips").fill_null(0.0))
+                + col("Verm_Tips").fill_null(0.0))
             .alias("Total Tips"),
         )
         .with_column(
             (col("LoLa Total").fill_null(0.0)
                 + col("MiTi Total").fill_null(0.0)
-                + col("Vermietung Total").fill_null(0.0)
+                + col("Verm Total").fill_null(0.0)
                 + col("Total Tips").fill_null(0.0))
-            .alias("Total"),
+            .alias("Total SumUp"),
         )
         .select([
             col("Date"),
-            col("LoLa_Cash"),
+            col("LoLa_Bar"),
             col("LoLa_Card"),
             col("LoLa Total"),
-            col("MiTi_Cash"),
+            col("MiTi_Bar"),
             col("MiTi_Card"),
             col("MiTi Total"),
-            col("Vermietung_Cash"),
-            col("Vermietung_Card"),
-            col("Vermietung Total"),
+            col("Verm_Bar"),
+            col("Verm_Card"),
+            col("Verm Total"),
             col("Cash Total"),
             col("Card Total"),
-            col("Total Consumption"),
+            col("Total"),
             col("LoLa_Tips"),
             col("MiTi_Tips"),
-            col("Vermietung_Tips"),
+            col("Verm_Tips"),
             col("Total Tips"),
-            col("Total"),
+            col("Total SumUp"),
         ])
         .collect()
 }
@@ -155,7 +154,11 @@ fn cons_pred_and_alias(topic: &Topic, payment_method: &PaymentMethod) -> (Expr, 
     let expr = (col("Topic").eq(lit(topic.to_string())))
         .and(col("Payment Method").eq(lit(payment_method.to_string())))
         .and(col("Purpose").neq(lit(Purpose::Tip.to_string())));
-    let alias = format!("{topic}_{payment_method}");
+    let payment_method_label = match payment_method {
+        PaymentMethod::Cash => "Bar",
+        PaymentMethod::Card => "Card",
+    };
+    let alias = format!("{topic}_{payment_method_label}");
     (expr, alias)
 }
 
@@ -201,7 +204,7 @@ mod tests {
     #[case(Topic::LoLa, PaymentMethod::Cash, Purpose::Consumption,
         df!(
             "Date" => &["20.03.2023"],
-            "LoLa_Cash" => &[4.7]),
+            "LoLa_Bar" => &[4.7]),
         )
     ]
     #[case(Topic::MiTi, PaymentMethod::Card, Purpose::Consumption,
