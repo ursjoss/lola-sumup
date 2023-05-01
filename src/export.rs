@@ -65,17 +65,33 @@ pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Bo
     let comb5 = comb4.join(verm_cash, [col("Date")], [col("Date")], JoinType::Left);
     let comb6 = comb5.join(verm_card, [col("Date")], [col("Date")], JoinType::Left);
     let mut combined = comb6
-        .with_column((col("LoLa_Cash") + col("LoLa_Card")).alias("LoLa_Total"))
-        .with_column((col("MiTi_Cash") + col("MiTi_Card")).alias("MiTi_Total"))
-        .with_column((col("Vermietung_Cash") + col("Vermietung_Card")).alias("Vermietung_Total"))
         .with_column(
-            (col("LoLa_Cash") + col("MiTi_Cash") + col("Vermietung_Cash")).alias("Cash_Total"),
+            (col("LoLa_Cash").fill_null(0.0) + col("LoLa_Card").fill_null(0.0)).alias("LoLa_Total"),
         )
         .with_column(
-            (col("LoLa_Card") + col("MiTi_Card") + col("Vermietung_Card")).alias("Card_Total"),
+            (col("MiTi_Cash").fill_null(0.0) + col("MiTi_Card").fill_null(0.0)).alias("MiTi_Total"),
         )
         .with_column(
-            (col("LoLa_Total") + col("MiTi_Total") + col("Vermietung_Total")).alias("Total"),
+            (col("Vermietung_Cash").fill_null(0.0) + col("Vermietung_Card").fill_null(0.0))
+                .alias("Vermietung_Total"),
+        )
+        .with_column(
+            (col("LoLa_Cash").fill_null(0.0)
+                + col("MiTi_Cash").fill_null(0.0)
+                + col("Vermietung_Cash").fill_null(0.0))
+            .alias("Cash_Total"),
+        )
+        .with_column(
+            (col("LoLa_Card").fill_null(0.0)
+                + col("MiTi_Card").fill_null(0.0)
+                + col("Vermietung_Card").fill_null(0.0))
+            .alias("Card_Total"),
+        )
+        .with_column(
+            (col("LoLa_Total").fill_null(0.0)
+                + col("MiTi_Total").fill_null(0.0)
+                + col("Vermietung_Total").fill_null(0.0))
+            .alias("Total"),
         )
         .select([
             col("Date"),
@@ -117,7 +133,10 @@ fn collect_by(ldf: LazyFrame, predicate_and_alias: (Expr, String)) -> LazyFrame 
     ldf.filter(predicate)
         .groupby(["Date"])
         .agg([col("Price (Gross)").sum()])
-        .select([col("Date"), col("Price (Gross)").alias(alias.as_str())])
+        .select([
+            col("Date"),
+            col("Price (Gross)").fill_null(0.0).alias(alias.as_str()),
+        ])
         .sort(
             "Date",
             SortOptions {
@@ -126,4 +145,49 @@ fn collect_by(ldf: LazyFrame, predicate_and_alias: (Expr, String)) -> LazyFrame 
                 multithreaded: false,
             },
         )
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case(Topic::LoLa, PaymentMethod::Card,
+        df!(
+            "Date" => &["14.03.2023", "16.03.2023", "28.03.2023"],
+            "LoLa_Card" => &[1.3, 0.0, 3.6]),
+        )
+    ]
+    #[case(Topic::LoLa, PaymentMethod::Cash,
+        df!(
+            "Date" => &["20.03.2023"],
+            "LoLa_Cash" => &[4.7]),
+        )
+    ]
+    #[case(Topic::MiTi, PaymentMethod::Card,
+        df!(
+            "Date" => &["15.03.2023"],
+            "MiTi_Card" => &[5.2]),
+        )
+    ]
+    fn test(
+        #[case] topic: Topic,
+        #[case] payment_method: PaymentMethod,
+        #[case] expected: PolarsResult<DataFrame>,
+    ) {
+        let df_in = df!(
+            "Date" => &["16.03.2023", "14.03.2023", "15.03.2023", "28.03.2023", "20.03.2023"],
+            "Price (Gross)" => &[None, Some(1.3), Some(5.2), Some(3.6), Some(4.7)],
+            "Topic" => &["LoLa", "LoLa", "MiTi", "LoLa", "LoLa"],
+            "Payment Method" => &["Card", "Card", "Card", "Card", "Cash"]
+        )
+        .expect("Misconfigured dataframe");
+        let paa = predicate_and_alias(&topic, &payment_method);
+        let out = collect_by(df_in.lazy(), paa)
+            .collect()
+            .expect("Unable to collect result");
+        assert_eq!(out, expected.expect("Misconfigured expected df"));
+    }
 }
