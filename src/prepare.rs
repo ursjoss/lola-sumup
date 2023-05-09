@@ -15,7 +15,7 @@ pub fn prepare(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), B
         Some(path) => Box::new(File::create(path)?),
         None => Box::new(io::stdout()),
     };
-    let mut wtr = csv::Writer::from_writer(iowtr);
+    let mut wtr = csv::WriterBuilder::new().delimiter(b';').from_writer(iowtr);
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(true)
         .from_path(input_path)?;

@@ -10,6 +10,7 @@ use crate::prepare::{PaymentMethod, Purpose, Topic};
 pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Box<dyn Error>> {
     let raw_df = CsvReader::from_path(input_path)?
         .has_header(true)
+        .with_delimiter(b';')
         .with_try_parse_dates(true)
         .finish()?;
     let mut df = collect_data(raw_df)?;
@@ -21,7 +22,7 @@ pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Bo
     };
     CsvWriter::new(iowtr)
         .has_header(true)
-        .with_delimiter(b',')
+        .with_delimiter(b';')
         .finish(&mut df)?;
     Ok(())
 }
