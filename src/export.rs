@@ -129,20 +129,20 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         )
         .select([
             col("Date"),
-            col("LoLa_Bar"),
-            col("LoLa_Card"),
-            col("LoLa Total"),
             col("MiTi_Bar"),
             col("MiTi_Card"),
             col("MiTi Total"),
+            col("LoLa_Bar"),
+            col("LoLa_Card"),
+            col("LoLa Total"),
             col("Verm_Bar"),
             col("Verm_Card"),
             col("Verm Total"),
             col("Cash Total"),
             col("Card Total"),
             col("Total"),
-            col("LoLa_Tips"),
             col("MiTi_Tips"),
+            col("LoLa_Tips"),
             col("Verm_Tips"),
             col("Total Tips"),
             col("Total SumUp"),
@@ -190,6 +190,7 @@ fn collect_by(ldf: LazyFrame, predicate_and_alias: (Expr, String)) -> LazyFrame 
 
 #[cfg(test)]
 mod tests {
+    use chrono::NaiveDate;
     use rstest::rstest;
 
     use super::*;
@@ -219,7 +220,7 @@ mod tests {
             "LoLa_Tips" => &[0.5]),
         )
     ]
-    fn test(
+    fn test_collect_by(
         #[case] topic: Topic,
         #[case] payment_method: PaymentMethod,
         #[case] purpose: Purpose,
@@ -241,5 +242,59 @@ mod tests {
             .collect()
             .expect("Unable to collect result");
         assert_eq!(out, expected.expect("Misconfigured expected df"));
+    }
+
+    #[rstest]
+    fn test_collect_data() {
+        let df = df!(
+            "Account" => &["a@b.ch"],
+            "Date" => &["17.04.2023"],
+            "Time" => &["12:32:00"],
+            "Type" => &["Sales"],
+            "Transaction ID" => &["TEGUCXAGDE"],
+            "Receipt Number" => &["S20230000303"],
+            "Payment Method" => &["Cash"],
+            "Quantity" => &[1],
+            "Description" => &["foo"],
+            "Currency" => &["CHF"],
+            "Price (Gross)" => &[16.0],
+            "Price (Net)" => &[16.0],
+            "Tax" => &["0.0%"],
+            "Tax rate" => &[""],
+            "Transaction refunded" => &[""],
+            "Topic" => &["MiTi"],
+            "Purpose" => &["Consumption"],
+            "Comment" => &[""],
+        )
+        .expect("Misconfigured test data frame");
+        let out = collect_data(df).expect("should be able to collect the data");
+        let date0 = NaiveDate::parse_from_str("1.4.2023", "%d.%m.%Y").expect("valid date");
+        let date1 = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
+        // the first record is a silly workaround to get typed values into each slice. It's filtered out below.
+        let expected = df!(
+            "Date" => &[date0, date1],
+            "MiTi_Bar" => &[Some(0.0), Some(16.0)],
+            "MiTi_Card" => &[Some(0.0),  None],
+            "MiTi Total" => &[0.0, 16.0],
+            "LoLa_Bar" => &[Some(0.0), None],
+            "LoLa_Card" => &[Some(0.0), None],
+            "LoLa Total" => &[0.0, 0.0],
+            "Verm_Bar" => &[Some(0.0), None],
+            "Verm_Card" => &[Some(0.0), None],
+            "Verm Total" => &[0.0, 0.0],
+            "Cash Total" => &[0.0, 16.0],
+            "Card Total" => &[0.0, 0.0],
+            "Total" => &[0.0, 16.0],
+            "MiTi_Tips" => &[Some(0.0), None],
+            "LoLa_Tips" => &[Some(0.0), None],
+            "Verm_Tips" => &[Some(0.0), None],
+            "Total Tips" => &[0.0, 0.0],
+            "Total SumUp" => &[0.0, 16.0],
+        )
+        .expect("valid data frame")
+        .lazy()
+        .filter(col("Total SumUp").neq(lit(0.0)))
+        .collect();
+        assert_eq!(out, expected.expect("valid data frame"));
     }
 }
