@@ -270,6 +270,7 @@ mod tests {
         let out = collect_data(df).expect("should be able to collect the data");
         let date0 = NaiveDate::parse_from_str("1.4.2023", "%d.%m.%Y").expect("valid date");
         let date1 = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
+        // the first record is a silly workaround to get typed values into each slice. It's filtered out below.
         let expected = df!(
             "Date" => &[date0, date1],
             "MiTi_Bar" => &[Some(0.0), Some(16.0)],
