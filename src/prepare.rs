@@ -153,6 +153,18 @@ impl fmt::Display for Purpose {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+pub enum Owner {
+    LoLa,
+    MiTi,
+}
+
+impl fmt::Display for Owner {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
+
 /// The file format for the `Intermediate` file
 #[derive(Debug, Serialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
@@ -183,6 +195,7 @@ pub struct Intermediate {
     #[serde(rename = "Transaction refunded")]
     transaction_refunded: String,
     topic: Topic,
+    owner: Option<Owner>,
     purpose: Purpose,
     comment: String,
 }
@@ -238,6 +251,7 @@ impl From<SalesReport> for Intermediate {
             tax_rate: ri.tax_rate,
             transaction_refunded: ri.transaction_refunded,
             topic: infer_topic(ri.time),
+            owner: infer_owner(ri.time, &ri.description),
             purpose: infer_purpose(ri.description.trim()),
             comment: String::new(),
         }
@@ -264,6 +278,20 @@ fn infer_purpose(description: &str) -> Purpose {
     }
 }
 
+fn infer_owner(time: NaiveTime, description: &str) -> Option<Owner> {
+    let topic = infer_topic(time);
+    if topic == Topic::MiTi {
+        let patterns: Vec<&str> = vec!["Hauptgang", "Kinderteller", "Menü", "Dessert", "Vorspeise"];
+        if patterns.iter().any(|p| description.contains(p)) {
+            Some(Owner::MiTi)
+        } else {
+            Some(Owner::LoLa)
+        }
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use chrono::{NaiveDate, NaiveTime};
@@ -275,16 +303,44 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case("09:15", "Kaffee ", Topic::MiTi, Purpose::Consumption)]
-    #[case("11:53", "Tee", Topic::MiTi, Purpose::Consumption)]
-    #[case("14:16", "Tee", Topic::LoLa, Purpose::Consumption)]
-    #[case("18:01", "Bier", Topic::Verm, Purpose::Consumption)]
-    #[case("22:59", "Trinkgeld", Topic::Verm, Purpose::Tip)]
+    #[case(
+        "09:15",
+        "Kaffee ",
+        Topic::MiTi,
+        Purpose::Consumption,
+        Some(Owner::LoLa)
+    )]
+    #[case(
+        "09:15",
+        "Hauptgang",
+        Topic::MiTi,
+        Purpose::Consumption,
+        Some(Owner::MiTi)
+    )]
+    #[case(
+        "10:59",
+        "Hauptgang+Dessert normal",
+        Topic::MiTi,
+        Purpose::Consumption,
+        Some(Owner::MiTi)
+    )]
+    #[case(
+        "11:15",
+        "Menü ganz reduziert",
+        Topic::MiTi,
+        Purpose::Consumption,
+        Some(Owner::MiTi)
+    )]
+    #[case("11:53", "Tee", Topic::MiTi, Purpose::Consumption, Some(Owner::LoLa))]
+    #[case("14:16", "Tee", Topic::LoLa, Purpose::Consumption, None)]
+    #[case("18:01", "Bier", Topic::Verm, Purpose::Consumption, None)]
+    #[case("22:59", "Trinkgeld", Topic::Verm, Purpose::Tip, None)]
     fn test(
         #[case] time: &str,
         #[case] description: &str,
         #[case] topic: Topic,
         #[case] purpose: Purpose,
+        #[case] owner: Option<Owner>,
     ) {
         let csv = new_csv(time, description);
         let expected = new_record(
@@ -292,6 +348,7 @@ mod tests {
             description.trim(),
             topic,
             purpose,
+            owner,
         );
 
         let mut reader = Reader::from_reader(csv.as_bytes());
@@ -308,7 +365,13 @@ test@org.org,15.03.23,{time},Sales,TD4KP497FR,S20230000001,Cash,2,{description},
 ")
     }
 
-    fn new_record(time: &str, description: &str, topic: Topic, purpose: Purpose) -> Intermediate {
+    fn new_record(
+        time: &str,
+        description: &str,
+        topic: Topic,
+        purpose: Purpose,
+        owner: Option<Owner>,
+    ) -> Intermediate {
         Intermediate {
             account: "test@org.org".into(),
             date: NaiveDate::from_ymd_opt(2023, 3, 15).unwrap(),
@@ -327,6 +390,7 @@ test@org.org,15.03.23,{time},Sales,TD4KP497FR,S20230000001,Cash,2,{description},
             transaction_refunded: String::new(),
             topic,
             purpose,
+            owner,
             comment: String::new(),
         }
     }

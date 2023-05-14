@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Display, Formatter};
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -5,7 +6,7 @@ use std::{error::Error, io};
 
 use polars::prelude::*;
 
-use crate::prepare::{PaymentMethod, Purpose, Topic};
+use crate::prepare::{Owner, PaymentMethod, Purpose, Topic};
 
 pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Box<dyn Error>> {
     let raw_df = CsvReader::from_path(input_path)?
@@ -13,6 +14,8 @@ pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Bo
         .with_delimiter(b';')
         .with_try_parse_dates(true)
         .finish()?;
+    validate_topic_owner_constraint(&raw_df)?;
+
     let mut df = collect_data(raw_df)?;
     df.extend(&df.sum())?;
 
@@ -25,6 +28,83 @@ pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Bo
         .with_delimiter(b';')
         .finish(&mut df)?;
     Ok(())
+}
+
+fn validate_topic_owner_constraint(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
+    topic_owner_constraint(
+        raw_df,
+        TopicOwnerConstraintViolationError::MiTiWithoutOwner,
+        col("Topic")
+            .eq(lit(Topic::MiTi.to_string()))
+            .and(col("Owner").is_null()),
+    )?;
+    topic_owner_constraint(
+        raw_df,
+        TopicOwnerConstraintViolationError::OtherWithOwner,
+        col("Topic")
+            .neq(lit(Topic::MiTi.to_string()))
+            .and(col("Owner").is_not_null()),
+    )?;
+    Ok(())
+}
+
+enum TopicOwnerConstraintViolationError {
+    MiTiWithoutOwner(DataFrame),
+    OtherWithOwner(DataFrame),
+}
+
+impl Display for TopicOwnerConstraintViolationError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TopicOwnerConstraintViolationError::MiTiWithoutOwner(df) => {
+                write!(f, "Row with topic 'MiTi' must have an Owner! {df}")
+            }
+            TopicOwnerConstraintViolationError::OtherWithOwner(df) => {
+                write!(
+                    f,
+                    "Row with topic other than 'MiTi' must not have an Owner! {df}"
+                )
+            }
+        }
+    }
+}
+
+impl Debug for TopicOwnerConstraintViolationError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self}:?")
+    }
+}
+
+impl Error for TopicOwnerConstraintViolationError {}
+
+fn topic_owner_constraint(
+    raw_df: &DataFrame,
+    error: fn(DataFrame) -> TopicOwnerConstraintViolationError,
+    predicate: Expr,
+) -> Result<(), Box<dyn Error>> {
+    let df = raw_df
+        .clone()
+        .lazy()
+        .with_row_count("Row-No", Some(2))
+        .filter(predicate)
+        .select([
+            col("Row-No"),
+            col("Date"),
+            col("Time"),
+            col("Transaction ID"),
+            col("Description"),
+            col("Price (Gross)"),
+            col("Topic"),
+            col("Owner"),
+            col("Purpose"),
+            col("Comment"),
+        ])
+        .collect()?;
+    if df.shape().0 > 0 {
+        Err(Box::try_from(error(df)).unwrap())
+    } else {
+        Ok(())
+    }
 }
 
 #[allow(clippy::too_many_lines)]
@@ -76,7 +156,9 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     );
     let lola_tips = collect_by(ldf.clone(), tip_pred_and_alias(&Topic::LoLa));
     let miti_tips = collect_by(ldf.clone(), tip_pred_and_alias(&Topic::MiTi));
-    let verm_tips = collect_by(ldf, tip_pred_and_alias(&Topic::Verm));
+    let verm_tips = collect_by(ldf.clone(), tip_pred_and_alias(&Topic::Verm));
+    let miti_miti = collect_by(ldf.clone(), miti_pred_and_alias(&Owner::MiTi));
+    let miti_lola = collect_by(ldf, miti_pred_and_alias(&Owner::LoLa));
     let comb1 = all_dates.join(lola_cash, [col("Date")], [col("Date")], JoinType::Left);
     let comb2 = comb1.join(lola_card, [col("Date")], [col("Date")], JoinType::Left);
     let comb3 = comb2.join(miti_cash, [col("Date")], [col("Date")], JoinType::Left);
@@ -86,7 +168,9 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     let comb7 = comb6.join(lola_tips, [col("Date")], [col("Date")], JoinType::Left);
     let comb8 = comb7.join(miti_tips, [col("Date")], [col("Date")], JoinType::Left);
     let comb9 = comb8.join(verm_tips, [col("Date")], [col("Date")], JoinType::Left);
-    comb9
+    let comb10 = comb9.join(miti_miti, [col("Date")], [col("Date")], JoinType::Left);
+    let comb11 = comb10.join(miti_lola, [col("Date")], [col("Date")], JoinType::Left);
+    comb11
         .with_column(
             (col("LoLa_Bar").fill_null(0.0) + col("LoLa_Card").fill_null(0.0)).alias("LoLa Total"),
         )
@@ -127,6 +211,9 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 + col("Total Tips").fill_null(0.0))
             .alias("Total SumUp"),
         )
+        .with_column(
+            (col("MiTi_MiTi").fill_null(0.0) + col("MiTi_LoLa").fill_null(0.0)).alias("Total MiTi"),
+        )
         .select([
             col("Date"),
             col("MiTi_Bar"),
@@ -146,6 +233,9 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Verm_Tips"),
             col("Total Tips"),
             col("Total SumUp"),
+            col("MiTi_MiTi"),
+            col("MiTi_LoLa"),
+            col("Total MiTi"),
         ])
         .collect()
 }
@@ -166,6 +256,14 @@ fn tip_pred_and_alias(topic: &Topic) -> (Expr, String) {
     let expr = (col("Topic").eq(lit(topic.to_string())))
         .and(col("Purpose").eq(lit(Purpose::Tip.to_string())));
     let alias = format!("{topic}_Tips");
+    (expr, alias)
+}
+
+fn miti_pred_and_alias(owner: &Owner) -> (Expr, String) {
+    let expr = (col("Topic").eq(lit(Topic::MiTi.to_string())))
+        .and(col("Owner").eq(lit(owner.to_string())))
+        .and(col("Purpose").neq(lit(Purpose::Tip.to_string())));
+    let alias = format!("MiTi_{owner}");
     (expr, alias)
 }
 
@@ -263,6 +361,7 @@ mod tests {
             "Tax rate" => &[""],
             "Transaction refunded" => &[""],
             "Topic" => &["MiTi"],
+            "Owner" => &["MiTi"],
             "Purpose" => &["Consumption"],
             "Comment" => &[""],
         )
@@ -290,11 +389,78 @@ mod tests {
             "Verm_Tips" => &[Some(0.0), None],
             "Total Tips" => &[0.0, 0.0],
             "Total SumUp" => &[0.0, 16.0],
+            "MiTi_MiTi" => &[Some(0.0), Some(16.0)],
+            "MiTi_LoLa" => &[Some(0.0), None],
+            "Total MiTi" => &[0.0, 16.0],
         )
         .expect("valid data frame")
         .lazy()
         .filter(col("Total SumUp").neq(lit(0.0)))
         .collect();
         assert_eq!(out, expected.expect("valid data frame"));
+    }
+
+    #[rstest]
+    // MiTi must have an owner
+    #[case(Topic::MiTi, Some("LoLa"), true, None)]
+    #[case(Topic::MiTi, Some("MiTi"), true, None)]
+    // LoLa/Verm must have no owner
+    #[case(Topic::LoLa, None, true, None)]
+    #[case(Topic::Verm, None, true, None)]
+    // MiTi w/o or non-MiTi with owner should fail
+    #[case(
+        Topic::MiTi,
+        None,
+        false,
+        Some("Row with topic 'MiTi' must have an Owner!")
+    )]
+    #[case(
+        Topic::LoLa,
+        Some("LoLa"),
+        false,
+        Some("Row with topic other than 'MiTi' must not have an Owner!")
+    )]
+    #[case(
+        Topic::Verm,
+        Some("MiTi"),
+        false,
+        Some("Row with topic other than 'MiTi' must not have an Owner!")
+    )]
+    fn test_constraints(
+        #[case] topic: Topic,
+        #[case] owner: Option<&str>,
+        #[case] expected_valid: bool,
+        #[case] error_msg: Option<&str>,
+    ) {
+        let df = df!(
+            "Account" => &["a@b.ch"],
+            "Date" => &["17.04.2023"],
+            "Time" => &["12:32:00"],
+            "Type" => &["Sales"],
+            "Transaction ID" => &["TEGUCXAGDE"],
+            "Receipt Number" => &["S20230000303"],
+            "Payment Method" => &["Cash"],
+            "Quantity" => &[1],
+            "Description" => &["foo"],
+            "Currency" => &["CHF"],
+            "Price (Gross)" => &[16.0],
+            "Price (Net)" => &[16.0],
+            "Tax" => &["0.0%"],
+            "Tax rate" => &[""],
+            "Transaction refunded" => &[""],
+            "Topic" => &[topic.to_string()],
+            "Owner" => &[owner],
+            "Purpose" => &["Consumption"],
+            "Comment" => &[""],
+        )
+        .expect("single record df");
+        match validate_topic_owner_constraint(&df) {
+            Ok(()) => assert!(expected_valid),
+            Err(e) => {
+                assert!(!expected_valid);
+                let msg = error_msg.expect("should have an error message");
+                assert!(e.to_string().starts_with(msg));
+            }
+        }
     }
 }
