@@ -9,11 +9,10 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-csv = "1.2.1"
 clap = { version = "4.2", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 chrono= { version = "0.4.24", features = ["serde"] }
-polars = { version = "0.29.0", features = ["lazy", "dtype-date", "temporal", "strings"] }
+polars = { version = "0.29.0", features = ["lazy", "dtype-date", "temporal", "strings", "concat_str"] }
 
 [dev-dependencies]
 rstest = "0.17.0"
