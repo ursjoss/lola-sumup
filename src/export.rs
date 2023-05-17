@@ -157,9 +157,11 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     let lola_tips = collect_by_price(ldf.clone(), tip_pred_and_alias(&Topic::LoLa));
     let miti_tips = collect_by_price(ldf.clone(), tip_pred_and_alias(&Topic::MiTi));
     let verm_tips = collect_by_price(ldf.clone(), tip_pred_and_alias(&Topic::Verm));
+    let miti_comm = collect_by_commission(ldf.clone(), commission_pred_and_alias(&Owner::MiTi));
+    let lola_comm = collect_by_commission(ldf.clone(), commission_pred_and_alias(&Owner::LoLa));
     let miti_miti = collect_by_price(ldf.clone(), miti_pred_and_alias(&Owner::MiTi));
-    let miti_lola = collect_by_price(ldf.clone(), miti_pred_and_alias(&Owner::LoLa));
-    let commission = collect_by_commission(ldf, commission_pred_and_alias());
+    let miti_lola = collect_by_price(ldf, miti_pred_and_alias(&Owner::LoLa));
+
     let with_lola_cash = all_dates.join(lola_cash, [col("Date")], [col("Date")], JoinType::Left);
     let with_lola_card =
         with_lola_cash.join(lola_card, [col("Date")], [col("Date")], JoinType::Left);
@@ -181,10 +183,12 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         with_verm_tips.join(miti_miti, [col("Date")], [col("Date")], JoinType::Left);
     let with_miti_lola =
         with_miti_miti.join(miti_lola, [col("Date")], [col("Date")], JoinType::Left);
-    let with_commission =
-        with_miti_lola.join(commission, [col("Date")], [col("Date")], JoinType::Left);
+    let with_comm_miti =
+        with_miti_lola.join(miti_comm, [col("Date")], [col("Date")], JoinType::Left);
+    let with_comm_lola =
+        with_comm_miti.join(lola_comm, [col("Date")], [col("Date")], JoinType::Left);
 
-    with_commission
+    with_comm_lola
         .with_column(
             (col("LoLa_Bar").fill_null(0.0) + col("LoLa_Card").fill_null(0.0)).alias("LoLa Total"),
         )
@@ -226,6 +230,10 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             .alias("Total SumUp"),
         )
         .with_column(
+            (col("MiTi_Commission").fill_null(0.0) + col("LoLa_Commission").fill_null(0.0))
+                .alias("Total Commission"),
+        )
+        .with_column(
             (col("MiTi_MiTi").fill_null(0.0) + col("MiTi_LoLa").fill_null(0.0)).alias("Total MiTi"),
         )
         .select([
@@ -247,7 +255,9 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Verm_Tips"),
             col("Total Tips"),
             col("Total SumUp"),
-            col("Commission"),
+            col("MiTi_Commission"),
+            col("LoLa_Commission"),
+            col("Total Commission"),
             col("MiTi_MiTi"),
             col("MiTi_LoLa"),
             col("Total MiTi"),
@@ -282,8 +292,15 @@ fn miti_pred_and_alias(owner: &Owner) -> (Expr, String) {
     (expr, alias)
 }
 
-fn commission_pred_and_alias() -> (Expr, String) {
-    (lit(true), "Commission".to_string())
+fn commission_pred_and_alias(owner: &Owner) -> (Expr, String) {
+    let expr = match owner {
+        Owner::MiTi => (col("Topic").eq(lit(Topic::MiTi.to_string())))
+            .and(col("Owner").eq(lit(owner.to_string()))),
+        Owner::LoLa => (col("Topic").neq(lit(Topic::MiTi.to_string())))
+            .or(col("Owner").eq(lit(owner.to_string()))),
+    };
+    let alias = format!("{owner}_Commission");
+    (expr, alias)
 }
 
 fn collect_by_price(ldf: LazyFrame, predicate_and_alias: (Expr, String)) -> LazyFrame {
@@ -394,7 +411,7 @@ mod tests {
             "Tax" => &["0.0%"],
             "Tax rate" => &[""],
             "Transaction refunded" => &[""],
-            "Commission" =>[0.24],
+            "Commission" =>[0.24123],
             "Topic" => &["MiTi"],
             "Owner" => &["MiTi"],
             "Purpose" => &["Consumption"],
@@ -424,7 +441,9 @@ mod tests {
             "Verm_Tips" => &[Some(0.0), None],
             "Total Tips" => &[0.0, 0.0],
             "Total SumUp" => &[0.0, 16.0],
-            "Commission" => &[0.0, 0.24],
+            "MiTi_Commission" => &[Some(0.0), Some(0.24)],
+            "LoLa_Commission" => &[Some(0.0), None],
+            "Total Commission" => &[0.0, 0.24],
             "MiTi_MiTi" => &[Some(0.0), Some(16.0)],
             "MiTi_LoLa" => &[Some(0.0), None],
             "Total MiTi" => &[0.0, 16.0],
