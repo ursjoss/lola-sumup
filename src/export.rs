@@ -305,7 +305,10 @@ fn collect_by_key_figure(
         .agg([col(key_figure).sum()])
         .select([
             col("Date"),
-            col(key_figure).fill_null(0.0).alias(alias.as_str()),
+            col(key_figure)
+                .fill_null(0.0)
+                .round(2)
+                .alias(alias.as_str()),
         ])
         .sort(
             "Date",
