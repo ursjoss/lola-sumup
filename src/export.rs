@@ -190,36 +190,46 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
 
     with_comm_lola
         .with_column(
-            (col("LoLa_Bar").fill_null(0.0) + col("LoLa_Card").fill_null(0.0)).alias("LoLa Total"),
+            (col("LoLa_Bar").fill_null(0.0) + col("LoLa_Card").fill_null(0.0))
+                .round(2)
+                .alias("LoLa Total"),
         )
         .with_column(
-            (col("MiTi_Bar").fill_null(0.0) + col("MiTi_Card").fill_null(0.0)).alias("MiTi Total"),
+            (col("MiTi_Bar").fill_null(0.0) + col("MiTi_Card").fill_null(0.0))
+                .round(2)
+                .alias("MiTi Total"),
         )
         .with_column(
-            (col("Verm_Bar").fill_null(0.0) + col("Verm_Card").fill_null(0.0)).alias("Verm Total"),
+            (col("Verm_Bar").fill_null(0.0) + col("Verm_Card").fill_null(0.0))
+                .round(2)
+                .alias("Verm Total"),
         )
         .with_column(
             (col("LoLa_Bar").fill_null(0.0)
                 + col("MiTi_Bar").fill_null(0.0)
                 + col("Verm_Bar").fill_null(0.0))
+            .round(2)
             .alias("Cash Total"),
         )
         .with_column(
             (col("LoLa_Card").fill_null(0.0)
                 + col("MiTi_Card").fill_null(0.0)
                 + col("Verm_Card").fill_null(0.0))
+            .round(2)
             .alias("Card Total"),
         )
         .with_column(
             (col("LoLa Total").fill_null(0.0)
                 + col("MiTi Total").fill_null(0.0)
                 + col("Verm Total").fill_null(0.0))
+            .round(2)
             .alias("Total"),
         )
         .with_column(
             (col("LoLa_Tips").fill_null(0.0)
                 + col("MiTi_Tips").fill_null(0.0)
                 + col("Verm_Tips").fill_null(0.0))
+            .round(2)
             .alias("Total Tips"),
         )
         .with_column(
@@ -227,14 +237,18 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 + col("MiTi Total").fill_null(0.0)
                 + col("Verm Total").fill_null(0.0)
                 + col("Total Tips").fill_null(0.0))
+            .round(2)
             .alias("Total SumUp"),
         )
         .with_column(
             (col("MiTi_Commission").fill_null(0.0) + col("LoLa_Commission").fill_null(0.0))
+                .round(2)
                 .alias("Total Commission"),
         )
         .with_column(
-            (col("MiTi_MiTi").fill_null(0.0) + col("MiTi_LoLa").fill_null(0.0)).alias("Total MiTi"),
+            (col("MiTi_MiTi").fill_null(0.0) + col("MiTi_LoLa").fill_null(0.0))
+                .round(2)
+                .alias("Total MiTi"),
         )
         .select([
             col("Date"),
@@ -326,12 +340,12 @@ fn key_figure_by_date_for(
     let (predicate, alias) = predicate_and_alias;
     ldf.filter(predicate)
         .groupby(["Date"])
-        .agg([col(key_figure).sum()])
+        .agg([col(key_figure).round(2).sum()])
         .select([
             col("Date"),
             col(key_figure)
-                .fill_null(0.0)
                 .round(2)
+                .fill_null(0.0)
                 .alias(alias.as_str()),
         ])
         .sort(
