@@ -130,47 +130,61 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 multithreaded: false,
             },
         );
-    let lola_cash = collect_by(
+    let lola_cash = collect_by_price(
         ldf.clone(),
         cons_pred_and_alias(&Topic::LoLa, &PaymentMethod::Cash),
     );
-    let lola_card = collect_by(
+    let lola_card = collect_by_price(
         ldf.clone(),
         cons_pred_and_alias(&Topic::LoLa, &PaymentMethod::Card),
     );
-    let miti_cash = collect_by(
+    let miti_cash = collect_by_price(
         ldf.clone(),
         cons_pred_and_alias(&Topic::MiTi, &PaymentMethod::Cash),
     );
-    let miti_card = collect_by(
+    let miti_card = collect_by_price(
         ldf.clone(),
         cons_pred_and_alias(&Topic::MiTi, &PaymentMethod::Card),
     );
-    let verm_cash = collect_by(
+    let verm_cash = collect_by_price(
         ldf.clone(),
         cons_pred_and_alias(&Topic::Verm, &PaymentMethod::Cash),
     );
-    let verm_card = collect_by(
+    let verm_card = collect_by_price(
         ldf.clone(),
         cons_pred_and_alias(&Topic::Verm, &PaymentMethod::Card),
     );
-    let lola_tips = collect_by(ldf.clone(), tip_pred_and_alias(&Topic::LoLa));
-    let miti_tips = collect_by(ldf.clone(), tip_pred_and_alias(&Topic::MiTi));
-    let verm_tips = collect_by(ldf.clone(), tip_pred_and_alias(&Topic::Verm));
-    let miti_miti = collect_by(ldf.clone(), miti_pred_and_alias(&Owner::MiTi));
-    let miti_lola = collect_by(ldf, miti_pred_and_alias(&Owner::LoLa));
-    let comb1 = all_dates.join(lola_cash, [col("Date")], [col("Date")], JoinType::Left);
-    let comb2 = comb1.join(lola_card, [col("Date")], [col("Date")], JoinType::Left);
-    let comb3 = comb2.join(miti_cash, [col("Date")], [col("Date")], JoinType::Left);
-    let comb4 = comb3.join(miti_card, [col("Date")], [col("Date")], JoinType::Left);
-    let comb5 = comb4.join(verm_cash, [col("Date")], [col("Date")], JoinType::Left);
-    let comb6 = comb5.join(verm_card, [col("Date")], [col("Date")], JoinType::Left);
-    let comb7 = comb6.join(lola_tips, [col("Date")], [col("Date")], JoinType::Left);
-    let comb8 = comb7.join(miti_tips, [col("Date")], [col("Date")], JoinType::Left);
-    let comb9 = comb8.join(verm_tips, [col("Date")], [col("Date")], JoinType::Left);
-    let comb10 = comb9.join(miti_miti, [col("Date")], [col("Date")], JoinType::Left);
-    let comb11 = comb10.join(miti_lola, [col("Date")], [col("Date")], JoinType::Left);
-    comb11
+    let lola_tips = collect_by_price(ldf.clone(), tip_pred_and_alias(&Topic::LoLa));
+    let miti_tips = collect_by_price(ldf.clone(), tip_pred_and_alias(&Topic::MiTi));
+    let verm_tips = collect_by_price(ldf.clone(), tip_pred_and_alias(&Topic::Verm));
+    let miti_miti = collect_by_price(ldf.clone(), miti_pred_and_alias(&Owner::MiTi));
+    let miti_lola = collect_by_price(ldf.clone(), miti_pred_and_alias(&Owner::LoLa));
+    let commission = collect_by_commission(ldf, commission_pred_and_alias());
+    let with_lola_cash = all_dates.join(lola_cash, [col("Date")], [col("Date")], JoinType::Left);
+    let with_lola_card =
+        with_lola_cash.join(lola_card, [col("Date")], [col("Date")], JoinType::Left);
+    let with_miti_cash =
+        with_lola_card.join(miti_cash, [col("Date")], [col("Date")], JoinType::Left);
+    let with_miti_card =
+        with_miti_cash.join(miti_card, [col("Date")], [col("Date")], JoinType::Left);
+    let with_verm_cash =
+        with_miti_card.join(verm_cash, [col("Date")], [col("Date")], JoinType::Left);
+    let with_verm_card =
+        with_verm_cash.join(verm_card, [col("Date")], [col("Date")], JoinType::Left);
+    let with_lola_tips =
+        with_verm_card.join(lola_tips, [col("Date")], [col("Date")], JoinType::Left);
+    let with_miti_tips =
+        with_lola_tips.join(miti_tips, [col("Date")], [col("Date")], JoinType::Left);
+    let with_verm_tips =
+        with_miti_tips.join(verm_tips, [col("Date")], [col("Date")], JoinType::Left);
+    let with_miti_miti =
+        with_verm_tips.join(miti_miti, [col("Date")], [col("Date")], JoinType::Left);
+    let with_miti_lola =
+        with_miti_miti.join(miti_lola, [col("Date")], [col("Date")], JoinType::Left);
+    let with_commission =
+        with_miti_lola.join(commission, [col("Date")], [col("Date")], JoinType::Left);
+
+    with_commission
         .with_column(
             (col("LoLa_Bar").fill_null(0.0) + col("LoLa_Card").fill_null(0.0)).alias("LoLa Total"),
         )
@@ -233,6 +247,7 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Verm_Tips"),
             col("Total Tips"),
             col("Total SumUp"),
+            col("Commission"),
             col("MiTi_MiTi"),
             col("MiTi_LoLa"),
             col("Total MiTi"),
@@ -267,14 +282,30 @@ fn miti_pred_and_alias(owner: &Owner) -> (Expr, String) {
     (expr, alias)
 }
 
-fn collect_by(ldf: LazyFrame, predicate_and_alias: (Expr, String)) -> LazyFrame {
+fn commission_pred_and_alias() -> (Expr, String) {
+    (lit(true), "Commission".to_string())
+}
+
+fn collect_by_price(ldf: LazyFrame, predicate_and_alias: (Expr, String)) -> LazyFrame {
+    collect_by_key_figure(ldf, "Price (Gross)", predicate_and_alias)
+}
+
+fn collect_by_commission(ldf: LazyFrame, predicate_and_alias: (Expr, String)) -> LazyFrame {
+    collect_by_key_figure(ldf, "Commission", predicate_and_alias)
+}
+
+fn collect_by_key_figure(
+    ldf: LazyFrame,
+    key_figure: &str,
+    predicate_and_alias: (Expr, String),
+) -> LazyFrame {
     let (predicate, alias) = predicate_and_alias;
     ldf.filter(predicate)
         .groupby(["Date"])
-        .agg([col("Price (Gross)").sum()])
+        .agg([col(key_figure).sum()])
         .select([
             col("Date"),
-            col("Price (Gross)").fill_null(0.0).alias(alias.as_str()),
+            col(key_figure).fill_null(0.0).alias(alias.as_str()),
         ])
         .sort(
             "Date",
@@ -336,7 +367,7 @@ mod tests {
             Purpose::Consumption => cons_pred_and_alias(&topic, &payment_method),
             Purpose::Tip => tip_pred_and_alias(&topic),
         };
-        let out = collect_by(df_in.lazy(), paa)
+        let out = collect_by_price(df_in.lazy(), paa)
             .collect()
             .expect("Unable to collect result");
         assert_eq!(out, expected.expect("Misconfigured expected df"));
@@ -360,6 +391,7 @@ mod tests {
             "Tax" => &["0.0%"],
             "Tax rate" => &[""],
             "Transaction refunded" => &[""],
+            "Commission" =>[0.24],
             "Topic" => &["MiTi"],
             "Owner" => &["MiTi"],
             "Purpose" => &["Consumption"],
@@ -389,6 +421,7 @@ mod tests {
             "Verm_Tips" => &[Some(0.0), None],
             "Total Tips" => &[0.0, 0.0],
             "Total SumUp" => &[0.0, 16.0],
+            "Commission" => &[0.0, 0.24],
             "MiTi_MiTi" => &[Some(0.0), Some(16.0)],
             "MiTi_LoLa" => &[Some(0.0), None],
             "Total MiTi" => &[0.0, 16.0],
@@ -448,6 +481,7 @@ mod tests {
             "Tax" => &["0.0%"],
             "Tax rate" => &[""],
             "Transaction refunded" => &[""],
+            "Commission" => &[0.24],
             "Topic" => &[topic.to_string()],
             "Owner" => &[owner],
             "Purpose" => &["Consumption"],
