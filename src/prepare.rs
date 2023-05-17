@@ -15,8 +15,12 @@ use serde::{Deserialize, Serialize};
 /// Prepares the intermediate working copy of the original file.
 /// Some derived fields are prepared in a best-effort approach.
 /// The values of the intermediate file can (manually) be optionally tweaked until it matches the expectations.
-pub fn prepare(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Box<dyn Error>> {
-    let mut df = read_data(input_path)?;
+pub fn prepare(
+    input_path: &Path,
+    commission_path: &Path,
+    output_path: &Option<PathBuf>,
+) -> Result<(), Box<dyn Error>> {
+    let mut df = read_data(input_path, commission_path)?;
     let iowtr: Box<dyn Write> = match output_path {
         Some(path) => Box::new(File::create(path)?),
         None => Box::new(io::stdout()),
@@ -30,15 +34,22 @@ pub fn prepare(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), B
     Ok(())
 }
 
-fn read_data(input_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
+fn read_data(input_path: &Path, commission_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
     let raw_df = CsvReader::from_path(input_path)?
         .has_header(true)
         .with_delimiter(b',')
         .finish()?;
-    build_df(&raw_df)
+    let commission_df = CsvReader::from_path(commission_path)?
+        .has_header(true)
+        .with_delimiter(b',')
+        .finish()?;
+    build_df(&raw_df, &commission_df)
 }
 
-fn build_df(raw_df: &DataFrame) -> Result<DataFrame, Box<dyn Error>> {
+fn build_df(
+    raw_df: &DataFrame,
+    raw_commission_df: &DataFrame,
+) -> Result<DataFrame, Box<dyn Error>> {
     let raw_date_format = StrptimeOptions {
         format: Some("%d.%m.%y".into()),
         strict: true,
@@ -51,6 +62,20 @@ fn build_df(raw_df: &DataFrame) -> Result<DataFrame, Box<dyn Error>> {
         exact: true,
         ..Default::default()
     };
+
+    let commission_df = raw_commission_df
+        .clone()
+        .lazy()
+        .filter(
+            col("Zahlungsart")
+                .eq(lit("Umsatz"))
+                .and(col("Status").eq(lit("Erfolgreich"))),
+        )
+        .select([
+            col("Transaktions-ID"),
+            col("Betrag inkl. MwSt.").alias("Commissioned Total"),
+            col("Gebühr").alias("Commission"),
+        ]);
 
     let (refunded_ids_1, refunded_ids_2) = refunded_id_dfs(raw_df);
 
@@ -84,6 +109,16 @@ fn build_df(raw_df: &DataFrame) -> Result<DataFrame, Box<dyn Error>> {
             [col("TransactionId")],
             JoinType::Left,
         )
+        .join(
+            commission_df,
+            [col("Transaction ID")],
+            [col("Transaktions-ID")],
+            JoinType::Left,
+        )
+        .with_column(
+            (col("Price (Gross)") / col("Commissioned Total") * col("Commission"))
+                .alias("Commission"),
+        )
         .filter(col("refunded1").is_null().and(col("refunded2").is_null()))
         .select([
             col("Account"),
@@ -101,6 +136,7 @@ fn build_df(raw_df: &DataFrame) -> Result<DataFrame, Box<dyn Error>> {
             col("Tax"),
             col("Tax rate"),
             col("Transaction refunded"),
+            col("Commission"),
             col("Topic"),
             infer_owner().alias("Owner"),
             infer_purpose().alias("Purpose"),
@@ -256,6 +292,15 @@ mod tests {
         )
         .expect("Misconfigured test data frame");
 
+        let raw_commission_df = df!(
+            "Transaktions-ID" => &["TEGUCXAGDE"],
+            "Zahlungsart" => &["Umsatz"],
+            "Status" => &["Erfolgreich"],
+            "Betrag inkl. MwSt." => &[16.0],
+            "Gebühr" => &[0.24],
+        )
+        .expect("Misconfigured commission df");
+
         let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
         let time = NaiveTime::parse_from_str("12:32:00", "%H:%M:%S").expect("valid time");
         let expected = df!(
@@ -274,13 +319,14 @@ mod tests {
             "Tax" => &["0.0%"],
             "Tax rate" => &[""],
             "Transaction refunded" => &[""],
+            "Commission" => &[0.24],
             "Topic" => &["MiTi"],
             "Owner" => &["LoLa"],
             "Purpose" => &["Consumption"],
             "Comment" => &[""],
         );
 
-        let out = build_df(&df).expect("should parse");
+        let out = build_df(&df, &raw_commission_df).expect("should parse");
 
         assert_eq!(out, expected.expect("valid data frame"));
     }

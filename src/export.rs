@@ -130,78 +130,106 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 multithreaded: false,
             },
         );
-    let lola_cash = collect_by(
+    let lola_cash = price_by_date_for(
+        consumption_of(&Topic::LoLa, &PaymentMethod::Cash),
         ldf.clone(),
-        cons_pred_and_alias(&Topic::LoLa, &PaymentMethod::Cash),
     );
-    let lola_card = collect_by(
+    let lola_card = price_by_date_for(
+        consumption_of(&Topic::LoLa, &PaymentMethod::Card),
         ldf.clone(),
-        cons_pred_and_alias(&Topic::LoLa, &PaymentMethod::Card),
     );
-    let miti_cash = collect_by(
+    let miti_cash = price_by_date_for(
+        consumption_of(&Topic::MiTi, &PaymentMethod::Cash),
         ldf.clone(),
-        cons_pred_and_alias(&Topic::MiTi, &PaymentMethod::Cash),
     );
-    let miti_card = collect_by(
+    let miti_card = price_by_date_for(
+        consumption_of(&Topic::MiTi, &PaymentMethod::Card),
         ldf.clone(),
-        cons_pred_and_alias(&Topic::MiTi, &PaymentMethod::Card),
     );
-    let verm_cash = collect_by(
+    let verm_cash = price_by_date_for(
+        consumption_of(&Topic::Verm, &PaymentMethod::Cash),
         ldf.clone(),
-        cons_pred_and_alias(&Topic::Verm, &PaymentMethod::Cash),
     );
-    let verm_card = collect_by(
+    let verm_card = price_by_date_for(
+        consumption_of(&Topic::Verm, &PaymentMethod::Card),
         ldf.clone(),
-        cons_pred_and_alias(&Topic::Verm, &PaymentMethod::Card),
     );
-    let lola_tips = collect_by(ldf.clone(), tip_pred_and_alias(&Topic::LoLa));
-    let miti_tips = collect_by(ldf.clone(), tip_pred_and_alias(&Topic::MiTi));
-    let verm_tips = collect_by(ldf.clone(), tip_pred_and_alias(&Topic::Verm));
-    let miti_miti = collect_by(ldf.clone(), miti_pred_and_alias(&Owner::MiTi));
-    let miti_lola = collect_by(ldf, miti_pred_and_alias(&Owner::LoLa));
-    let comb1 = all_dates.join(lola_cash, [col("Date")], [col("Date")], JoinType::Left);
-    let comb2 = comb1.join(lola_card, [col("Date")], [col("Date")], JoinType::Left);
-    let comb3 = comb2.join(miti_cash, [col("Date")], [col("Date")], JoinType::Left);
-    let comb4 = comb3.join(miti_card, [col("Date")], [col("Date")], JoinType::Left);
-    let comb5 = comb4.join(verm_cash, [col("Date")], [col("Date")], JoinType::Left);
-    let comb6 = comb5.join(verm_card, [col("Date")], [col("Date")], JoinType::Left);
-    let comb7 = comb6.join(lola_tips, [col("Date")], [col("Date")], JoinType::Left);
-    let comb8 = comb7.join(miti_tips, [col("Date")], [col("Date")], JoinType::Left);
-    let comb9 = comb8.join(verm_tips, [col("Date")], [col("Date")], JoinType::Left);
-    let comb10 = comb9.join(miti_miti, [col("Date")], [col("Date")], JoinType::Left);
-    let comb11 = comb10.join(miti_lola, [col("Date")], [col("Date")], JoinType::Left);
-    comb11
+    let lola_tips = price_by_date_for(tips_of(&Topic::LoLa), ldf.clone());
+    let miti_tips = price_by_date_for(tips_of(&Topic::MiTi), ldf.clone());
+    let verm_tips = price_by_date_for(tips_of(&Topic::Verm), ldf.clone());
+    let miti_comm = commission_by_date_for(commission_by(&Owner::MiTi), ldf.clone());
+    let lola_comm = commission_by_date_for(commission_by(&Owner::LoLa), ldf.clone());
+    let miti_miti = price_by_date_for(miti_by(&Owner::MiTi), ldf.clone());
+    let miti_lola = price_by_date_for(miti_by(&Owner::LoLa), ldf);
+
+    let with_lola_cash = all_dates.join(lola_cash, [col("Date")], [col("Date")], JoinType::Left);
+    let with_lola_card =
+        with_lola_cash.join(lola_card, [col("Date")], [col("Date")], JoinType::Left);
+    let with_miti_cash =
+        with_lola_card.join(miti_cash, [col("Date")], [col("Date")], JoinType::Left);
+    let with_miti_card =
+        with_miti_cash.join(miti_card, [col("Date")], [col("Date")], JoinType::Left);
+    let with_verm_cash =
+        with_miti_card.join(verm_cash, [col("Date")], [col("Date")], JoinType::Left);
+    let with_verm_card =
+        with_verm_cash.join(verm_card, [col("Date")], [col("Date")], JoinType::Left);
+    let with_lola_tips =
+        with_verm_card.join(lola_tips, [col("Date")], [col("Date")], JoinType::Left);
+    let with_miti_tips =
+        with_lola_tips.join(miti_tips, [col("Date")], [col("Date")], JoinType::Left);
+    let with_verm_tips =
+        with_miti_tips.join(verm_tips, [col("Date")], [col("Date")], JoinType::Left);
+    let with_miti_miti =
+        with_verm_tips.join(miti_miti, [col("Date")], [col("Date")], JoinType::Left);
+    let with_miti_lola =
+        with_miti_miti.join(miti_lola, [col("Date")], [col("Date")], JoinType::Left);
+    let with_comm_miti =
+        with_miti_lola.join(miti_comm, [col("Date")], [col("Date")], JoinType::Left);
+    let with_comm_lola =
+        with_comm_miti.join(lola_comm, [col("Date")], [col("Date")], JoinType::Left);
+
+    with_comm_lola
         .with_column(
-            (col("LoLa_Bar").fill_null(0.0) + col("LoLa_Card").fill_null(0.0)).alias("LoLa Total"),
+            (col("LoLa_Bar").fill_null(0.0) + col("LoLa_Card").fill_null(0.0))
+                .round(2)
+                .alias("LoLa Total"),
         )
         .with_column(
-            (col("MiTi_Bar").fill_null(0.0) + col("MiTi_Card").fill_null(0.0)).alias("MiTi Total"),
+            (col("MiTi_Bar").fill_null(0.0) + col("MiTi_Card").fill_null(0.0))
+                .round(2)
+                .alias("MiTi Total"),
         )
         .with_column(
-            (col("Verm_Bar").fill_null(0.0) + col("Verm_Card").fill_null(0.0)).alias("Verm Total"),
+            (col("Verm_Bar").fill_null(0.0) + col("Verm_Card").fill_null(0.0))
+                .round(2)
+                .alias("Verm Total"),
         )
         .with_column(
             (col("LoLa_Bar").fill_null(0.0)
                 + col("MiTi_Bar").fill_null(0.0)
                 + col("Verm_Bar").fill_null(0.0))
+            .round(2)
             .alias("Cash Total"),
         )
         .with_column(
             (col("LoLa_Card").fill_null(0.0)
                 + col("MiTi_Card").fill_null(0.0)
                 + col("Verm_Card").fill_null(0.0))
+            .round(2)
             .alias("Card Total"),
         )
         .with_column(
             (col("LoLa Total").fill_null(0.0)
                 + col("MiTi Total").fill_null(0.0)
                 + col("Verm Total").fill_null(0.0))
+            .round(2)
             .alias("Total"),
         )
         .with_column(
             (col("LoLa_Tips").fill_null(0.0)
                 + col("MiTi_Tips").fill_null(0.0)
                 + col("Verm_Tips").fill_null(0.0))
+            .round(2)
             .alias("Total Tips"),
         )
         .with_column(
@@ -209,10 +237,18 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 + col("MiTi Total").fill_null(0.0)
                 + col("Verm Total").fill_null(0.0)
                 + col("Total Tips").fill_null(0.0))
+            .round(2)
             .alias("Total SumUp"),
         )
         .with_column(
-            (col("MiTi_MiTi").fill_null(0.0) + col("MiTi_LoLa").fill_null(0.0)).alias("Total MiTi"),
+            (col("MiTi_Commission").fill_null(0.0) + col("LoLa_Commission").fill_null(0.0))
+                .round(2)
+                .alias("Total Commission"),
+        )
+        .with_column(
+            (col("MiTi_MiTi").fill_null(0.0) + col("MiTi_LoLa").fill_null(0.0))
+                .round(2)
+                .alias("Total MiTi"),
         )
         .select([
             col("Date"),
@@ -233,6 +269,9 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Verm_Tips"),
             col("Total Tips"),
             col("Total SumUp"),
+            col("MiTi_Commission"),
+            col("LoLa_Commission"),
+            col("Total Commission"),
             col("MiTi_MiTi"),
             col("MiTi_LoLa"),
             col("Total MiTi"),
@@ -240,7 +279,8 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         .collect()
 }
 
-fn cons_pred_and_alias(topic: &Topic, payment_method: &PaymentMethod) -> (Expr, String) {
+/// Predicate and alias for Consumption, selected for `Topic` and `PaymentMethod`
+fn consumption_of(topic: &Topic, payment_method: &PaymentMethod) -> (Expr, String) {
     let expr = (col("Topic").eq(lit(topic.to_string())))
         .and(col("Payment Method").eq(lit(payment_method.to_string())))
         .and(col("Purpose").neq(lit(Purpose::Tip.to_string())));
@@ -252,14 +292,16 @@ fn cons_pred_and_alias(topic: &Topic, payment_method: &PaymentMethod) -> (Expr, 
     (expr, alias)
 }
 
-fn tip_pred_and_alias(topic: &Topic) -> (Expr, String) {
+/// Predicate and alias for Tips, selected by `Topic`
+fn tips_of(topic: &Topic) -> (Expr, String) {
     let expr = (col("Topic").eq(lit(topic.to_string())))
         .and(col("Purpose").eq(lit(Purpose::Tip.to_string())));
     let alias = format!("{topic}_Tips");
     (expr, alias)
 }
 
-fn miti_pred_and_alias(owner: &Owner) -> (Expr, String) {
+/// Predicate and alias for Miti by `Owner`
+fn miti_by(owner: &Owner) -> (Expr, String) {
     let expr = (col("Topic").eq(lit(Topic::MiTi.to_string())))
         .and(col("Owner").eq(lit(owner.to_string())))
         .and(col("Purpose").neq(lit(Purpose::Tip.to_string())));
@@ -267,14 +309,44 @@ fn miti_pred_and_alias(owner: &Owner) -> (Expr, String) {
     (expr, alias)
 }
 
-fn collect_by(ldf: LazyFrame, predicate_and_alias: (Expr, String)) -> LazyFrame {
+/// Predicate and alias for commission by `Owner`
+fn commission_by(owner: &Owner) -> (Expr, String) {
+    let expr = match owner {
+        Owner::MiTi => (col("Topic").eq(lit(Topic::MiTi.to_string())))
+            .and(col("Owner").eq(lit(owner.to_string()))),
+        Owner::LoLa => (col("Topic").neq(lit(Topic::MiTi.to_string())))
+            .or(col("Owner").eq(lit(owner.to_string()))),
+    };
+    let alias = format!("{owner}_Commission");
+    (expr, alias)
+}
+
+/// Aggregates daily consumption
+fn price_by_date_for(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> LazyFrame {
+    key_figure_by_date_for("Price (Gross)", predicate_and_alias, ldf)
+}
+
+/// Aggregates daily commission
+fn commission_by_date_for(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> LazyFrame {
+    key_figure_by_date_for("Commission", predicate_and_alias, ldf)
+}
+
+/// Aggregates daily values for a particular key figure, rounded to a two decimals
+fn key_figure_by_date_for(
+    key_figure: &str,
+    predicate_and_alias: (Expr, String),
+    ldf: LazyFrame,
+) -> LazyFrame {
     let (predicate, alias) = predicate_and_alias;
     ldf.filter(predicate)
         .groupby(["Date"])
-        .agg([col("Price (Gross)").sum()])
+        .agg([col(key_figure).round(2).sum()])
         .select([
             col("Date"),
-            col("Price (Gross)").fill_null(0.0).alias(alias.as_str()),
+            col(key_figure)
+                .round(2)
+                .fill_null(0.0)
+                .alias(alias.as_str()),
         ])
         .sort(
             "Date",
@@ -333,10 +405,10 @@ mod tests {
         )
         .expect("Misconfigured dataframe");
         let paa = match purpose {
-            Purpose::Consumption => cons_pred_and_alias(&topic, &payment_method),
-            Purpose::Tip => tip_pred_and_alias(&topic),
+            Purpose::Consumption => consumption_of(&topic, &payment_method),
+            Purpose::Tip => tips_of(&topic),
         };
-        let out = collect_by(df_in.lazy(), paa)
+        let out = price_by_date_for(paa, df_in.lazy())
             .collect()
             .expect("Unable to collect result");
         assert_eq!(out, expected.expect("Misconfigured expected df"));
@@ -360,6 +432,7 @@ mod tests {
             "Tax" => &["0.0%"],
             "Tax rate" => &[""],
             "Transaction refunded" => &[""],
+            "Commission" =>[0.24123],
             "Topic" => &["MiTi"],
             "Owner" => &["MiTi"],
             "Purpose" => &["Consumption"],
@@ -389,6 +462,9 @@ mod tests {
             "Verm_Tips" => &[Some(0.0), None],
             "Total Tips" => &[0.0, 0.0],
             "Total SumUp" => &[0.0, 16.0],
+            "MiTi_Commission" => &[Some(0.0), Some(0.24)],
+            "LoLa_Commission" => &[Some(0.0), None],
+            "Total Commission" => &[0.0, 0.24],
             "MiTi_MiTi" => &[Some(0.0), Some(16.0)],
             "MiTi_LoLa" => &[Some(0.0), None],
             "Total MiTi" => &[0.0, 16.0],
@@ -448,6 +524,7 @@ mod tests {
             "Tax" => &["0.0%"],
             "Tax rate" => &[""],
             "Transaction refunded" => &[""],
+            "Commission" => &[0.24],
             "Topic" => &[topic.to_string()],
             "Owner" => &[owner],
             "Purpose" => &["Consumption"],

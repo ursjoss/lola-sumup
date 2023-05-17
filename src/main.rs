@@ -27,6 +27,10 @@ enum Commands {
         #[arg(short, long)]
         input_file: PathBuf,
 
+        /// the input file with the commissions
+        #[arg(short, long)]
+        commission_file: PathBuf,
+
         /// the output file in intermediate format
         #[arg(short, long)]
         output_file: Option<PathBuf>,
@@ -49,8 +53,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     match &cli.command {
         Commands::Prepare {
             input_file,
+            commission_file,
             output_file,
-        } => prepare(input_file, output_file),
+        } => prepare(input_file, commission_file, output_file),
         Commands::Export {
             input_file,
             output_file,
