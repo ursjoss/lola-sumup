@@ -130,37 +130,37 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 multithreaded: false,
             },
         );
-    let lola_cash = collect_by_price(
+    let lola_cash = price_by_date_for(
+        consumption_of(&Topic::LoLa, &PaymentMethod::Cash),
         ldf.clone(),
-        cons_pred_and_alias(&Topic::LoLa, &PaymentMethod::Cash),
     );
-    let lola_card = collect_by_price(
+    let lola_card = price_by_date_for(
+        consumption_of(&Topic::LoLa, &PaymentMethod::Card),
         ldf.clone(),
-        cons_pred_and_alias(&Topic::LoLa, &PaymentMethod::Card),
     );
-    let miti_cash = collect_by_price(
+    let miti_cash = price_by_date_for(
+        consumption_of(&Topic::MiTi, &PaymentMethod::Cash),
         ldf.clone(),
-        cons_pred_and_alias(&Topic::MiTi, &PaymentMethod::Cash),
     );
-    let miti_card = collect_by_price(
+    let miti_card = price_by_date_for(
+        consumption_of(&Topic::MiTi, &PaymentMethod::Card),
         ldf.clone(),
-        cons_pred_and_alias(&Topic::MiTi, &PaymentMethod::Card),
     );
-    let verm_cash = collect_by_price(
+    let verm_cash = price_by_date_for(
+        consumption_of(&Topic::Verm, &PaymentMethod::Cash),
         ldf.clone(),
-        cons_pred_and_alias(&Topic::Verm, &PaymentMethod::Cash),
     );
-    let verm_card = collect_by_price(
+    let verm_card = price_by_date_for(
+        consumption_of(&Topic::Verm, &PaymentMethod::Card),
         ldf.clone(),
-        cons_pred_and_alias(&Topic::Verm, &PaymentMethod::Card),
     );
-    let lola_tips = collect_by_price(ldf.clone(), tip_pred_and_alias(&Topic::LoLa));
-    let miti_tips = collect_by_price(ldf.clone(), tip_pred_and_alias(&Topic::MiTi));
-    let verm_tips = collect_by_price(ldf.clone(), tip_pred_and_alias(&Topic::Verm));
-    let miti_comm = collect_by_commission(ldf.clone(), commission_pred_and_alias(&Owner::MiTi));
-    let lola_comm = collect_by_commission(ldf.clone(), commission_pred_and_alias(&Owner::LoLa));
-    let miti_miti = collect_by_price(ldf.clone(), miti_pred_and_alias(&Owner::MiTi));
-    let miti_lola = collect_by_price(ldf, miti_pred_and_alias(&Owner::LoLa));
+    let lola_tips = price_by_date_for(tips_of(&Topic::LoLa), ldf.clone());
+    let miti_tips = price_by_date_for(tips_of(&Topic::MiTi), ldf.clone());
+    let verm_tips = price_by_date_for(tips_of(&Topic::Verm), ldf.clone());
+    let miti_comm = commission_by_date_for(commission_by(&Owner::MiTi), ldf.clone());
+    let lola_comm = commission_by_date_for(commission_by(&Owner::LoLa), ldf.clone());
+    let miti_miti = price_by_date_for(miti_by(&Owner::MiTi), ldf.clone());
+    let miti_lola = price_by_date_for(miti_by(&Owner::LoLa), ldf);
 
     let with_lola_cash = all_dates.join(lola_cash, [col("Date")], [col("Date")], JoinType::Left);
     let with_lola_card =
@@ -265,7 +265,8 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         .collect()
 }
 
-fn cons_pred_and_alias(topic: &Topic, payment_method: &PaymentMethod) -> (Expr, String) {
+/// Predicate and alias for Consumption, selected for `Topic` and `PaymentMethod`
+fn consumption_of(topic: &Topic, payment_method: &PaymentMethod) -> (Expr, String) {
     let expr = (col("Topic").eq(lit(topic.to_string())))
         .and(col("Payment Method").eq(lit(payment_method.to_string())))
         .and(col("Purpose").neq(lit(Purpose::Tip.to_string())));
@@ -277,14 +278,16 @@ fn cons_pred_and_alias(topic: &Topic, payment_method: &PaymentMethod) -> (Expr, 
     (expr, alias)
 }
 
-fn tip_pred_and_alias(topic: &Topic) -> (Expr, String) {
+/// Predicate and alias for Tips, selected by `Topic`
+fn tips_of(topic: &Topic) -> (Expr, String) {
     let expr = (col("Topic").eq(lit(topic.to_string())))
         .and(col("Purpose").eq(lit(Purpose::Tip.to_string())));
     let alias = format!("{topic}_Tips");
     (expr, alias)
 }
 
-fn miti_pred_and_alias(owner: &Owner) -> (Expr, String) {
+/// Predicate and alias for Miti by `Owner`
+fn miti_by(owner: &Owner) -> (Expr, String) {
     let expr = (col("Topic").eq(lit(Topic::MiTi.to_string())))
         .and(col("Owner").eq(lit(owner.to_string())))
         .and(col("Purpose").neq(lit(Purpose::Tip.to_string())));
@@ -292,7 +295,8 @@ fn miti_pred_and_alias(owner: &Owner) -> (Expr, String) {
     (expr, alias)
 }
 
-fn commission_pred_and_alias(owner: &Owner) -> (Expr, String) {
+/// Predicate and alias for commission by `Owner`
+fn commission_by(owner: &Owner) -> (Expr, String) {
     let expr = match owner {
         Owner::MiTi => (col("Topic").eq(lit(Topic::MiTi.to_string())))
             .and(col("Owner").eq(lit(owner.to_string()))),
@@ -303,18 +307,21 @@ fn commission_pred_and_alias(owner: &Owner) -> (Expr, String) {
     (expr, alias)
 }
 
-fn collect_by_price(ldf: LazyFrame, predicate_and_alias: (Expr, String)) -> LazyFrame {
-    collect_by_key_figure(ldf, "Price (Gross)", predicate_and_alias)
+/// Aggregates daily consumption
+fn price_by_date_for(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> LazyFrame {
+    key_figure_by_date_for("Price (Gross)", predicate_and_alias, ldf)
 }
 
-fn collect_by_commission(ldf: LazyFrame, predicate_and_alias: (Expr, String)) -> LazyFrame {
-    collect_by_key_figure(ldf, "Commission", predicate_and_alias)
+/// Aggregates daily commission
+fn commission_by_date_for(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> LazyFrame {
+    key_figure_by_date_for("Commission", predicate_and_alias, ldf)
 }
 
-fn collect_by_key_figure(
-    ldf: LazyFrame,
+/// Aggregates daily values for a particular key figure, rounded to a two decimals
+fn key_figure_by_date_for(
     key_figure: &str,
     predicate_and_alias: (Expr, String),
+    ldf: LazyFrame,
 ) -> LazyFrame {
     let (predicate, alias) = predicate_and_alias;
     ldf.filter(predicate)
@@ -384,10 +391,10 @@ mod tests {
         )
         .expect("Misconfigured dataframe");
         let paa = match purpose {
-            Purpose::Consumption => cons_pred_and_alias(&topic, &payment_method),
-            Purpose::Tip => tip_pred_and_alias(&topic),
+            Purpose::Consumption => consumption_of(&topic, &payment_method),
+            Purpose::Tip => tips_of(&topic),
         };
-        let out = collect_by_price(df_in.lazy(), paa)
+        let out = price_by_date_for(paa, df_in.lazy())
             .collect()
             .expect("Unable to collect result");
         assert_eq!(out, expected.expect("Misconfigured expected df"));
