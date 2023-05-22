@@ -250,6 +250,11 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .round(2)
                 .alias("Total MiTi"),
         )
+        .with_column(
+            (col("Card Total").fill_null(0.0) - col("Total Commission").fill_null(0.0))
+                .round(2)
+                .alias("Card Consumption"),
+        )
         .select([
             col("Date"),
             col("MiTi_Bar"),
@@ -272,6 +277,7 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("MiTi_Commission"),
             col("LoLa_Commission"),
             col("Total Commission"),
+            col("Card Consumption"),
             col("MiTi_MiTi"),
             col("MiTi_LoLa"),
             col("Total MiTi"),
@@ -423,7 +429,7 @@ mod tests {
             "Type" => &["Sales"],
             "Transaction ID" => &["TEGUCXAGDE"],
             "Receipt Number" => &["S20230000303"],
-            "Payment Method" => &["Cash"],
+            "Payment Method" => &["Card"],
             "Quantity" => &[1],
             "Description" => &["foo"],
             "Currency" => &["CHF"],
@@ -445,8 +451,8 @@ mod tests {
         // the first record is a silly workaround to get typed values into each slice. It's filtered out below.
         let expected = df!(
             "Date" => &[date0, date1],
-            "MiTi_Bar" => &[Some(0.0), Some(16.0)],
-            "MiTi_Card" => &[Some(0.0),  None],
+            "MiTi_Bar" => &[Some(0.0), None],
+            "MiTi_Card" => &[Some(0.0), Some(16.0)],
             "MiTi Total" => &[0.0, 16.0],
             "LoLa_Bar" => &[Some(0.0), None],
             "LoLa_Card" => &[Some(0.0), None],
@@ -454,8 +460,8 @@ mod tests {
             "Verm_Bar" => &[Some(0.0), None],
             "Verm_Card" => &[Some(0.0), None],
             "Verm Total" => &[0.0, 0.0],
-            "Cash Total" => &[0.0, 16.0],
-            "Card Total" => &[0.0, 0.0],
+            "Cash Total" => &[0.0, 0.0],
+            "Card Total" => &[0.0, 16.0],
             "Total" => &[0.0, 16.0],
             "MiTi_Tips" => &[Some(0.0), None],
             "LoLa_Tips" => &[Some(0.0), None],
@@ -465,6 +471,7 @@ mod tests {
             "MiTi_Commission" => &[Some(0.0), Some(0.24)],
             "LoLa_Commission" => &[Some(0.0), None],
             "Total Commission" => &[0.0, 0.24],
+            "Card Consumption" => &[0.0, 15.76],
             "MiTi_MiTi" => &[Some(0.0), Some(16.0)],
             "MiTi_LoLa" => &[Some(0.0), None],
             "Total MiTi" => &[0.0, 16.0],
