@@ -36,14 +36,14 @@ fn validate_topic_owner_constraint(raw_df: &DataFrame) -> Result<(), Box<dyn Err
         TopicOwnerConstraintViolationError::MiTiWithoutOwner,
         col("Topic")
             .eq(lit(Topic::MiTi.to_string()))
-            .and(col("Owner").is_null()),
+            .and(col("Owner").fill_null(lit("")).eq(lit(""))),
     )?;
     topic_owner_constraint(
         raw_df,
         TopicOwnerConstraintViolationError::OtherWithOwner,
         col("Topic")
             .neq(lit(Topic::MiTi.to_string()))
-            .and(col("Owner").is_not_null()),
+            .and(col("Owner").fill_null(lit("")).neq(lit(""))),
     )?;
     Ok(())
 }
