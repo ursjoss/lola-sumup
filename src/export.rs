@@ -250,6 +250,11 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .round(2)
                 .alias("Total MiTi"),
         )
+        .with_column(
+            (col("Card Total").fill_null(0.0) - col("Total Commission").fill_null(0.0))
+                .round(2)
+                .alias("Card Consumption"),
+        )
         .select([
             col("Date"),
             col("MiTi_Bar"),
@@ -272,6 +277,7 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("MiTi_Commission"),
             col("LoLa_Commission"),
             col("Total Commission"),
+            col("Card Consumption"),
             col("MiTi_MiTi"),
             col("MiTi_LoLa"),
             col("Total MiTi"),
@@ -465,6 +471,7 @@ mod tests {
             "MiTi_Commission" => &[Some(0.0), Some(0.24)],
             "LoLa_Commission" => &[Some(0.0), None],
             "Total Commission" => &[0.0, 0.24],
+            "Card Consumption" => &[0.0, 15.76],
             "MiTi_MiTi" => &[Some(0.0), Some(16.0)],
             "MiTi_LoLa" => &[Some(0.0), None],
             "Total MiTi" => &[0.0, 16.0],
