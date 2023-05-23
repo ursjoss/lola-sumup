@@ -209,21 +209,21 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 + col("MiTi_Bar").fill_null(0.0)
                 + col("Verm_Bar").fill_null(0.0))
             .round(2)
-            .alias("Cash Total"),
+            .alias("Cons. Bar"),
         )
         .with_column(
             (col("LoLa_Card").fill_null(0.0)
                 + col("MiTi_Card").fill_null(0.0)
                 + col("Verm_Card").fill_null(0.0))
             .round(2)
-            .alias("Card Total"),
+            .alias("Cons. Card"),
         )
         .with_column(
             (col("LoLa Total").fill_null(0.0)
                 + col("MiTi Total").fill_null(0.0)
                 + col("Verm Total").fill_null(0.0))
             .round(2)
-            .alias("Total"),
+            .alias("Consumption"),
         )
         .with_column(
             (col("LoLa_Tips").fill_null(0.0)
@@ -251,7 +251,7 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .alias("Total MiTi"),
         )
         .with_column(
-            (col("Card Total").fill_null(0.0) - col("Total Commission").fill_null(0.0))
+            (col("Cons. Card").fill_null(0.0) - col("Total Commission").fill_null(0.0))
                 .round(2)
                 .alias("Card Consumption"),
         )
@@ -266,9 +266,9 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Verm_Bar"),
             col("Verm_Card"),
             col("Verm Total"),
-            col("Cash Total"),
-            col("Card Total"),
-            col("Total"),
+            col("Cons. Bar"),
+            col("Cons. Card"),
+            col("Consumption"),
             col("MiTi_Tips"),
             col("LoLa_Tips"),
             col("Verm_Tips"),
@@ -460,9 +460,9 @@ mod tests {
             "Verm_Bar" => &[Some(0.0), None],
             "Verm_Card" => &[Some(0.0), None],
             "Verm Total" => &[0.0, 0.0],
-            "Cash Total" => &[0.0, 0.0],
-            "Card Total" => &[0.0, 16.0],
-            "Total" => &[0.0, 16.0],
+            "Cons. Bar" => &[0.0, 0.0],
+            "Cons. Card" => &[0.0, 16.0],
+            "Consumption" => &[0.0, 16.0],
             "MiTi_Tips" => &[Some(0.0), None],
             "LoLa_Tips" => &[Some(0.0), None],
             "Verm_Tips" => &[Some(0.0), None],
