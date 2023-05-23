@@ -20,7 +20,8 @@ pub fn prepare(
     commission_path: &Path,
     output_path: &Option<PathBuf>,
 ) -> Result<(), Box<dyn Error>> {
-    let mut df = read_data(input_path, commission_path)?;
+    let mut df = read_data(input_path, commission_path)?
+        .sort(["Date", "Time", "Transaction ID", "Description"], false)?;
     let iowtr: Box<dyn Write> = match output_path {
         Some(path) => Box::new(File::create(path)?),
         None => Box::new(io::stdout()),
