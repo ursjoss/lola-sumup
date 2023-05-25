@@ -366,9 +366,9 @@ fn miti_by(owner: &Owner) -> (Expr, String) {
 fn commission_by(owner: &Owner) -> (Expr, String) {
     let expr = match owner {
         Owner::MiTi => (col("Topic").eq(lit(Topic::MiTi.to_string())))
-            .and(col("Owner").eq(lit(owner.to_string()))),
+            .and(col("Owner").eq(lit(Owner::MiTi.to_string()))),
         Owner::LoLa => (col("Topic").neq(lit(Topic::MiTi.to_string())))
-            .or(col("Owner").eq(lit(owner.to_string()))),
+            .or(col("Owner").eq(lit(Owner::LoLa.to_string()))),
     };
     let alias = format!("{owner}_Commission");
     (expr, alias)
