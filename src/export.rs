@@ -393,7 +393,7 @@ fn key_figure_by_date_for(
     let (predicate, alias) = predicate_and_alias;
     ldf.filter(predicate)
         .groupby(["Date"])
-        .agg([col(key_figure).round(2).sum()])
+        .agg([col(key_figure).sum()])
         .select([
             col("Date"),
             col(key_figure)
