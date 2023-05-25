@@ -8,7 +8,8 @@ use polars::datatypes::DataType;
 use polars::frame::{DataFrame, UniqueKeepStrategy};
 use polars::io::{SerReader, SerWriter};
 use polars::prelude::{
-    col, lit, when, CsvReader, CsvWriter, Expr, IntoLazy, JoinType, LazyFrame, StrptimeOptions,
+    col, lit, when, CsvReader, CsvWriter, Expr, IntoLazy, JoinType, LazyFrame, LiteralValue,
+    StrptimeOptions,
 };
 use serde::{Deserialize, Serialize};
 
@@ -141,9 +142,8 @@ fn build_df(
                 .to_time(time_format.clone())
                 .alias("Time"),
         )
-        .with_column(col("Description").str().strip(None).alias("Description"))
+        .with_column(col("Description").alias("Description"))
         .with_column(infer_topic(time_format).alias("Topic"))
-        .with_column(lit("").alias("Comment"))
         .join(
             refunded_ids_1,
             [col("Transaction ID")],
@@ -188,7 +188,7 @@ fn build_df(
             col("Topic"),
             infer_owner().alias("Owner"),
             infer_purpose().alias("Purpose"),
-            col("Comment"),
+            Expr::Literal(LiteralValue::Null).alias("Comment"),
         ])
         .collect()?;
     Ok(df)
@@ -314,7 +314,7 @@ impl fmt::Display for Owner {
 mod tests {
     use chrono::{NaiveDate, NaiveTime};
     use polars::df;
-    use polars::prelude::NamedFrom;
+    use polars::prelude::{AnyValue, NamedFrom};
     use rstest::rstest;
 
     use super::*;
@@ -372,7 +372,7 @@ mod tests {
             "Topic" => &["MiTi", "MiTi"],
             "Owner" => &["LoLa", "LoLa"],
             "Purpose" => &["Consumption", "Tip"],
-            "Comment" => &["", ""],
+            "Comment" => &[AnyValue::Null, AnyValue::Null],
         );
 
         let out = build_df(&df, &raw_commission_df).expect("should parse");
