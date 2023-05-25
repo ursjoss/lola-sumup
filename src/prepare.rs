@@ -229,7 +229,7 @@ fn infer_topic(time_options: StrptimeOptions) -> Expr {
 
 fn infer_owner() -> Expr {
     when(col("Topic").neq(lit(Topic::MiTi.to_string())))
-        .then(lit(""))
+        .then(Expr::Literal(LiteralValue::Null))
         .when(
             col("Description")
                 .str()
