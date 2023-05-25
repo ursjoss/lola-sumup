@@ -36,14 +36,14 @@ fn validate_topic_owner_constraint(raw_df: &DataFrame) -> Result<(), Box<dyn Err
         TopicOwnerConstraintViolationError::MiTiWithoutOwner,
         col("Topic")
             .eq(lit(Topic::MiTi.to_string()))
-            .and(col("Owner").eq(lit(""))),
+            .and(col("Owner").fill_null(lit("")).eq(lit(""))),
     )?;
     topic_owner_constraint(
         raw_df,
         TopicOwnerConstraintViolationError::LoLaWithOwner,
         col("Topic")
             .neq(lit(Topic::MiTi.to_string()))
-            .and(col("Owner").neq(lit(""))),
+            .and(col("Owner").fill_null(lit("")).neq(lit(""))),
     )?;
     Ok(())
 }
@@ -540,33 +540,40 @@ mod tests {
 
     #[rstest]
     // MiTi must have an owner
-    #[case(Topic::MiTi, "LoLa", true, None)]
-    #[case(Topic::MiTi, "MiTi", true, None)]
+    #[case(Topic::MiTi, Some("LoLa"), true, None)]
+    #[case(Topic::MiTi, Some("MiTi"), true, None)]
     // LoLa (Cafe/Verm) must have no owner
-    #[case(Topic::Cafe, "", true, None)]
-    #[case(Topic::Verm, "", true, None)]
+    #[case(Topic::Cafe, Some(""), true, None)]
+    #[case(Topic::Verm, Some(""), true, None)]
+    #[case(Topic::Verm, None, true, None)]
     // MiTi w/o or non-MiTi with owner should fail
     #[case(
         Topic::MiTi,
-        "",
+        Some(""),
+        false,
+        Some("Row with topic 'MiTi' must have an Owner!")
+    )]
+    #[case(
+        Topic::MiTi,
+        None,
         false,
         Some("Row with topic 'MiTi' must have an Owner!")
     )]
     #[case(
         Topic::Cafe,
-        "Cafe",
+        Some("Cafe"),
         false,
         Some("Row with LoLa topic ('Cafe' or 'Verm') must not have an Owner!")
     )]
     #[case(
         Topic::Verm,
-        "MiTi",
+        Some("MiTi"),
         false,
         Some("Row with LoLa topic ('Cafe' or 'Verm') must not have an Owner!")
     )]
     fn test_constraints(
         #[case] topic: Topic,
-        #[case] owner: &str,
+        #[case] owner: Option<&str>,
         #[case] expected_valid: bool,
         #[case] error_msg: Option<&str>,
     ) {
