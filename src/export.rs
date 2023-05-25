@@ -489,7 +489,7 @@ mod tests {
             "Topic" => &["MiTi"],
             "Owner" => &["MiTi"],
             "Purpose" => &["Consumption"],
-            "Comment" => &[""],
+            "Comment" => &[None::<String>],
         )
         .expect("Misconfigured test data frame");
         let out = collect_data(df).expect("should be able to collect the data");
@@ -597,7 +597,7 @@ mod tests {
             "Topic" => &[topic.to_string()],
             "Owner" => &[owner],
             "Purpose" => &["Consumption"],
-            "Comment" => &[""],
+            "Comment" => &[None::<String>],
         )
         .expect("single record df");
         match validate_topic_owner_constraint(&df) {
