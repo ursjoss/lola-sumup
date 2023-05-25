@@ -245,7 +245,7 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         .with_column(
             (col("Tips_Cash").fill_null(0.0) + col("Tips_Card").fill_null(0.0))
                 .round(2)
-                .alias("Tips"),
+                .alias("Tips Total"),
         )
         .with_column(
             (col("Gross Cash").fill_null(0.0) + col("Tips_Cash").fill_null(0.0))
@@ -261,7 +261,7 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             (col("Cafe Total").fill_null(0.0)
                 + col("MiTi Total").fill_null(0.0)
                 + col("Verm Total").fill_null(0.0)
-                + col("Tips").fill_null(0.0))
+                + col("Tips Total").fill_null(0.0))
             .round(2)
             .alias("SumUp Total"),
         )
@@ -302,22 +302,22 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Verm_Card"),
             col("Verm Total"),
             col("Gross Cash"),
+            col("Tips_Cash"),
+            col("Sumup Cash"),
             col("Gross Card"),
+            col("Tips_Card"),
+            col("Sumup Card"),
             col("Gross Total"),
+            col("Tips Total"),
+            col("SumUp Total"),
             col("Gross Card MiTi"),
             col("Gross Card LoLa"),
-            col("Sumup Cash"),
-            col("Sumup Card"),
-            col("SumUp Total"),
             col("MiTi_Commission"),
             col("LoLa_Commission"),
             col("Total Commission"),
             col("Net Card MiTi"),
             col("Net Card LoLa"),
             col("Net Card Total"),
-            col("Tips_Cash"),
-            col("Tips_Card"),
-            col("Tips"),
             col("MiTi_Tips"),
             col("Cafe_Tips"),
             col("Verm_Tips"),
@@ -507,22 +507,22 @@ mod tests {
             "Verm_Card" => &[None::<f64>],
             "Verm Total" => &[0.0],
             "Gross Cash" => &[0.0],
+            "Tips_Cash" => &[None::<f64>],
+            "Sumup Cash" => &[0.0],
             "Gross Card" => &[16.0],
+            "Tips_Card" => &[None::<f64>],
+            "Sumup Card" => &[16.0],
             "Gross Total" => &[16.0],
+            "Tips Total" => &[0.0],
+            "SumUp Total" => &[16.0],
             "Gross Card MiTi" => &[16.0],
             "Gross Card LoLa" => &[0.0],
-            "Sumup Cash" => &[0.0],
-            "Sumup Card" => &[16.0],
-            "SumUp Total" => &[16.0],
             "MiTi_Commission" => &[Some(0.24)],
             "LoLa_Commission" => &[None::<f64>],
             "Total Commission" => &[0.24],
             "Net Card MiTi" => &[15.76],
             "Net Card LoLa" => &[0.0],
             "Net Card Total" => &[15.76],
-            "Tips_Cash" => &[None::<f64>],
-            "Tips_Card" => &[None::<f64>],
-            "Tips" => &[0.0],
             "MiTi_Tips" => &[None::<f64>],
             "Cafe_Tips" => &[None::<f64>],
             "Verm_Tips" => &[None::<f64>],
