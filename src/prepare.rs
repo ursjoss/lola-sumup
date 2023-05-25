@@ -142,7 +142,7 @@ fn build_df(
                 .to_time(time_format.clone())
                 .alias("Time"),
         )
-        .with_column(col("Description").alias("Description"))
+        .with_column(col("Description").str().strip(None).alias("Description"))
         .with_column(infer_topic(time_format).alias("Topic"))
         .join(
             refunded_ids_1,
@@ -330,7 +330,7 @@ mod tests {
             "Receipt Number" => &["S20230000303"],
             "Payment Method" => &["Card"],
             "Quantity" => &[1_i64],
-            "Description" => &["foo"],
+            "Description" => &[" foo "],
             "Currency" => &["CHF"],
             "Price (Gross)" => &[16.0],
             "Price (Net)" => &[16.0],
