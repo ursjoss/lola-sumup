@@ -224,7 +224,7 @@ fn infer_topic(time_options: StrptimeOptions) -> Expr {
         .then(lit(Topic::MiTi.to_string()))
         .when(col("Time").gt(lit("18:00:00").str().to_time(time_options)))
         .then(lit(Topic::Verm.to_string()))
-        .otherwise(lit(Topic::LoLa.to_string()))
+        .otherwise(lit(Topic::Cafe.to_string()))
 }
 
 fn infer_owner() -> Expr {
@@ -275,8 +275,8 @@ impl fmt::Display for PaymentMethod {
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub enum Topic {
-    LoLa,
     MiTi,
+    Cafe,
     Verm,
 }
 
