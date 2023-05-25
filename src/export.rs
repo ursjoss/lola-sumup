@@ -493,47 +493,45 @@ mod tests {
         )
         .expect("Misconfigured test data frame");
         let out = collect_data(df).expect("should be able to collect the data");
-        let date0 = NaiveDate::parse_from_str("1.4.2023", "%d.%m.%Y").expect("valid date");
-        let date1 = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
+        let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
         // the first record is a silly workaround to get typed values into each slice. It's filtered out below.
         let expected = df!(
-            "Date" => &[date0, date1],
-            "MiTi_Cash" => &[Some(0.0), None],
-            "MiTi_Card" => &[Some(0.0), Some(16.0)],
-            "MiTi Total" => &[0.0, 16.0],
-            "Cafe_Cash" => &[Some(0.0), None],
-            "Cafe_Card" => &[Some(0.0), None],
-            "Cafe Total" => &[0.0, 0.0],
-            "Verm_Cash" => &[Some(0.0), None],
-            "Verm_Card" => &[Some(0.0), None],
-            "Verm Total" => &[0.0, 0.0],
-            "Gross Cash" => &[0.0, 0.0],
-            "Gross Card" => &[0.0, 16.0],
-            "Gross Total" => &[0.0, 16.0],
-            "Gross Card MiTi" => &[0.0, 16.0],
-            "Gross Card LoLa" => &[0.0, 0.0],
-            "Sumup Cash" => &[0.0, 0.0],
-            "Sumup Card" => &[0.0, 16.0],
-            "SumUp Total" => &[0.0, 16.0],
-            "MiTi_Commission" => &[Some(0.0), Some(0.24)],
-            "LoLa_Commission" => &[Some(0.0), None],
-            "Total Commission" => &[0.0, 0.24],
-            "Net Card MiTi" => &[0.0, 15.76],
-            "Net Card LoLa" => &[0.0, 0.0],
-            "Net Card Total" => &[0.0, 15.76],
-            "Tips_Cash" => &[Some(0.0), None],
-            "Tips_Card" => &[Some(0.0), None],
-            "Tips" => &[0.0, 0.0],
-            "MiTi_Tips" => &[Some(0.0), None],
-            "Cafe_Tips" => &[Some(0.0), None],
-            "Verm_Tips" => &[Some(0.0), None],
-            "MiTi_MiTi" => &[Some(0.0), Some(16.0)],
-            "MiTi_LoLa" => &[Some(0.0), None],
-            "Total MiTi" => &[0.0, 16.0],
+            "Date" => &[date],
+            "MiTi_Cash" => &[None::<f64>],
+            "MiTi_Card" => &[Some(16.0)],
+            "MiTi Total" => &[16.0],
+            "Cafe_Cash" => &[None::<f64>],
+            "Cafe_Card" => &[None::<f64>],
+            "Cafe Total" => &[0.0],
+            "Verm_Cash" => &[None::<f64>],
+            "Verm_Card" => &[None::<f64>],
+            "Verm Total" => &[0.0],
+            "Gross Cash" => &[0.0],
+            "Gross Card" => &[16.0],
+            "Gross Total" => &[16.0],
+            "Gross Card MiTi" => &[16.0],
+            "Gross Card LoLa" => &[0.0],
+            "Sumup Cash" => &[0.0],
+            "Sumup Card" => &[16.0],
+            "SumUp Total" => &[16.0],
+            "MiTi_Commission" => &[Some(0.24)],
+            "LoLa_Commission" => &[None::<f64>],
+            "Total Commission" => &[0.24],
+            "Net Card MiTi" => &[15.76],
+            "Net Card LoLa" => &[0.0],
+            "Net Card Total" => &[15.76],
+            "Tips_Cash" => &[None::<f64>],
+            "Tips_Card" => &[None::<f64>],
+            "Tips" => &[0.0],
+            "MiTi_Tips" => &[None::<f64>],
+            "Cafe_Tips" => &[None::<f64>],
+            "Verm_Tips" => &[None::<f64>],
+            "MiTi_MiTi" => &[Some(16.0)],
+            "MiTi_LoLa" => &[None::<f64>],
+            "Total MiTi" => &[16.0],
         )
         .expect("valid data frame")
         .lazy()
-        .filter(col("SumUp Total").neq(lit(0.0)))
         .collect();
         assert_eq!(out, expected.expect("valid data frame"));
     }
