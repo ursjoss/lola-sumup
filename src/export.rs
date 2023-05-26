@@ -164,7 +164,11 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     let lola_comm_miti =
         commission_by_date_for(commission_by(&Owner::LoLa, Some(true)), ldf.clone());
     let miti_miti = price_by_date_for(miti_by(&Owner::MiTi), ldf.clone());
-    let miti_lola = price_by_date_for(miti_by(&Owner::LoLa), ldf);
+    let miti_lola = price_by_date_for(miti_by(&Owner::LoLa), ldf.clone());
+    let gross_miti_miti_card = price_by_date_for(
+        owned_consumption_of(&Topic::MiTi, &Owner::MiTi, &PaymentMethod::Card),
+        ldf,
+    );
 
     let with_cafe_cash = all_dates.join(cafe_cash, [col("Date")], [col("Date")], JoinType::Left);
     let with_cafe_card =
@@ -197,8 +201,14 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         with_tips_cash.join(tips_card, [col("Date")], [col("Date")], JoinType::Left);
     let with_lola_comm_miti =
         with_tips_card.join(lola_comm_miti, [col("Date")], [col("Date")], JoinType::Left);
+    let with_gross_miti_miti_card = with_lola_comm_miti.join(
+        gross_miti_miti_card,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left,
+    );
 
-    with_lola_comm_miti
+    with_gross_miti_miti_card
         .with_column(
             (col("MiTi_Cash").fill_null(0.0) + col("MiTi_Card").fill_null(0.0))
                 .round(2)
@@ -324,6 +334,7 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Verm_Tips"),
             col("Gross MiTi (MiTi)"),
             col("Gross MiTi (LoLa)"),
+            col("Gross MiTi (MiTi) Card"),
         ])
         .collect()
 }
@@ -334,6 +345,19 @@ fn consumption_of(topic: &Topic, payment_method: &PaymentMethod) -> (Expr, Strin
         .and(col("Payment Method").eq(lit(payment_method.to_string())))
         .and(col("Purpose").neq(lit(Purpose::Tip.to_string())));
     let alias = format!("{topic}_{payment_method}");
+    (expr, alias)
+}
+
+fn owned_consumption_of(
+    topic: &Topic,
+    owner: &Owner,
+    payment_method: &PaymentMethod,
+) -> (Expr, String) {
+    let expr = (col("Topic").eq(lit(topic.to_string())))
+        .and(col("Owner").eq(lit(owner.to_string())))
+        .and(col("Payment Method").eq(lit(payment_method.to_string())))
+        .and(col("Purpose").neq(lit(Purpose::Tip.to_string())));
+    let alias = format!("Gross {topic} ({owner}) {payment_method}");
     (expr, alias)
 }
 
@@ -538,10 +562,7 @@ mod tests {
             "Verm_Tips" => &[None::<f64>],
             "Gross MiTi (MiTi)" => &[Some(16.0)],
             "Gross MiTi (LoLa)" => &[None::<f64>],
-            // "Gross MiTi (MiTi) Card" => &[Some(16.0)],
-            // "Net MiTi (MiTi) Card" => &[15.74],
-            // "Contribution (LoLa)" => &[0.0],
-            // "Credit MiTi" => &[15.74],
+            "Gross MiTi (MiTi) Card" => &[Some(16.0)],
         )
         .expect("valid data frame")
         .lazy()

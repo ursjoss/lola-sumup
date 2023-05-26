@@ -14,7 +14,7 @@ The columns of the resulting summary file are defined as follows:
 - Gross Values of consumptions of topics `MiTi`, `Cafe`, `Verm` (commissions not subtracted) split by payment method
   - `MiTi_Cash`: Gross Cash Income Mitagstisch
   - `MiTi_Card`: Gross Card Income Mitagstisch
-  - `MiTi Total`: Total Gross Income Mitagstisch [`MiTi_Cash` + `MiTi_Card`]
+  - `MiTi Total`: Total Gross Income Mitagstisch [`MiTi_Cash` + `MiTi_Card`], also [`Gross MiTi (MiTi)` + `Gross MiTi (LoLa)`]
   - `Cafe_Cash`: Gross Cash Income Café
   - `Cafe_Card`: Gross Card Income Café
   - `Cafe Total`: Total Gross Income Café [`Cafe_Cash` + `Cafe_Card`]
@@ -47,7 +47,6 @@ The columns of the resulting summary file are defined as follows:
   - `Cafe_Tips`: Tips for Café
   - `Verm_Tips`: Tips for Vermietungen
 - Split of Topic Mitagstisch by Owner:
-  - `MiTi_MiTi`: Gross Income Mittagstisch Menus
-  - `MiTi_LoLa`: Gross Income Mittagstisch LoLa-Beverages
-  - `Total MiTi`: [`MiTi_MiTi` + `MiTi_LoLa`] also [`MiTi Total`]
-  - `MiTi_MiTi_Card`: Gross Income Mittagstisch Menus via Card (TODO)
+  - `Gross MiTi (MiTi)`: Gross Income Mittagstisch from their own Menus (payed via Card or Cash)
+  - `Gross MiTi (LoLa)`: Gross Income Mittagstisch with LoLa-items (Beverages...) (payed via Card or Cash)
+  - `Gross MiTi (MiTi) Card`: Gross Income Mittagstisch from their own Menus (payed via Card only)
