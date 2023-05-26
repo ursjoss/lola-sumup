@@ -310,6 +310,11 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                     - col("LoLa_Commission_MiTi").fill_null(0.0)))
             .round(2)
             .alias("Contribution LoLa"),
+        ) //`Net MiTi(MiTi) Card` + `Contribution (LoLa)`
+        .with_column(
+            (col("Net MiTi (MiTi) Card").fill_null(0.0) + col("Contribution LoLa").fill_null(0.0))
+                .round(2)
+                .alias("Credit MiTi"),
         )
         .select([
             col("Date"),
@@ -349,6 +354,7 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Gross MiTi (MiTi) Card"),
             col("Net MiTi (MiTi) Card"),
             col("Contribution LoLa"),
+            col("Credit MiTi"),
         ])
         .collect()
 }
@@ -579,6 +585,7 @@ mod tests {
             "Gross MiTi (MiTi) Card" => &[Some(16.0)],
             "Net MiTi (MiTi) Card" => &[15.76],
             "Contribution LoLa" => &[0.0],
+            "Credit MiTi" => &[15.76],
         )
         .expect("valid data frame")
         .lazy()
