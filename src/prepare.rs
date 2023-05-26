@@ -8,7 +8,8 @@ use polars::datatypes::DataType;
 use polars::frame::{DataFrame, UniqueKeepStrategy};
 use polars::io::{SerReader, SerWriter};
 use polars::prelude::{
-    col, lit, when, CsvReader, CsvWriter, Expr, IntoLazy, JoinType, LazyFrame, StrptimeOptions,
+    col, lit, when, CsvReader, CsvWriter, Expr, IntoLazy, JoinType, LazyFrame, LiteralValue,
+    StrptimeOptions,
 };
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +21,8 @@ pub fn prepare(
     commission_path: &Path,
     output_path: &Option<PathBuf>,
 ) -> Result<(), Box<dyn Error>> {
-    let mut df = read_data(input_path, commission_path)?;
+    let mut df = read_data(input_path, commission_path)?
+        .sort(["Date", "Time", "Transaction ID", "Description"], false)?;
     let iowtr: Box<dyn Write> = match output_path {
         Some(path) => Box::new(File::create(path)?),
         None => Box::new(io::stdout()),
@@ -46,6 +48,7 @@ fn read_data(input_path: &Path, commission_path: &Path) -> Result<DataFrame, Box
     build_df(&raw_df, &commission_df)
 }
 
+#[allow(clippy::too_many_lines)]
 fn build_df(
     raw_df: &DataFrame,
     raw_commission_df: &DataFrame,
@@ -79,8 +82,53 @@ fn build_df(
 
     let (refunded_ids_1, refunded_ids_2) = refunded_id_dfs(raw_df);
 
-    let df = raw_df
+    let add_tips_df = raw_commission_df
         .clone()
+        .lazy()
+        .filter(
+            col("Zahlungsart")
+                .eq(lit("Umsatz"))
+                .and(col("Status").eq(lit("Erfolgreich")))
+                .and(col("Trinkgeldbetrag").fill_null(0.0).gt(0.0)),
+        )
+        .select([
+            col("Transaktions-ID"),
+            col("Trinkgeldbetrag").fill_null(0.0).alias("TG"),
+        ]);
+
+    let additional_tip_df = raw_df
+        .clone()
+        .lazy()
+        .join(
+            add_tips_df,
+            [col("Transaction ID")],
+            [col("Transaktions-ID")],
+            JoinType::Inner,
+        )
+        .filter(col("TG").gt(lit(0.0)))
+        .select([
+            col("Account"),
+            col("Date"),
+            col("Time"),
+            col("Type"),
+            col("Transaction ID"),
+            col("Receipt Number"),
+            col("Payment Method"),
+            lit(1_i64).alias("Quantity"),
+            lit("Trinkgeld").alias("Description"),
+            col("Currency"),
+            col("TG").alias("Price (Gross)"),
+            col("TG").alias("Price (Net)"),
+            lit(0.0).alias("Tax"),
+            lit("").alias("Tax rate"),
+            lit("").alias("Transaction refunded"),
+        ])
+        .unique(None, UniqueKeepStrategy::First)
+        .collect()?;
+
+    let union_df = raw_df.vstack(&additional_tip_df)?;
+
+    let df = union_df
         .lazy()
         .with_column(
             col("Date")
@@ -96,7 +144,6 @@ fn build_df(
         )
         .with_column(col("Description").str().strip(None).alias("Description"))
         .with_column(infer_topic(time_format).alias("Topic"))
-        .with_column(lit("").alias("Comment"))
         .join(
             refunded_ids_1,
             [col("Transaction ID")],
@@ -117,6 +164,7 @@ fn build_df(
         )
         .with_column(
             (col("Price (Gross)") / col("Commissioned Total") * col("Commission"))
+                .round(4)
                 .alias("Commission"),
         )
         .filter(col("refunded1").is_null().and(col("refunded2").is_null()))
@@ -140,7 +188,7 @@ fn build_df(
             col("Topic"),
             infer_owner().alias("Owner"),
             infer_purpose().alias("Purpose"),
-            col("Comment"),
+            Expr::Literal(LiteralValue::Null).alias("Comment"),
         ])
         .collect()?;
     Ok(df)
@@ -176,12 +224,12 @@ fn infer_topic(time_options: StrptimeOptions) -> Expr {
         .then(lit(Topic::MiTi.to_string()))
         .when(col("Time").gt(lit("18:00:00").str().to_time(time_options)))
         .then(lit(Topic::Verm.to_string()))
-        .otherwise(lit(Topic::LoLa.to_string()))
+        .otherwise(lit(Topic::Cafe.to_string()))
 }
 
 fn infer_owner() -> Expr {
     when(col("Topic").neq(lit(Topic::MiTi.to_string())))
-        .then(lit(""))
+        .then(Expr::Literal(LiteralValue::Null))
         .when(
             col("Description")
                 .str()
@@ -227,8 +275,8 @@ impl fmt::Display for PaymentMethod {
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub enum Topic {
-    LoLa,
     MiTi,
+    Cafe,
     Verm,
 }
 
@@ -266,7 +314,7 @@ impl fmt::Display for Owner {
 mod tests {
     use chrono::{NaiveDate, NaiveTime};
     use polars::df;
-    use polars::prelude::NamedFrom;
+    use polars::prelude::{AnyValue, NamedFrom};
     use rstest::rstest;
 
     use super::*;
@@ -280,13 +328,13 @@ mod tests {
             "Type" => &["Sales"],
             "Transaction ID" => &["TEGUCXAGDE"],
             "Receipt Number" => &["S20230000303"],
-            "Payment Method" => &["Cash"],
-            "Quantity" => &[1],
-            "Description" => &["foo"],
+            "Payment Method" => &["Card"],
+            "Quantity" => &[1_i64],
+            "Description" => &[" foo "],
             "Currency" => &["CHF"],
             "Price (Gross)" => &[16.0],
             "Price (Net)" => &[16.0],
-            "Tax" => &["0.0%"],
+            "Tax" => &[0.0],
             "Tax rate" => &[""],
             "Transaction refunded" => &[""],
         )
@@ -296,7 +344,8 @@ mod tests {
             "Transaktions-ID" => &["TEGUCXAGDE"],
             "Zahlungsart" => &["Umsatz"],
             "Status" => &["Erfolgreich"],
-            "Betrag inkl. MwSt." => &[16.0],
+            "Betrag inkl. MwSt." => &[17.0],
+            "Trinkgeldbetrag" => &[1.0],
             "Gebühr" => &[0.24],
         )
         .expect("Misconfigured commission df");
@@ -304,26 +353,26 @@ mod tests {
         let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
         let time = NaiveTime::parse_from_str("12:32:00", "%H:%M:%S").expect("valid time");
         let expected = df!(
-            "Account" => &["a@b.ch"],
-            "Date" => &[date],
-            "Time" => &[time],
-            "Type" => &["Sales"],
-            "Transaction ID" => &["TEGUCXAGDE"],
-            "Receipt Number" => &["S20230000303"],
-            "Payment Method" => &["Cash"],
-            "Quantity" => &[1],
-            "Description" => &["foo"],
-            "Currency" => &["CHF"],
-            "Price (Gross)" => &[16.0],
-            "Price (Net)" => &[16.0],
-            "Tax" => &["0.0%"],
-            "Tax rate" => &[""],
-            "Transaction refunded" => &[""],
-            "Commission" => &[0.24],
-            "Topic" => &["MiTi"],
-            "Owner" => &["LoLa"],
-            "Purpose" => &["Consumption"],
-            "Comment" => &[""],
+            "Account" => &["a@b.ch", "a@b.ch"],
+            "Date" => &[date, date],
+            "Time" => &[time, time],
+            "Type" => &["Sales", "Sales"],
+            "Transaction ID" => &["TEGUCXAGDE", "TEGUCXAGDE"],
+            "Receipt Number" => &["S20230000303", "S20230000303"],
+            "Payment Method" => &["Card", "Card"],
+            "Quantity" => &[1_i64, 1_i64],
+            "Description" => &["foo", "Trinkgeld"],
+            "Currency" => &["CHF", "CHF"],
+            "Price (Gross)" => &[16.0, 1.0],
+            "Price (Net)" => &[16.0, 1.0],
+            "Tax" => &[0.0, 0.0],
+            "Tax rate" => &["", ""],
+            "Transaction refunded" => &["", ""],
+            "Commission" => &[0.2259, 0.0141],
+            "Topic" => &["MiTi", "MiTi"],
+            "Owner" => &["LoLa", "LoLa"],
+            "Purpose" => &["Consumption", "Tip"],
+            "Comment" => &[AnyValue::Null, AnyValue::Null],
         );
 
         let out = build_df(&df, &raw_commission_df).expect("should parse");
