@@ -159,8 +159,10 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     let verm_tips = price_by_date_for(tips_of_topic(&Topic::Verm), ldf.clone());
     let tips_cash = price_by_date_for(tips_by_payment_method(&PaymentMethod::Cash), ldf.clone());
     let tips_card = price_by_date_for(tips_by_payment_method(&PaymentMethod::Card), ldf.clone());
-    let miti_comm = commission_by_date_for(commission_by(&Owner::MiTi), ldf.clone());
-    let lola_comm = commission_by_date_for(commission_by(&Owner::LoLa), ldf.clone());
+    let miti_comm = commission_by_date_for(commission_by(&Owner::MiTi, None), ldf.clone());
+    let lola_comm = commission_by_date_for(commission_by(&Owner::LoLa, Some(false)), ldf.clone());
+    let lola_comm_miti =
+        commission_by_date_for(commission_by(&Owner::LoLa, Some(true)), ldf.clone());
     let miti_miti = price_by_date_for(miti_by(&Owner::MiTi), ldf.clone());
     let miti_lola = price_by_date_for(miti_by(&Owner::LoLa), ldf);
 
@@ -193,8 +195,10 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         with_comm_lola.join(tips_cash, [col("Date")], [col("Date")], JoinType::Left);
     let with_tips_card =
         with_tips_cash.join(tips_card, [col("Date")], [col("Date")], JoinType::Left);
+    let with_lola_comm_miti =
+        with_tips_card.join(lola_comm_miti, [col("Date")], [col("Date")], JoinType::Left);
 
-    with_tips_card
+    with_lola_comm_miti
         .with_column(
             (col("MiTi_Cash").fill_null(0.0) + col("MiTi_Card").fill_null(0.0))
                 .round(2)
@@ -310,6 +314,7 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Net Card MiTi"),
             col("Gross Card LoLa"),
             col("LoLa_Commission"),
+            col("LoLa_Commission_MiTi"),
             col("Net Card LoLa"),
             col("Gross Card").alias("Gross Card Total"),
             col("Total Commission"),
@@ -358,14 +363,22 @@ fn miti_by(owner: &Owner) -> (Expr, String) {
 }
 
 /// Predicate and alias for commission by `Owner`
-fn commission_by(owner: &Owner) -> (Expr, String) {
+fn commission_by(owner: &Owner, miti_only: Option<bool>) -> (Expr, String) {
     let expr = match owner {
         Owner::MiTi => (col("Topic").eq(lit(Topic::MiTi.to_string())))
             .and(col("Owner").eq(lit(Owner::MiTi.to_string()))),
-        Owner::LoLa => (col("Topic").neq(lit(Topic::MiTi.to_string())))
-            .or(col("Owner").eq(lit(Owner::LoLa.to_string()))),
+        Owner::LoLa => match miti_only {
+            None => panic!("Configured wrongly, we need [miti_only] for owner LoLa"),
+            Some(false) => (col("Topic").neq(lit(Topic::MiTi.to_string())))
+                .or(col("Owner").eq(lit(Owner::LoLa.to_string()))),
+            Some(true) => (col("Topic").eq(lit(Topic::MiTi.to_string())))
+                .and(col("Owner").eq(lit(Owner::LoLa.to_string()))),
+        },
     };
-    let alias = format!("{owner}_Commission");
+    let alias = match miti_only {
+        None | Some(false) => format!("{owner}_Commission"),
+        Some(true) => format!("{owner}_Commission_MiTi"),
+    };
     (expr, alias)
 }
 
@@ -515,6 +528,7 @@ mod tests {
             "Net Card MiTi" => &[15.76],
             "Gross Card LoLa" => &[0.0],
             "LoLa_Commission" => &[None::<f64>],
+            "LoLa_Commission_MiTi" => &[None::<f64>],
             "Net Card LoLa" => &[0.0],
             "Gross Card Total" => &[16.0],
             "Total Commission" => &[0.24],

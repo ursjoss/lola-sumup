@@ -36,7 +36,8 @@ The columns of the resulting summary file are defined as follows:
   - `MiTi_Commission`: Card Commission for Mittagstisch
   - `Net Card MiTi`: Net Card Income Mitagstisch [`Gross Card MiTi` - `MiTi_Commission`]
   - `Gross Card LoLa`: Gross Card Income LoLa (Café and Vermietungen) [`Cafe_Card` + `Verm_Card`]
-  - `LoLa_Commission`: Card Commission for LoLa
+  - `LoLa_Commission`: Card Commission for LoLa (including commission for items sold by MiTi)
+  - `LoLa_Commission_MiTi`: Card Commission for LoLa items sold by MiTi only
   - `Net Card LoLa`: Net Card Income LoLa (Café and Vermietungen) [`Gross Card LoLa` - `LoLa_Commission`]
   - `Gross Card Total`: Gross Card Income (MiTi, Café, Vermietungen) [`Gross Card MiTi` + `Gross Card LoLa`]
   - `Total Commission`: Card Commission Total (MiTi, Café, Vermietungen) [`MiTi_Commission` + `LoLa_Commission`]
