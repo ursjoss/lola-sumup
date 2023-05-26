@@ -271,11 +271,6 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .alias("Total Commission"),
         )
         .with_column(
-            (col("MiTi_MiTi").fill_null(0.0) + col("MiTi_LoLa").fill_null(0.0))
-                .round(2)
-                .alias("Total MiTi"),
-        )
-        .with_column(
             (col("Gross Card MiTi").fill_null(0.0) - col("MiTi_Commission").fill_null(0.0))
                 .round(2)
                 .alias("Net Card MiTi"),
@@ -322,9 +317,8 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("MiTi_Tips"),
             col("Cafe_Tips"),
             col("Verm_Tips"),
-            col("MiTi_MiTi"),
-            col("MiTi_LoLa"),
-            col("Total MiTi"),
+            col("Gross MiTi (MiTi)"),
+            col("Gross MiTi (LoLa)"),
         ])
         .collect()
 }
@@ -359,7 +353,7 @@ fn miti_by(owner: &Owner) -> (Expr, String) {
     let expr = (col("Topic").eq(lit(Topic::MiTi.to_string())))
         .and(col("Owner").eq(lit(owner.to_string())))
         .and(col("Purpose").neq(lit(Purpose::Tip.to_string())));
-    let alias = format!("MiTi_{owner}");
+    let alias = format!("Gross MiTi ({owner})");
     (expr, alias)
 }
 
@@ -528,9 +522,12 @@ mod tests {
             "MiTi_Tips" => &[None::<f64>],
             "Cafe_Tips" => &[None::<f64>],
             "Verm_Tips" => &[None::<f64>],
-            "MiTi_MiTi" => &[Some(16.0)],
-            "MiTi_LoLa" => &[None::<f64>],
-            "Total MiTi" => &[16.0],
+            "Gross MiTi (MiTi)" => &[Some(16.0)],
+            "Gross MiTi (LoLa)" => &[None::<f64>],
+            // "Gross MiTi (MiTi) Card" => &[Some(16.0)],
+            // "Net MiTi (MiTi) Card" => &[15.74],
+            // "Contribution (LoLa)" => &[0.0],
+            // "Credit MiTi" => &[15.74],
         )
         .expect("valid data frame")
         .lazy()
