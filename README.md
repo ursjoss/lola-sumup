@@ -14,7 +14,7 @@ The columns of the resulting summary file are defined as follows:
 - Gross Values of consumptions of topics `MiTi`, `Cafe`, `Verm` (commissions not subtracted) split by payment method
   - `MiTi_Cash`: Gross Cash Income Mitagstisch
   - `MiTi_Card`: Gross Card Income Mitagstisch
-  - `MiTi Total`: Total Gross Income Mitagstisch [`MiTi_Cash` + `MiTi_Card`]
+  - `MiTi Total`: Total Gross Income Mitagstisch [`MiTi_Cash` + `MiTi_Card`], also [`Gross MiTi (MiTi)` + `Gross MiTi (LoLa)`]
   - `Cafe_Cash`: Gross Cash Income Café
   - `Cafe_Card`: Gross Card Income Café
   - `Cafe Total`: Total Gross Income Café [`Cafe_Cash` + `Cafe_Card`]
@@ -36,7 +36,8 @@ The columns of the resulting summary file are defined as follows:
   - `MiTi_Commission`: Card Commission for Mittagstisch
   - `Net Card MiTi`: Net Card Income Mitagstisch [`Gross Card MiTi` - `MiTi_Commission`]
   - `Gross Card LoLa`: Gross Card Income LoLa (Café and Vermietungen) [`Cafe_Card` + `Verm_Card`]
-  - `LoLa_Commission`: Card Commission for LoLa
+  - `LoLa_Commission`: Card Commission for LoLa (including commission for items sold by MiTi)
+  - `LoLa_Commission_MiTi`: Card Commission for LoLa items sold by MiTi only
   - `Net Card LoLa`: Net Card Income LoLa (Café and Vermietungen) [`Gross Card LoLa` - `LoLa_Commission`]
   - `Gross Card Total`: Gross Card Income (MiTi, Café, Vermietungen) [`Gross Card MiTi` + `Gross Card LoLa`]
   - `Total Commission`: Card Commission Total (MiTi, Café, Vermietungen) [`MiTi_Commission` + `LoLa_Commission`]
@@ -46,7 +47,10 @@ The columns of the resulting summary file are defined as follows:
   - `Cafe_Tips`: Tips for Café
   - `Verm_Tips`: Tips for Vermietungen
 - Split of Topic Mitagstisch by Owner:
-  - `MiTi_MiTi`: Gross Income Mittagstisch Menus
-  - `MiTi_LoLa`: Gross Income Mittagstisch LoLa-Beverages
-  - `Total MiTi`: [`MiTi_MiTi` + `MiTi_LoLa`] also [`MiTi Total`]
-  - `MiTi_MiTi_Card`: Gross Income Mittagstisch Menus via Card (TODO)
+  - `Gross MiTi (MiTi)`: Gross Income Mittagstisch from their own Menus (payed via Card or Cash)
+  - `Gross MiTi (LoLa)`: Gross Income Mittagstisch with LoLa-items (Beverages...) (payed via Card or Cash)
+  - `Gross MiTi (MiTi) Card`: Gross Income Mittagstisch from their own Menus (payed via Card only)
+  - `Net MiTi (MiTi) Card `: Net Income Mittagstisch Menus w/O commission payed by card [`Gross MiTi (MiTi) Card` - `MiTi_Commission`]
+  - `Contribution LoLa`: Share MiTi from selling LoLa items [20% * (`Gross MiTi (LoLa)` - `LoLa_Commission_MiTi`)]
+  - `Credit MiTi`: Money from MiTi sales via Card w/O commission + contribution Lola sales [`Net MiTi (MiTi) Card` + `Contribution LoLa`]
+  

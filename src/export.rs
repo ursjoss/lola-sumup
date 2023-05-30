@@ -159,10 +159,16 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     let verm_tips = price_by_date_for(tips_of_topic(&Topic::Verm), ldf.clone());
     let tips_cash = price_by_date_for(tips_by_payment_method(&PaymentMethod::Cash), ldf.clone());
     let tips_card = price_by_date_for(tips_by_payment_method(&PaymentMethod::Card), ldf.clone());
-    let miti_comm = commission_by_date_for(commission_by(&Owner::MiTi), ldf.clone());
-    let lola_comm = commission_by_date_for(commission_by(&Owner::LoLa), ldf.clone());
+    let miti_comm = commission_by_date_for(commission_by(&Owner::MiTi, None), ldf.clone());
+    let lola_comm = commission_by_date_for(commission_by(&Owner::LoLa, Some(false)), ldf.clone());
+    let lola_comm_miti =
+        commission_by_date_for(commission_by(&Owner::LoLa, Some(true)), ldf.clone());
     let miti_miti = price_by_date_for(miti_by(&Owner::MiTi), ldf.clone());
-    let miti_lola = price_by_date_for(miti_by(&Owner::LoLa), ldf);
+    let miti_lola = price_by_date_for(miti_by(&Owner::LoLa), ldf.clone());
+    let gross_miti_miti_card = price_by_date_for(
+        owned_consumption_of(&Topic::MiTi, &Owner::MiTi, &PaymentMethod::Card),
+        ldf,
+    );
 
     let with_cafe_cash = all_dates.join(cafe_cash, [col("Date")], [col("Date")], JoinType::Left);
     let with_cafe_card =
@@ -193,8 +199,16 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         with_comm_lola.join(tips_cash, [col("Date")], [col("Date")], JoinType::Left);
     let with_tips_card =
         with_tips_cash.join(tips_card, [col("Date")], [col("Date")], JoinType::Left);
+    let with_lola_comm_miti =
+        with_tips_card.join(lola_comm_miti, [col("Date")], [col("Date")], JoinType::Left);
+    let with_gross_miti_miti_card = with_lola_comm_miti.join(
+        gross_miti_miti_card,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left,
+    );
 
-    with_tips_card
+    with_gross_miti_miti_card
         .with_column(
             (col("MiTi_Cash").fill_null(0.0) + col("MiTi_Card").fill_null(0.0))
                 .round(2)
@@ -271,11 +285,6 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .alias("Total Commission"),
         )
         .with_column(
-            (col("MiTi_MiTi").fill_null(0.0) + col("MiTi_LoLa").fill_null(0.0))
-                .round(2)
-                .alias("Total MiTi"),
-        )
-        .with_column(
             (col("Gross Card MiTi").fill_null(0.0) - col("MiTi_Commission").fill_null(0.0))
                 .round(2)
                 .alias("Net Card MiTi"),
@@ -289,6 +298,23 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             (col("Gross Card").fill_null(0.0) - col("Total Commission").fill_null(0.0))
                 .round(2)
                 .alias("Net Card Total"),
+        )
+        .with_column(
+            (col("Gross MiTi (MiTi) Card").fill_null(0.0) - col("MiTi_Commission").fill_null(0.0))
+                .round(2)
+                .alias("Net MiTi (MiTi) Card"),
+        )
+        .with_column(
+            (lit(0.2)
+                * (col("Gross MiTi (LoLa)").fill_null(0.0)
+                    - col("LoLa_Commission_MiTi").fill_null(0.0)))
+            .round(2)
+            .alias("Contribution LoLa"),
+        ) //`Net MiTi(MiTi) Card` + `Contribution (LoLa)`
+        .with_column(
+            (col("Net MiTi (MiTi) Card").fill_null(0.0) + col("Contribution LoLa").fill_null(0.0))
+                .round(2)
+                .alias("Credit MiTi"),
         )
         .select([
             col("Date"),
@@ -315,6 +341,7 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Net Card MiTi"),
             col("Gross Card LoLa"),
             col("LoLa_Commission"),
+            col("LoLa_Commission_MiTi"),
             col("Net Card LoLa"),
             col("Gross Card").alias("Gross Card Total"),
             col("Total Commission"),
@@ -322,9 +349,12 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("MiTi_Tips"),
             col("Cafe_Tips"),
             col("Verm_Tips"),
-            col("MiTi_MiTi"),
-            col("MiTi_LoLa"),
-            col("Total MiTi"),
+            col("Gross MiTi (MiTi)"),
+            col("Gross MiTi (LoLa)"),
+            col("Gross MiTi (MiTi) Card"),
+            col("Net MiTi (MiTi) Card"),
+            col("Contribution LoLa"),
+            col("Credit MiTi"),
         ])
         .collect()
 }
@@ -335,6 +365,19 @@ fn consumption_of(topic: &Topic, payment_method: &PaymentMethod) -> (Expr, Strin
         .and(col("Payment Method").eq(lit(payment_method.to_string())))
         .and(col("Purpose").neq(lit(Purpose::Tip.to_string())));
     let alias = format!("{topic}_{payment_method}");
+    (expr, alias)
+}
+
+fn owned_consumption_of(
+    topic: &Topic,
+    owner: &Owner,
+    payment_method: &PaymentMethod,
+) -> (Expr, String) {
+    let expr = (col("Topic").eq(lit(topic.to_string())))
+        .and(col("Owner").eq(lit(owner.to_string())))
+        .and(col("Payment Method").eq(lit(payment_method.to_string())))
+        .and(col("Purpose").neq(lit(Purpose::Tip.to_string())));
+    let alias = format!("Gross {topic} ({owner}) {payment_method}");
     (expr, alias)
 }
 
@@ -359,19 +402,27 @@ fn miti_by(owner: &Owner) -> (Expr, String) {
     let expr = (col("Topic").eq(lit(Topic::MiTi.to_string())))
         .and(col("Owner").eq(lit(owner.to_string())))
         .and(col("Purpose").neq(lit(Purpose::Tip.to_string())));
-    let alias = format!("MiTi_{owner}");
+    let alias = format!("Gross MiTi ({owner})");
     (expr, alias)
 }
 
 /// Predicate and alias for commission by `Owner`
-fn commission_by(owner: &Owner) -> (Expr, String) {
+fn commission_by(owner: &Owner, miti_only: Option<bool>) -> (Expr, String) {
     let expr = match owner {
         Owner::MiTi => (col("Topic").eq(lit(Topic::MiTi.to_string())))
             .and(col("Owner").eq(lit(Owner::MiTi.to_string()))),
-        Owner::LoLa => (col("Topic").neq(lit(Topic::MiTi.to_string())))
-            .or(col("Owner").eq(lit(Owner::LoLa.to_string()))),
+        Owner::LoLa => match miti_only {
+            None => panic!("Configured wrongly, we need [miti_only] for owner LoLa"),
+            Some(false) => (col("Topic").neq(lit(Topic::MiTi.to_string())))
+                .or(col("Owner").eq(lit(Owner::LoLa.to_string()))),
+            Some(true) => (col("Topic").eq(lit(Topic::MiTi.to_string())))
+                .and(col("Owner").eq(lit(Owner::LoLa.to_string()))),
+        },
     };
-    let alias = format!("{owner}_Commission");
+    let alias = match miti_only {
+        None | Some(false) => format!("{owner}_Commission"),
+        Some(true) => format!("{owner}_Commission_MiTi"),
+    };
     (expr, alias)
 }
 
@@ -521,6 +572,7 @@ mod tests {
             "Net Card MiTi" => &[15.76],
             "Gross Card LoLa" => &[0.0],
             "LoLa_Commission" => &[None::<f64>],
+            "LoLa_Commission_MiTi" => &[None::<f64>],
             "Net Card LoLa" => &[0.0],
             "Gross Card Total" => &[16.0],
             "Total Commission" => &[0.24],
@@ -528,9 +580,12 @@ mod tests {
             "MiTi_Tips" => &[None::<f64>],
             "Cafe_Tips" => &[None::<f64>],
             "Verm_Tips" => &[None::<f64>],
-            "MiTi_MiTi" => &[Some(16.0)],
-            "MiTi_LoLa" => &[None::<f64>],
-            "Total MiTi" => &[16.0],
+            "Gross MiTi (MiTi)" => &[Some(16.0)],
+            "Gross MiTi (LoLa)" => &[None::<f64>],
+            "Gross MiTi (MiTi) Card" => &[Some(16.0)],
+            "Net MiTi (MiTi) Card" => &[15.76],
+            "Contribution LoLa" => &[0.0],
+            "Credit MiTi" => &[15.76],
         )
         .expect("valid data frame")
         .lazy()
