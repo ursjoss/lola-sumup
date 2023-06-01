@@ -19,15 +19,26 @@ pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Bo
     let mut df = collect_data(raw_df)?;
     df.extend(&df.sum())?;
 
-    let iowtr: Box<dyn Write> = match output_path {
-        Some(path) => Box::new(File::create(path)?),
-        None => Box::new(io::stdout()),
-    };
-    CsvWriter::new(iowtr)
-        .has_header(true)
-        .with_delimiter(b';')
-        .finish(&mut df)?;
-    Ok(())
+    write_summary(output_path, &mut df.clone())?;
+    write_miti_file(&mut gather_df_miti(&df)?)
+}
+
+fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
+    df.clone()
+        .lazy()
+        .select([
+            col("Date"),
+            col("MiTi_Cash"),
+            col("MiTi_Card"),
+            col("MiTi Total"),
+            col("Gross MiTi (MiTi)"),
+            col("Gross MiTi (LoLa)"),
+            col("Gross MiTi (MiTi) Card"),
+            col("Net MiTi (MiTi) Card"),
+            col("Contribution LoLa"),
+            col("Credit MiTi"),
+        ])
+        .collect()
 }
 
 fn validate_topic_owner_constraint(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
@@ -310,7 +321,7 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                     - col("LoLa_Commission_MiTi").fill_null(0.0)))
             .round(2)
             .alias("Contribution LoLa"),
-        ) //`Net MiTi(MiTi) Card` + `Contribution (LoLa)`
+        )
         .with_column(
             (col("Net MiTi (MiTi) Card").fill_null(0.0) + col("Contribution LoLa").fill_null(0.0))
                 .round(2)
@@ -463,6 +474,31 @@ fn key_figure_by_date_for(
         )
 }
 
+fn write_summary(output_path: &Option<PathBuf>, df: &mut DataFrame) -> Result<(), Box<dyn Error>> {
+    let iowtr: Box<dyn Write> = match output_path {
+        Some(path) => Box::new(File::create(path)?),
+        None => Box::new(io::stdout()),
+    };
+    CsvWriter::new(iowtr)
+        .has_header(true)
+        .with_delimiter(b';')
+        .finish(df)?;
+    Ok(())
+}
+
+fn write_miti_file(df: &mut DataFrame) -> Result<(), Box<dyn Error>> {
+    let output_path = Some(PathBuf::from("miti.csv"));
+    let iowtr: Box<dyn Write> = match output_path {
+        Some(path) => Box::new(File::create(path)?),
+        None => Box::new(io::stdout()),
+    };
+    CsvWriter::new(iowtr)
+        .has_header(true)
+        .with_delimiter(b';')
+        .finish(&mut df.clone())?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use chrono::NaiveDate;
@@ -546,7 +582,6 @@ mod tests {
         .expect("Misconfigured test data frame");
         let out = collect_data(df).expect("should be able to collect the data");
         let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
-        // the first record is a silly workaround to get typed values into each slice. It's filtered out below.
         let expected = df!(
             "Date" => &[date],
             "MiTi_Cash" => &[None::<f64>],
@@ -663,5 +698,68 @@ mod tests {
                 assert!(e.to_string().starts_with(msg));
             }
         }
+    }
+
+    #[rstest]
+    fn test_gather_df_miti() {
+        let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
+        let df_summary = df!(
+            "Date" => &[date],
+            "MiTi_Cash" => &[None::<f64>],
+            "MiTi_Card" => &[Some(16.0)],
+            "MiTi Total" => &[16.0],
+            "Cafe_Cash" => &[None::<f64>],
+            "Cafe_Card" => &[None::<f64>],
+            "Cafe Total" => &[0.0],
+            "Verm_Cash" => &[None::<f64>],
+            "Verm_Card" => &[None::<f64>],
+            "Verm Total" => &[0.0],
+            "Gross Cash" => &[0.0],
+            "Tips_Cash" => &[None::<f64>],
+            "Sumup Cash" => &[0.0],
+            "Gross Card" => &[16.0],
+            "Tips_Card" => &[None::<f64>],
+            "Sumup Card" => &[16.0],
+            "Gross Total" => &[16.0],
+            "Tips Total" => &[0.0],
+            "SumUp Total" => &[16.0],
+            "Gross Card MiTi" => &[16.0],
+            "MiTi_Commission" => &[Some(0.24)],
+            "Net Card MiTi" => &[15.76],
+            "Gross Card LoLa" => &[0.0],
+            "LoLa_Commission" => &[None::<f64>],
+            "LoLa_Commission_MiTi" => &[None::<f64>],
+            "Net Card LoLa" => &[0.0],
+            "Gross Card Total" => &[16.0],
+            "Total Commission" => &[0.24],
+            "Net Card Total" => &[15.76],
+            "MiTi_Tips" => &[None::<f64>],
+            "Cafe_Tips" => &[None::<f64>],
+            "Verm_Tips" => &[None::<f64>],
+            "Gross MiTi (MiTi)" => &[Some(16.0)],
+            "Gross MiTi (LoLa)" => &[None::<f64>],
+            "Gross MiTi (MiTi) Card" => &[Some(16.0)],
+            "Net MiTi (MiTi) Card" => &[15.76],
+            "Contribution LoLa" => &[0.0],
+            "Credit MiTi" => &[15.76],
+        )
+        .expect("valid data frame");
+        let expected = df!(
+            "Date" => &[date],
+            "MiTi_Cash" => &[None::<f64>],
+            "MiTi_Card" => &[Some(16.0)],
+            "MiTi Total" => &[16.0],
+            "Gross MiTi (MiTi)" => &[Some(16.0)],
+            "Gross MiTi (LoLa)" => &[None::<f64>],
+            "Gross MiTi (MiTi) Card" => &[Some(16.0)],
+            "Net MiTi (MiTi) Card" => &[15.76],
+            "Contribution LoLa" => &[0.0],
+            "Credit MiTi" => &[15.76],
+        )
+        .expect("valid data frame")
+        .lazy()
+        .collect();
+        let out = gather_df_miti(&df_summary).expect("should be able to collect miti_df");
+        assert_eq!(out, expected.expect("valid data frame"));
     }
 }
