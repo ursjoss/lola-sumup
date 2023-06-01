@@ -19,15 +19,53 @@ pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Bo
     let mut df = collect_data(raw_df)?;
     df.extend(&df.sum())?;
 
-    let iowtr: Box<dyn Write> = match output_path {
-        Some(path) => Box::new(File::create(path)?),
-        None => Box::new(io::stdout()),
-    };
-    CsvWriter::new(iowtr)
-        .has_header(true)
-        .with_delimiter(b';')
-        .finish(&mut df)?;
-    Ok(())
+    write_summary(output_path, &mut df.clone())?;
+    write_miti_file(&mut gather_df_miti(&df)?)
+}
+
+fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
+    df.clone()
+        .lazy()
+        .with_column(
+            (col("MiTi_Cash").fill_null(0.0) + col("MiTi_Tips_Cash").fill_null(0.0))
+                .round(2)
+                .alias("Total Cash"),
+        )
+        .with_column(
+            (col("MiTi_Card").fill_null(0.0) + col("MiTi_Tips_Card").fill_null(0.0))
+                .round(2)
+                .alias("Total Card"),
+        )
+        .with_column(
+            (col("MiTi_Tips_Cash").fill_null(0.0) + col("MiTi_Tips_Card").fill_null(0.0))
+                .round(2)
+                .alias("Tips Total"),
+        )
+        .with_column(
+            (col("MiTi Total").fill_null(0.0) + col("Tips Total").fill_null(0.0))
+                .round(2)
+                .alias("Payment Total"),
+        )
+        .select([
+            col("Date"),
+            col("MiTi_Cash").alias("Income Cash"),
+            col("MiTi_Tips_Cash").alias("Tips Cash"),
+            col("Total Cash"),
+            col("MiTi_Card").alias("Income Card"),
+            col("MiTi_Tips_Card").alias("Tips Card"),
+            col("Total Card"),
+            col("MiTi Total").alias("Income Total"),
+            col("Tips Total"),
+            col("Payment Total"),
+            col("Gross MiTi (MiTi)").alias("Gross Income MiTi"),
+            col("Gross MiTi (LoLa)").alias("Gross Income LoLa"),
+            col("Gross MiTi (MiTi) Card").alias("Gross Card MiTi"),
+            col("MiTi_Commission").alias("Commission MiTi"),
+            col("Net MiTi (MiTi) Card").alias("Net Card MiTi"),
+            col("Contribution LoLa"),
+            col("Credit MiTi").alias("Credit"),
+        ])
+        .collect()
 }
 
 fn validate_topic_owner_constraint(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
@@ -155,6 +193,14 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         ldf.clone(),
     );
     let cafe_tips = price_by_date_for(tips_of_topic(&Topic::Cafe), ldf.clone());
+    let miti_tips_cash = price_by_date_for(
+        tips_of_topic_by_payment_method(&Topic::MiTi, &PaymentMethod::Cash),
+        ldf.clone(),
+    );
+    let miti_tips_card = price_by_date_for(
+        tips_of_topic_by_payment_method(&Topic::MiTi, &PaymentMethod::Card),
+        ldf.clone(),
+    );
     let miti_tips = price_by_date_for(tips_of_topic(&Topic::MiTi), ldf.clone());
     let verm_tips = price_by_date_for(tips_of_topic(&Topic::Verm), ldf.clone());
     let tips_cash = price_by_date_for(tips_by_payment_method(&PaymentMethod::Cash), ldf.clone());
@@ -183,8 +229,12 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         with_verm_cash.join(verm_card, [col("Date")], [col("Date")], JoinType::Left);
     let with_cafe_tips =
         with_verm_card.join(cafe_tips, [col("Date")], [col("Date")], JoinType::Left);
+    let with_miti_tips_cash =
+        with_cafe_tips.join(miti_tips_cash, [col("Date")], [col("Date")], JoinType::Left);
+    let with_miti_tips_card =
+        with_miti_tips_cash.join(miti_tips_card, [col("Date")], [col("Date")], JoinType::Left);
     let with_miti_tips =
-        with_cafe_tips.join(miti_tips, [col("Date")], [col("Date")], JoinType::Left);
+        with_miti_tips_card.join(miti_tips, [col("Date")], [col("Date")], JoinType::Left);
     let with_verm_tips =
         with_miti_tips.join(verm_tips, [col("Date")], [col("Date")], JoinType::Left);
     let with_miti_miti =
@@ -310,7 +360,7 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                     - col("LoLa_Commission_MiTi").fill_null(0.0)))
             .round(2)
             .alias("Contribution LoLa"),
-        ) //`Net MiTi(MiTi) Card` + `Contribution (LoLa)`
+        )
         .with_column(
             (col("Net MiTi (MiTi) Card").fill_null(0.0) + col("Contribution LoLa").fill_null(0.0))
                 .round(2)
@@ -346,6 +396,8 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Gross Card").alias("Gross Card Total"),
             col("Total Commission"),
             col("Net Card Total"),
+            col("MiTi_Tips_Cash"),
+            col("MiTi_Tips_Card"),
             col("MiTi_Tips"),
             col("Cafe_Tips"),
             col("Verm_Tips"),
@@ -386,6 +438,18 @@ fn tips_of_topic(topic: &Topic) -> (Expr, String) {
     let expr = (col("Topic").eq(lit(topic.to_string())))
         .and(col("Purpose").eq(lit(Purpose::Tip.to_string())));
     let alias = format!("{topic}_Tips");
+    (expr, alias)
+}
+
+/// Predicate and alias for Tips, selected by `Topic` and `PaymentMethod`
+fn tips_of_topic_by_payment_method(
+    topic: &Topic,
+    payment_method: &PaymentMethod,
+) -> (Expr, String) {
+    let expr = (col("Topic").eq(lit(topic.to_string())))
+        .and(col("Payment Method").eq(lit(payment_method.to_string())))
+        .and(col("Purpose").eq(lit(Purpose::Tip.to_string())));
+    let alias = format!("{topic}_Tips_{payment_method}");
     (expr, alias)
 }
 
@@ -461,6 +525,31 @@ fn key_figure_by_date_for(
                 multithreaded: false,
             },
         )
+}
+
+fn write_summary(output_path: &Option<PathBuf>, df: &mut DataFrame) -> Result<(), Box<dyn Error>> {
+    let iowtr: Box<dyn Write> = match output_path {
+        Some(path) => Box::new(File::create(path)?),
+        None => Box::new(io::stdout()),
+    };
+    CsvWriter::new(iowtr)
+        .has_header(true)
+        .with_delimiter(b';')
+        .finish(df)?;
+    Ok(())
+}
+
+fn write_miti_file(df: &mut DataFrame) -> Result<(), Box<dyn Error>> {
+    let output_path = Some(PathBuf::from("miti.csv"));
+    let iowtr: Box<dyn Write> = match output_path {
+        Some(path) => Box::new(File::create(path)?),
+        None => Box::new(io::stdout()),
+    };
+    CsvWriter::new(iowtr)
+        .has_header(true)
+        .with_delimiter(b';')
+        .finish(&mut df.clone())?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -546,7 +635,6 @@ mod tests {
         .expect("Misconfigured test data frame");
         let out = collect_data(df).expect("should be able to collect the data");
         let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
-        // the first record is a silly workaround to get typed values into each slice. It's filtered out below.
         let expected = df!(
             "Date" => &[date],
             "MiTi_Cash" => &[None::<f64>],
@@ -577,6 +665,8 @@ mod tests {
             "Gross Card Total" => &[16.0],
             "Total Commission" => &[0.24],
             "Net Card Total" => &[15.76],
+            "MiTi_Tips_Cash" => &[None::<f64>],
+            "MiTi_Tips_Card" => &[None::<f64>],
             "MiTi_Tips" => &[None::<f64>],
             "Cafe_Tips" => &[None::<f64>],
             "Verm_Tips" => &[None::<f64>],
@@ -663,5 +753,77 @@ mod tests {
                 assert!(e.to_string().starts_with(msg));
             }
         }
+    }
+
+    #[rstest]
+    fn test_gather_df_miti() {
+        let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
+        let df_summary = df!(
+            "Date" => &[date],
+            "MiTi_Cash" => &[None::<f64>],
+            "MiTi_Card" => &[Some(16.0)],
+            "MiTi Total" => &[16.0],
+            "Cafe_Cash" => &[None::<f64>],
+            "Cafe_Card" => &[None::<f64>],
+            "Cafe Total" => &[0.0],
+            "Verm_Cash" => &[None::<f64>],
+            "Verm_Card" => &[None::<f64>],
+            "Verm Total" => &[0.0],
+            "Gross Cash" => &[0.0],
+            "Tips_Cash" => &[None::<f64>],
+            "Sumup Cash" => &[0.0],
+            "Gross Card" => &[16.0],
+            "Tips_Card" => &[None::<f64>],
+            "Sumup Card" => &[16.0],
+            "Gross Total" => &[16.0],
+            "Tips Total" => &[0.0],
+            "SumUp Total" => &[16.0],
+            "Gross Card MiTi" => &[16.0],
+            "MiTi_Commission" => &[Some(0.24)],
+            "Net Card MiTi" => &[15.76],
+            "Gross Card LoLa" => &[0.0],
+            "LoLa_Commission" => &[None::<f64>],
+            "LoLa_Commission_MiTi" => &[None::<f64>],
+            "Net Card LoLa" => &[0.0],
+            "Gross Card Total" => &[16.0],
+            "Total Commission" => &[0.24],
+            "Net Card Total" => &[15.76],
+            "MiTi_Tips_Cash" => &[None::<f64>],
+            "MiTi_Tips_Card" => &[None::<f64>],
+            "MiTi_Tips" => &[None::<f64>],
+            "Cafe_Tips" => &[None::<f64>],
+            "Verm_Tips" => &[None::<f64>],
+            "Gross MiTi (MiTi)" => &[Some(16.0)],
+            "Gross MiTi (LoLa)" => &[None::<f64>],
+            "Gross MiTi (MiTi) Card" => &[Some(16.0)],
+            "Net MiTi (MiTi) Card" => &[15.76],
+            "Contribution LoLa" => &[0.0],
+            "Credit MiTi" => &[15.76],
+        )
+        .expect("valid data frame");
+        let expected = df!(
+            "Date" => &[date],
+            "Income Cash" => &[None::<f64>],
+            "Tips Cash" => &[None::<f64>],
+            "Total Cash" => &[0.0],
+            "Income Card" => &[Some(16.0)],
+            "Tips Card" => &[None::<f64>],
+            "Total Card" => &[16.0],
+            "Income Total" => &[16.0],
+            "Tips Total" => &[0.0],
+            "Payment Total" => &[16.0],
+            "Gross Income MiTi" => &[Some(16.0)],
+            "Gross Income LoLa" => &[None::<f64>],
+            "Gross Card MiTi" => &[Some(16.0)],
+            "Commission MiTi" => &[0.24],
+            "Net Card MiTi" => &[15.76],
+            "Contribution LoLa" => &[0.0],
+            "Credit" => &[15.76],
+        )
+        .expect("valid data frame")
+        .lazy()
+        .collect();
+        let out = gather_df_miti(&df_summary).expect("should be able to collect miti_df");
+        assert_eq!(out, expected.expect("valid data frame"));
     }
 }
