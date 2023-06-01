@@ -20,7 +20,8 @@ pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Bo
     df.extend(&df.sum())?;
 
     write_summary(output_path, &mut df.clone())?;
-    write_miti_file(&mut gather_df_miti(&df)?)
+    write_additional_file(&mut gather_df_miti(&df)?, "miti.csv")?;
+    write_additional_file(&mut gather_df_accounting(&df)?, "accounting.csv")
 }
 
 fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
@@ -64,6 +65,19 @@ fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Net MiTi (MiTi) Card").alias("Net Card MiTi"),
             col("Contribution LoLa"),
             col("Credit MiTi").alias("Credit"),
+        ])
+        .collect()
+}
+
+fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
+    df.clone()
+        .lazy()
+        .select([
+            col("Date"),
+            col("Gross Card LoLa"),
+            col("Net Card MiTi"),
+            col("Net Card Total"),
+            col("LoLa_Commission").alias("Commission LoLa"),
         ])
         .collect()
 }
@@ -539,8 +553,8 @@ fn write_summary(output_path: &Option<PathBuf>, df: &mut DataFrame) -> Result<()
     Ok(())
 }
 
-fn write_miti_file(df: &mut DataFrame) -> Result<(), Box<dyn Error>> {
-    let output_path = Some(PathBuf::from("miti.csv"));
+fn write_additional_file(df: &mut DataFrame, file_name: &str) -> Result<(), Box<dyn Error>> {
+    let output_path = Some(PathBuf::from(file_name));
     let iowtr: Box<dyn Write> = match output_path {
         Some(path) => Box::new(File::create(path)?),
         None => Box::new(io::stdout()),
@@ -824,6 +838,67 @@ mod tests {
         .lazy()
         .collect();
         let out = gather_df_miti(&df_summary).expect("should be able to collect miti_df");
+        assert_eq!(out, expected.expect("valid data frame"));
+    }
+
+    #[rstest]
+    fn test_gather_df_accounting() {
+        let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
+        let df_summary = df!(
+            "Date" => &[date],
+            "MiTi_Cash" => &[None::<f64>],
+            "MiTi_Card" => &[Some(16.0)],
+            "MiTi Total" => &[16.0],
+            "Cafe_Cash" => &[None::<f64>],
+            "Cafe_Card" => &[3.5],
+            "Cafe Total" => &[3.5],
+            "Verm_Cash" => &[None::<f64>],
+            "Verm_Card" => &[10.0],
+            "Verm Total" => &[10.0],
+            "Gross Cash" => &[0.0],
+            "Tips_Cash" => &[None::<f64>],
+            "Sumup Cash" => &[0.0],
+            "Gross Card" => &[29.5],
+            "Tips_Card" => &[None::<f64>],
+            "Sumup Card" => &[29.5],
+            "Gross Total" => &[29.5],
+            "Tips Total" => &[0.0],
+            "SumUp Total" => &[29.5],
+            "Gross Card MiTi" => &[16.0],
+            "MiTi_Commission" => &[Some(0.24)],
+            "Net Card MiTi" => &[15.76],
+            "Gross Card LoLa" => &[13.5],
+            "LoLa_Commission" => &[Some(0.04)],
+            "LoLa_Commission_MiTi" => &[None::<f64>],
+            "Net Card LoLa" => &[13.1],
+            "Gross Card Total" => &[29.5],
+            "Total Commission" => &[0.28],
+            "Net Card Total" => &[29.22],
+            "MiTi_Tips_Cash" => &[None::<f64>],
+            "MiTi_Tips_Card" => &[None::<f64>],
+            "MiTi_Tips" => &[None::<f64>],
+            "Cafe_Tips" => &[None::<f64>],
+            "Verm_Tips" => &[None::<f64>],
+            "Gross MiTi (MiTi)" => &[Some(16.0)],
+            "Gross MiTi (LoLa)" => &[None::<f64>],
+            "Gross MiTi (MiTi) Card" => &[Some(16.0)],
+            "Net MiTi (MiTi) Card" => &[15.76],
+            "Contribution LoLa" => &[0.0],
+            "Credit MiTi" => &[15.76],
+        )
+        .expect("valid data frame");
+        let expected = df!(
+            "Date" => &[date],
+            "Gross Card LoLa" => &[13.5],
+            "Net Card MiTi" => &[15.76],
+            "Net Card Total" => &[29.22],
+            "Commission LoLa" => &[Some(0.04)],
+        )
+        .expect("valid data frame")
+        .lazy()
+        .collect();
+        let out =
+            gather_df_accounting(&df_summary).expect("should be able to collect accounting_df");
         assert_eq!(out, expected.expect("valid data frame"));
     }
 }
