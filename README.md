@@ -81,3 +81,18 @@ The columns of the resulting miti.csv file are defined as follows:
   - `Net Card MiTi`: Net income from menus payed by card [`Net MiTi (MiTi) Card`]
   - `Contribution LoLa`: 20% share on net income from selling lola items
   - `Credit MiTi`: Total credit, i.e. [`Net Card MiTi` + `Contribution LoLa`, or `Credit MiTi`]
+
+# Accounting Report
+
+The columns of the resulting accounting.csv file are defined as follows:
+
+- Generic columns
+  - `Date`: [`Date`]
+- Debit statements in transitory account
+  - `Gross Card LoLa`: Total Gross Payments Card w/o MiTi
+  - `Net Card MiTi`: Net Card income Mittagstisch
+- Credit statements in transitory account
+  - `Net Card Total`: Net Card income Mittagstisch
+  - `Commission LoLa`: Commission for Café and Vermietung, i.e. w/o Mittagstisch
+
+`Gross Card LoLa` + `Net Card MiTi` = `Net Card Total` + `Commission LoLa`
