@@ -96,7 +96,7 @@ mod tests {
             "Gross MiTi (MiTi) Card" => &[Some(167.0)],
             "Net MiTi (MiTi) Card" => &[164.25],
             "Contribution LoLa" => &[10.51],
-            "Credit MiTi" => &[174.76],
+            "Credit MiTi" => &[175.76],
         )
         .expect("valid data frame");
         let expected = df!(
@@ -116,7 +116,7 @@ mod tests {
             "Commission MiTi" => &[2.75],
             "Net Card MiTi" => &[164.25],
             "Contribution LoLa" => &[10.51],
-            "Credit" => &[174.76],
+            "Credit" => &[175.76],
         )
         .expect("valid data frame")
         .lazy()

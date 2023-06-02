@@ -323,9 +323,11 @@ fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             .alias("Contribution LoLa"),
         )
         .with_column(
-            (col("Net MiTi (MiTi) Card").fill_null(0.0) + col("Contribution LoLa").fill_null(0.0))
-                .round(2)
-                .alias("Credit MiTi"),
+            (col("Net MiTi (MiTi) Card").fill_null(0.0)
+                + col("Contribution LoLa").fill_null(0.0)
+                + col("MiTi_Tips_Card").fill_null(0.0))
+            .round(2)
+            .alias("Credit MiTi"),
         )
         .select([
             col("Date"),
