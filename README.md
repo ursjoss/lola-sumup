@@ -54,7 +54,7 @@ The columns of the resulting summary file are defined as follows:
   - `Gross MiTi (MiTi) Card`: Gross Income Mittagstisch from their own Menus (payed via Card only)
   - `Net MiTi (MiTi) Card `: Net Income Mittagstisch Menus w/O commission payed by card [`Gross MiTi (MiTi) Card` - `MiTi_Commission`]
   - `Contribution LoLa`: Share MiTi from selling LoLa items [20% * (`Gross MiTi (LoLa)` - `LoLa_Commission_MiTi`)]
-  - `Credit MiTi`: Money from MiTi sales via Card w/O commission + contribution Lola sales [`Net MiTi (MiTi) Card` + `Contribution LoLa`]
+  - `Credit MiTi`: Money from MiTi sales via Card w/o commission + contribution Lola sales + tips payed via Card [`Net MiTi (MiTi) Card` + `Contribution LoLa` + `MiTi_Tips_Card`]
 
 # Mittagstisch Report
 
@@ -80,7 +80,7 @@ The columns of the resulting miti.csv file are defined as follows:
   - `Commission MiTi`: Commission on `Gross Card MiTi` [`MiTi_Commission`]
   - `Net Card MiTi`: Net income from menus payed by card [`Net MiTi (MiTi) Card`]
   - `Contribution LoLa`: 20% share on net income from selling lola items
-  - `Credit MiTi`: Total credit, i.e. [`Net Card MiTi` + `Contribution LoLa`, or `Credit MiTi`]
+  - `Credit MiTi`: Total credit, i.e. [`Net Card MiTi` + `Contribution LoLa` + `Tips Card`, or `Credit MiTi`]
 
 # Accounting Report
 
