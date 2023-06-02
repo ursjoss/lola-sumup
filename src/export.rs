@@ -26,7 +26,7 @@ pub fn export(input_path: &Path, output_path: &Option<PathBuf>) -> Result<(), Bo
     let mut df = collect_data(raw_df)?;
     df.extend(&df.sum())?;
 
-    write_summary(output_path, &mut df.clone())?;
+    write_summary(output_path, &mut df)?;
     write_additional_file(&mut gather_df_miti(&df)?, "miti.csv")?;
     write_additional_file(&mut gather_df_accounting(&df)?, "accounting.csv")
 }
