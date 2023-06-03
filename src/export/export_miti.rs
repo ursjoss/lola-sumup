@@ -24,6 +24,11 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
                 .round(2)
                 .alias("Payment Total"),
         )
+        .with_column(
+            (col("Gross MiTi (LoLa)").fill_null(0.0) - col("LoLa_Commission_MiTi").fill_null(0.0))
+                .round(2)
+                .alias("Net Income LoLa"),
+        )
         .select([
             col("Date"),
             col("MiTi_Cash").alias("Income Cash"),
@@ -37,6 +42,8 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Payment Total"),
             col("Gross MiTi (MiTi)").alias("Gross Income MiTi"),
             col("Gross MiTi (LoLa)").alias("Gross Income LoLa"),
+            col("LoLa_Commission_MiTi").alias("Commission LoLa"),
+            col("Net Income LoLa"),
             col("Gross MiTi (MiTi) Card").alias("Gross Card MiTi"),
             col("MiTi_Commission").alias("Commission MiTi"),
             col("Net MiTi (MiTi) Card").alias("Net Card MiTi"),
@@ -112,6 +119,8 @@ mod tests {
             "Payment Total" => &[304.5],
             "Gross Income MiTi" => &[Some(250.0)],
             "Gross Income LoLa" => &[Some(53)],
+            "Commission LoLa" => &[0.44],
+            "Net Income LoLa" => &[52.56],
             "Gross Card MiTi" => &[Some(167.0)],
             "Commission MiTi" => &[2.75],
             "Net Card MiTi" => &[164.25],

@@ -157,11 +157,13 @@ The columns of the resulting file are defined as follows:
 - Income by ownership (MiTi or LoLa):
   - `Gross Income MiTi`: Gross income from menus [`Gross MiTi (MiTi)`]
   - `Gross Income LoLa`: Gross income from LoLa items [`Gross MiTi (LoLa)`]
+  - `Commission LoLa`: Commission for LoLa payments [`LoLa_Commission_MiTi`]
+  - `Net Income LoLa`: Net Income for selling LoLa items [`Gross Income LoLa` - `Commission LoLa`]
 - Card related income, gross, commission and net, income from selling LoLa and total credit:
   - `Gross Card MiTi`: Gross income from menus payed by card [`Gross MiTi (MiTi) Card`]
   - `Commission MiTi`: Commission on `Gross Card MiTi` [`MiTi_Commission`]
   - `Net Card MiTi`: Net income from menus payed by card [`Net MiTi (MiTi) Card`]
-  - `Contribution LoLa`: 20% share on net income from selling lola items
+  - `Contribution LoLa`: 20% share on net income from selling lola items [0.2 * `Net Income LoLa`]
   - `Credit MiTi`: Total credit, i.e. [`Net Card MiTi` + `Contribution LoLa` + `Tips Card`, or `Credit MiTi`]
 
 ### Accounting Report
