@@ -4,11 +4,21 @@ use polars::prelude::*;
 pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
     df.clone()
         .lazy()
+        .with_column(
+            (col("Net Card Total").fill_null(0.0) + col("Tips_Card").fill_null(0.0))
+                .round(2)
+                .alias("Payment SumUp"),
+        )
+        .with_column(
+            (col("Net Card MiTi").fill_null(0.0) + col("MiTi_Tips_Card").fill_null(0.0))
+                .round(2)
+                .alias("Net Card Total MiTi"),
+        )
         .select([
             col("Date"),
             col("Gross Card LoLa"),
-            col("Net Card MiTi"),
-            col("Net Card Total"),
+            col("Net Card Total MiTi"),
+            col("Payment SumUp"),
             col("LoLa_Commission").alias("Commission LoLa"),
         ])
         .collect()
@@ -70,8 +80,8 @@ mod tests {
         let expected = df!(
             "Date" => &[date],
             "Gross Card LoLa" => &[32.0],
-            "Net Card MiTi" => &[188.25],
-            "Net Card Total" => &[219.21],
+            "Net Card Total MiTi" => &[189.25],
+            "Payment SumUp" => &[220.21],
             "Commission LoLa" => &[Some(1.04)],
         )
         .expect("valid data frame")
