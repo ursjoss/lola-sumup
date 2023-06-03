@@ -49,7 +49,7 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Net MiTi (MiTi) Card").alias("Net Card MiTi"),
             col("Contribution LoLa"),
             col("MiTi_Tips_Card").alias("Tips Due"),
-            col("Credit MiTi").alias("Total Payment Due"),
+            col("Debt to MiTi").alias("Total Payment Due"),
         ])
         .collect()
 }
@@ -104,7 +104,7 @@ mod tests {
             "Gross MiTi (MiTi) Card" => &[Some(167.0)],
             "Net MiTi (MiTi) Card" => &[164.25],
             "Contribution LoLa" => &[10.51],
-            "Credit MiTi" => &[175.76],
+            "Debt to MiTi" => &[175.76],
         )
         .expect("valid data frame");
         let expected = df!(

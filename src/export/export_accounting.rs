@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use polars::prelude::*;
 
 /// Produces the Accounting dataframe from the summary [df]
@@ -14,14 +16,44 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
                 .round(2)
                 .alias("Net Card Total MiTi"),
         )
+        .with_column(
+            (col("Tips_Card").fill_null(0.0) - col("MiTi_Tips_Card").fill_null(0.0))
+                .round(2)
+                .alias("Tips Card LoLa"),
+        )
         .select([
             col("Date"),
             col("Gross Card LoLa"),
             col("Net Card Total MiTi"),
+            col("Tips Card LoLa"),
             col("Payment SumUp"),
             col("LoLa_Commission").alias("Commission LoLa"),
+            col("Debt to MiTi"),
         ])
         .collect()
+}
+
+/// validates the accounting constraint net 0
+pub fn validate_acc_constraint(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
+    let violations = df_acc
+        .clone()
+        .lazy()
+        .with_column(
+            (col("Gross Card LoLa") + col("Net Card Total MiTi") + col("Tips Card LoLa")
+                - col("Payment SumUp")
+                - col("Commission LoLa"))
+            .alias("Net"),
+        )
+        .filter(col("Net").round(2).neq(lit(0.0)))
+        .collect()?;
+    if violations.shape().0 > 0 {
+        let row_vec = violations.get_row(0).unwrap().0;
+        let date = row_vec.get(0).unwrap().clone();
+        let net = row_vec.get(6).unwrap().clone();
+        Err(format!("Constraint violation for accounting export on {date}: net value is {net} instead of 0.0").into())
+    } else {
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -74,15 +106,17 @@ mod tests {
             "Gross MiTi (MiTi) Card" => &[Some(167.0)],
             "Net MiTi (MiTi) Card" => &[164.25],
             "Contribution LoLa" => &[10.51],
-            "Credit MiTi" => &[175.76],
+            "Debt to MiTi" => &[175.76],
         )
         .expect("valid data frame");
         let expected = df!(
             "Date" => &[date],
             "Gross Card LoLa" => &[32.0],
             "Net Card Total MiTi" => &[189.25],
+            "Tips Card LoLa" => &[0.0],
             "Payment SumUp" => &[220.21],
             "Commission LoLa" => &[Some(1.04)],
+            "Debt to MiTi" => &[175.76],
         )
         .expect("valid data frame")
         .lazy()
@@ -90,5 +124,42 @@ mod tests {
         let out =
             gather_df_accounting(&df_summary).expect("should be able to collect accounting_df");
         assert_eq!(out, expected.expect("valid data frame"));
+    }
+
+    #[rstest]
+    #[case(32.0, 189.25, 1.0, 221.21, 1.04, None)]
+    #[case(32.1, 189.25, 1.0, 221.21, 1.04, Some(0.1))]
+    #[case(32.0, 188.15, 1.0, 221.21, 1.04, Some(-1.1))]
+    #[case(32.0, 189.25, 0.5, 221.21, 1.04, Some(-0.5))]
+    #[case(32.0, 189.25, 1.0, 121.01, 1.04, Some(100.2))]
+    #[case(32.0, 189.25, 1.0, 221.21, 10.14, Some(-9.1))]
+    fn test_violations(
+        #[case] gcl: f64,
+        #[case] nctm: f64,
+        #[case] tcl: f64,
+        #[case] psu: f64,
+        #[case] cl: f64,
+        #[case] delta: Option<f64>,
+    ) {
+        let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
+        let df = df!(
+            "Date" => &[date],
+            "Gross Card LoLa" => &[gcl],
+            "Net Card Total MiTi" => &[nctm],
+            "Tips Card LoLa" => &[tcl],
+            "Payment SumUp" => &[psu],
+            "Commission LoLa" => &[Some(cl)],
+        )
+        .expect("valid data frame");
+        match validate_acc_constraint(&df) {
+            Ok(()) => assert!(delta.is_none(), "Would not have expected delta {} on {date}.", delta.unwrap()),
+            Err(e) => match delta {
+                Some(d) => assert_eq!(
+                    e.to_string(),
+                    format!("Constraint violation for accounting export on {date}: net value is {d} instead of 0.0")
+                ),
+                None => panic!("Would have expected delta on {date}."),
+            },
+        }
     }
 }
