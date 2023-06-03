@@ -279,9 +279,9 @@ impl fmt::Display for RecordType {
 /// Payment method as defined in the sumup sales report
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub enum PaymentMethod {
-    /// Sales payed with cash
+    /// Sales paid with cash
     Cash,
-    /// Sales payed with card
+    /// Sales paid with card
     Card,
 }
 
