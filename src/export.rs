@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use polars::prelude::*;
 
 use crate::export::constraint::validation_topic_owner;
-use crate::export::export_accounting::gather_df_accounting;
+use crate::export::export_accounting::{gather_df_accounting, validate_acc_constraint};
 use crate::export::export_miti::gather_df_miti;
 use crate::export::export_summary::collect_data;
 
@@ -32,10 +32,9 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
         &mut gather_df_miti(&df)?,
         &path_with_prefix("mittagstisch", month, ts),
     )?;
-    write_to_file(
-        &mut gather_df_accounting(&df)?,
-        &path_with_prefix("accounting", month, ts),
-    )
+    let mut df_acc = gather_df_accounting(&df)?;
+    validate_acc_constraint(&df_acc)?;
+    write_to_file(&mut df_acc, &path_with_prefix("accounting", month, ts))
 }
 
 /// Constructs a path for a CSV file from `prefix`, `month` and `ts` (timestamp).
