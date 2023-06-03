@@ -16,10 +16,16 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
                 .round(2)
                 .alias("Net Card Total MiTi"),
         )
+        .with_column(
+            (col("Tips_Card").fill_null(0.0) - col("MiTi_Tips_Card").fill_null(0.0))
+                .round(2)
+                .alias("Tips Card LoLa"),
+        )
         .select([
             col("Date"),
             col("Gross Card LoLa"),
             col("Net Card Total MiTi"),
+            col("Tips Card LoLa"),
             col("Payment SumUp"),
             col("LoLa_Commission").alias("Commission LoLa"),
         ])
@@ -32,17 +38,17 @@ pub fn validate_acc_constraint(df_acc: &DataFrame) -> Result<(), Box<dyn Error>>
         .clone()
         .lazy()
         .with_column(
-            (col("Gross Card LoLa") + col("Net Card Total MiTi")
+            (col("Gross Card LoLa") + col("Net Card Total MiTi") + col("Tips Card LoLa")
                 - col("Payment SumUp")
                 - col("Commission LoLa"))
             .alias("Net"),
         )
-        .filter(col("Net").round(2).neq(lit(0)))
+        .filter(col("Net").round(2).neq(lit(0.0)))
         .collect()?;
     if violations.shape().0 > 0 {
         let row_vec = violations.get_row(0).unwrap().0;
         let date = row_vec.get(0).unwrap().clone();
-        let net = row_vec.get(5).unwrap().clone();
+        let net = row_vec.get(6).unwrap().clone();
         Err(format!("Constraint violation for accounting export on {date}: net value is {net} instead of 0.0").into())
     } else {
         Ok(())
@@ -106,6 +112,7 @@ mod tests {
             "Date" => &[date],
             "Gross Card LoLa" => &[32.0],
             "Net Card Total MiTi" => &[189.25],
+            "Tips Card LoLa" => &[0.0],
             "Payment SumUp" => &[220.21],
             "Commission LoLa" => &[Some(1.04)],
         )
@@ -118,14 +125,16 @@ mod tests {
     }
 
     #[rstest]
-    #[case(32.0, 189.25, 220.21, 1.04, None)]
-    #[case(32.1, 189.25, 220.21, 1.04, Some(0.1))]
-    #[case(32.0, 188.15, 220.21, 1.04, Some(-1.1))]
-    #[case(32.0, 189.25, 120.01, 1.04, Some(100.2))]
-    #[case(32.0, 189.25, 220.21, 10.14, Some(-9.1))]
+    #[case(32.0, 189.25, 1.0, 221.21, 1.04, None)]
+    #[case(32.1, 189.25, 1.0, 221.21, 1.04, Some(0.1))]
+    #[case(32.0, 188.15, 1.0, 221.21, 1.04, Some(-1.1))]
+    #[case(32.0, 189.25, 0.5, 221.21, 1.04, Some(-0.5))]
+    #[case(32.0, 189.25, 1.0, 121.01, 1.04, Some(100.2))]
+    #[case(32.0, 189.25, 1.0, 221.21, 10.14, Some(-9.1))]
     fn test_violations(
         #[case] gcl: f64,
         #[case] nctm: f64,
+        #[case] tcl: f64,
         #[case] psu: f64,
         #[case] cl: f64,
         #[case] delta: Option<f64>,
@@ -135,6 +144,7 @@ mod tests {
             "Date" => &[date],
             "Gross Card LoLa" => &[gcl],
             "Net Card Total MiTi" => &[nctm],
+            "Tips Card LoLa" => &[tcl],
             "Payment SumUp" => &[psu],
             "Commission LoLa" => &[Some(cl)],
         )

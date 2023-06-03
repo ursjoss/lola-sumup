@@ -178,8 +178,9 @@ The columns of the resulting accounting.csv file are defined as follows:
 - Debit statements in transitory account
   - `Gross Card LoLa`: Total Gross Payments Card w/o MiTi
   - `Net Card Total MiTi`: Net Card income + tips (card) Mittagstisch [`Net Card MiTi` + `MiTi_Tips_Card`]
+  - `Tips Card LoLa`: Tips LoLa payed via Card [`Tips_Card` - `MiTi_Tips_Card`]
 - Credit statements in transitory account
-  - `Payment Sumup`: Total Net Income plus tips payed via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]
+  - `Payment SumUp`: Total Net Income plus tips payed via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]
   - `Commission LoLa`: Commission for Café and Vermietung, i.e. w/o Mittagstisch
 
 Where `Gross Card LoLa` + `Net Card MiTi` must be equal to `Payment Sumup` + `Commission LoLa`.
