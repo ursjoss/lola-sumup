@@ -164,7 +164,8 @@ The columns of the resulting file are defined as follows:
   - `Commission MiTi`: Commission on `Gross Card MiTi` [`MiTi_Commission`]
   - `Net Card MiTi`: Net income from menus payed by card [`Net MiTi (MiTi) Card`]
   - `Contribution LoLa`: 20% share on net income from selling lola items [0.2 * `Net Income LoLa`]
-  - `Credit MiTi`: Total credit, i.e. [`Net Card MiTi` + `Contribution LoLa` + `Tips Card`, or `Credit MiTi`]
+  - `Tips Due`: Copy of [`Tips Card`] further up
+  - `Total Payment Due`: Total credit, i.e. [`Net Card MiTi` + `Contribution LoLa` + `Tips Card`, or `Credit MiTi`]
 
 ### Accounting Report
 
