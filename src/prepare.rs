@@ -34,6 +34,7 @@ pub fn prepare(
     Ok(())
 }
 
+/// Reads the two input csv files from filesystem, processes the data returns it as dataframe.
 fn process_input(
     sales_report: &Path,
     transaction_report: &Path,
@@ -49,6 +50,7 @@ fn process_input(
     combine_input_dfs(&sr_df, &txr_df)
 }
 
+/// Combines the sales report and transaction report dataframes into the summary dataframe.
 #[allow(clippy::too_many_lines)]
 fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame, Box<dyn Error>> {
     let raw_date_format = StrptimeOptions {
@@ -192,15 +194,18 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
     Ok(df)
 }
 
+/// returns two `LazyFrames` with transaction ids of refunded transactions.
+/// the first `LazyFrame` ahs columns `TransactionId` and "refunded1" (with static literal 'x' as values)
+/// the second `LazyFrame` ahs columns `TransactionId` and "refunded2" (with static literal 'x' as values)
 fn refunded_id_dfs(sr_df: &DataFrame) -> (LazyFrame, LazyFrame) {
-    let transaction_ids = sr_df.clone().lazy().select([col("Transaction ID")]);
+    let all_transaction_ids = sr_df.clone().lazy().select([col("Transaction ID")]);
     let ids_of_refunded = sr_df
         .clone()
         .lazy()
         .filter(col("Transaction refunded").is_not_null())
         .select([col("Transaction refunded")])
         .join(
-            transaction_ids,
+            all_transaction_ids,
             [col("Transaction refunded")],
             [col("Transaction ID")],
             JoinType::Inner,
@@ -217,6 +222,10 @@ fn refunded_id_dfs(sr_df: &DataFrame) -> (LazyFrame, LazyFrame) {
     (refunded_ids_1, refunded_ids_2)
 }
 
+/// Infers the `Topic` from the time of sale:
+/// before 14:15 -> `MiTi`
+/// between 14:15 and 18:00 -> `Cafe`
+/// after 18:00 -> `Vermiet`
 fn infer_topic(time_options: StrptimeOptions) -> Expr {
     when(col("Time").lt(lit("14:15:00").str().to_time(time_options.clone())))
         .then(lit(Topic::MiTi.to_string()))
@@ -225,6 +234,10 @@ fn infer_topic(time_options: StrptimeOptions) -> Expr {
         .otherwise(lit(Topic::Cafe.to_string()))
 }
 
+/// Infers the `Owner` from `Topic` and `Description`:
+/// - if `Topic` is not `MiTi`, the `Owner` will be blank
+/// - for `Topic::MiTi`, the Owner is `MiTi` if the description matches one of a hardcoded list of Strings.
+///   Otherwise the owner is `LoLa`.
 fn infer_owner() -> Expr {
     when(col("Topic").neq(lit(Topic::MiTi.to_string())))
         .then(Expr::Literal(LiteralValue::Null))
@@ -241,6 +254,8 @@ fn infer_owner() -> Expr {
         .otherwise(lit(Owner::LoLa.to_string()))
 }
 
+/// Infers the purpose based on the `Description`: Description "Trinkgeld" leads to `Tip`,
+/// `Consumption` otherwise.
 fn infer_purpose() -> Expr {
     when(col("Description").str().contains(lit("Trinkgeld"), true))
         .then(lit(Purpose::Tip.to_string()))
@@ -263,7 +278,9 @@ impl fmt::Display for RecordType {
 /// Payment method as defined in the sumup sales report
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub enum PaymentMethod {
+    /// Sales payed with cash
     Cash,
+    /// Sales payed with card
     Card,
 }
 
@@ -305,12 +322,13 @@ impl fmt::Display for Purpose {
     }
 }
 
-/// Derived main owner of the income
+/// Derived main owner of the income of sales by Mittagstisch.
+/// Sales by `LoLa` directly does not have an owner.
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub enum Owner {
-    /// LoLa as main owner
+    /// LoLa as main owner of sales by Mittags-Tisch
     LoLa,
-    /// Mittags-Tisch as main owner
+    /// Mittags-Tisch as main owner of sales by Mittags-Tisch.
     MiTi,
 }
 

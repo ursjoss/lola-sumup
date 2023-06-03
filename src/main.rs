@@ -65,10 +65,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 }
 
+/// Returns the current timestamp in format `<yyyymmddHHMMSS>`.
 fn ts_now() -> String {
     Local::now().format("%Y%m%d%H%M%S").to_string()
 }
 
+/// Ensures the validity of the value of the month parameter.
 fn month_in_range(input: &str) -> Result<String, String> {
     if input.len() != 6 || input.parse::<i32>().is_err() {
         Err("month must conform with pattern <yyyymm>.".into())
@@ -90,10 +92,14 @@ fn month_in_range(input: &str) -> Result<String, String> {
     }
 }
 
+/// Provides path for the intermediate file (`intermediate_<yyyymm>_<yyyymmddHHMMSS>.csv`)
+/// with `<yyyymm>` standing for the month being processed and
+/// `<yyyymmddHHMMSS>` representing the execution timestamp.
 fn intermediate_file(month: &String, ts: &String) -> PathBuf {
     PathBuf::from(format!("intermediate_{month}_{ts}.csv"))
 }
 
+/// Derives the month from the intermediate filename (e.g. `intermediate_<yyyymm>.csv` -> `<yyyymm>`)
 fn derive_month_from(file: Option<&str>) -> Result<String, String> {
     let min = "intermediate_yyyymm.csv";
     let underscore_index = min.find('_').unwrap();
