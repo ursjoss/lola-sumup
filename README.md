@@ -3,9 +3,89 @@
 
 [![](https://github.com/ursjoss/lola-sumup/workflows/Verify/badge.svg?branch=main)](https://github.com/ursjoss/lola-sumup/actions/workflows/verify.yml)
 
-CLI to evaluate the monthly sumup CSV file and extract useful reports
+CLI to evaluate the monthly SumUp CSV extracts and extract LoLa specific reports.
 
-# Summary Report
+## Summary
+
+The cli application `lola-sumup` has two subcommands: `prepare` and `export`.
+
+The `prepare` subcommand parses two SumUp extracts with monthly data and creates an intermediate file,
+combining data from both reports, enriched with three columns `Topic`, `Owner`, and `Purpose`.
+The user may redact the content of those three columns, as the simple heuristics may not get it right
+out of the box.
+
+The (potentially redacted) intermediate file is consumed by the second `export` step.
+It generates three different exports from it, dedicated to different purposes in the context of LoLa's
+monthly closing process.
+
+
+## CLI
+
+The `lola-sumup` command has two subcommands:
+
+```
+A cli program to create exports from sumup transactions exported in CSV format
+
+Usage: lola-sumup <COMMAND>
+
+Commands:
+  prepare  Prepares an enriched intermediate file from the original sumup sales report CSV and transaction report CSV
+  export   Consumes the (potentially redacted) intermediate file and exports to different special purpose CSV files
+  help     Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
+```
+
+### The prepare step
+
+The `lola-sumup prepare` command works as follows:
+
+```
+Prepares an enriched intermediate file from the original sumup sales report CSV and transaction report CSV
+
+Usage: lola-sumup prepare --sales-report <SALES_REPORT> --transaction-report <TRANSACTION_REPORT> <MONTH>
+
+Arguments:
+  <MONTH>  the month for which transactions are to be processed (<yyyymm>, e.g. 202305)
+
+Options:
+  -s, --sales-report <SALES_REPORT>              the sales-report to process
+  -t, --transaction-report <TRANSACTION_REPORT>  the transaction-report to process
+  -h, --help                                     Print help
+  -V, --version                                  Print version
+```
+
+It produces a file named e.g. `intermediate_202305_20230603142215.csv`,
+where `202305` is the processed month with the timestamp indicating when the process was executed
+(03. June 2023 14:22:15).
+
+### The export step
+
+The `lola-sumup export` command:
+
+```
+Consumes the (potentially redacted) intermediate file and exports to different special purpose CSV files
+
+Usage: lola-sumup export --intermediate-file <INTERMEDIATE_FILE>
+
+Options:
+  -i, --intermediate-file <INTERMEDIATE_FILE>  the intermediate file to process
+  -h, --help                                   Print help
+  -V, --version                                Print version
+```
+
+It produces three exports (with month and execution timestamp accordingly):
+- `accounting_202305_20230603142503.csv`
+- `mittagstisch_202305_20230603142503.csv`
+- `summary_202305_20230603142503.csv`
+
+## Description of the exports
+
+### Summary Report
+
+The summary file collects all original and derived columns that are required to build the other reports or for deeper insights.
 
 The columns of the resulting summary file are defined as follows:
 
@@ -56,9 +136,11 @@ The columns of the resulting summary file are defined as follows:
   - `Contribution LoLa`: Share MiTi from selling LoLa items [20% * (`Gross MiTi (LoLa)` - `LoLa_Commission_MiTi`)]
   - `Credit MiTi`: Money from MiTi sales via Card w/o commission + contribution Lola sales + tips payed via Card [`Net MiTi (MiTi) Card` + `Contribution LoLa` + `MiTi_Tips_Card`]
 
-# Mittagstisch Report
+### Mittagstisch Report
 
-The columns of the resulting miti.csv file are defined as follows:
+The purpose of the Mittagstisch export is to provide the relevant financial information to the Mittagstisch team.
+
+The columns of the resulting file are defined as follows:
 
 - Generic columns
   - `Date`: [`Date`]
@@ -82,7 +164,9 @@ The columns of the resulting miti.csv file are defined as follows:
   - `Contribution LoLa`: 20% share on net income from selling lola items
   - `Credit MiTi`: Total credit, i.e. [`Net Card MiTi` + `Contribution LoLa` + `Tips Card`, or `Credit MiTi`]
 
-# Accounting Report
+### Accounting Report
+
+The purpose of the accounting export is to provide the relevant information on monthly level to the book keeper.
 
 The columns of the resulting accounting.csv file are defined as follows:
 
@@ -95,4 +179,4 @@ The columns of the resulting accounting.csv file are defined as follows:
   - `Net Card Total`: Net Card income Mittagstisch
   - `Commission LoLa`: Commission for Café and Vermietung, i.e. w/o Mittagstisch
 
-`Gross Card LoLa` + `Net Card MiTi` = `Net Card Total` + `Commission LoLa`
+Where `Gross Card LoLa` + `Net Card MiTi` must be equal to `Net Card Total` + `Commission LoLa`.

@@ -1,8 +1,8 @@
 use std::fmt::{Debug, Formatter};
 use std::fs::File;
 use std::io::Write;
-use std::path::{Path, PathBuf};
-use std::{error::Error, fmt, io};
+use std::path::Path;
+use std::{error::Error, fmt};
 
 use polars::datatypes::DataType;
 use polars::frame::{DataFrame, UniqueKeepStrategy};
@@ -13,20 +13,18 @@ use polars::prelude::{
 };
 use serde::{Deserialize, Serialize};
 
-/// Prepares the intermediate working copy of the original file.
-/// Some derived fields are prepared in a best-effort approach.
-/// The values of the intermediate file can (manually) be optionally tweaked until it matches the expectations.
+/// Processes the sumup input files (sales-report and transaction report) to produce an intermediate file.
+/// Some derived fields are prepared based on heuristics in a best-effort approach (Topic, Owner, Purpose).
+/// The user may optionally redact those where the heuristics are not sufficient.
+/// The (potentially redacted) intermediate file will be the input for the exports.
 pub fn prepare(
-    input_path: &Path,
-    commission_path: &Path,
-    output_path: &Option<PathBuf>,
+    sales_report: &Path,
+    transaction_report: &Path,
+    output_path: &Path,
 ) -> Result<(), Box<dyn Error>> {
-    let mut df = read_data(input_path, commission_path)?
+    let mut df = process_input(sales_report, transaction_report)?
         .sort(["Date", "Time", "Transaction ID", "Description"], false)?;
-    let iowtr: Box<dyn Write> = match output_path {
-        Some(path) => Box::new(File::create(path)?),
-        None => Box::new(io::stdout()),
-    };
+    let iowtr: Box<dyn Write> = Box::new(File::create(output_path)?);
     CsvWriter::new(iowtr)
         .has_header(true)
         .with_delimiter(b';')
@@ -36,23 +34,23 @@ pub fn prepare(
     Ok(())
 }
 
-fn read_data(input_path: &Path, commission_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
-    let raw_df = CsvReader::from_path(input_path)?
+fn process_input(
+    sales_report: &Path,
+    transaction_report: &Path,
+) -> Result<DataFrame, Box<dyn Error>> {
+    let sr_df = CsvReader::from_path(sales_report)?
         .has_header(true)
         .with_delimiter(b',')
         .finish()?;
-    let commission_df = CsvReader::from_path(commission_path)?
+    let txr_df = CsvReader::from_path(transaction_report)?
         .has_header(true)
         .with_delimiter(b',')
         .finish()?;
-    build_df(&raw_df, &commission_df)
+    combine_input_dfs(&sr_df, &txr_df)
 }
 
 #[allow(clippy::too_many_lines)]
-fn build_df(
-    raw_df: &DataFrame,
-    raw_commission_df: &DataFrame,
-) -> Result<DataFrame, Box<dyn Error>> {
+fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame, Box<dyn Error>> {
     let raw_date_format = StrptimeOptions {
         format: Some("%d.%m.%y".into()),
         strict: true,
@@ -66,7 +64,7 @@ fn build_df(
         ..Default::default()
     };
 
-    let commission_df = raw_commission_df
+    let commission_df = txr_df
         .clone()
         .lazy()
         .filter(
@@ -80,9 +78,9 @@ fn build_df(
             col("Gebühr").alias("Commission"),
         ]);
 
-    let (refunded_ids_1, refunded_ids_2) = refunded_id_dfs(raw_df);
+    let (refunded_ids_1, refunded_ids_2) = refunded_id_dfs(sr_df);
 
-    let add_tips_df = raw_commission_df
+    let add_tips_df = txr_df
         .clone()
         .lazy()
         .filter(
@@ -96,7 +94,7 @@ fn build_df(
             col("Trinkgeldbetrag").fill_null(0.0).alias("TG"),
         ]);
 
-    let additional_tip_df = raw_df
+    let additional_tip_df = sr_df
         .clone()
         .lazy()
         .join(
@@ -126,7 +124,7 @@ fn build_df(
         .unique(None, UniqueKeepStrategy::First)
         .collect()?;
 
-    let union_df = raw_df.vstack(&additional_tip_df)?;
+    let union_df = sr_df.vstack(&additional_tip_df)?;
 
     let df = union_df
         .lazy()
@@ -194,9 +192,9 @@ fn build_df(
     Ok(df)
 }
 
-fn refunded_id_dfs(raw_df: &DataFrame) -> (LazyFrame, LazyFrame) {
-    let transaction_ids = raw_df.clone().lazy().select([col("Transaction ID")]);
-    let ids_of_refunded = raw_df
+fn refunded_id_dfs(sr_df: &DataFrame) -> (LazyFrame, LazyFrame) {
+    let transaction_ids = sr_df.clone().lazy().select([col("Transaction ID")]);
+    let ids_of_refunded = sr_df
         .clone()
         .lazy()
         .filter(col("Transaction refunded").is_not_null())
@@ -249,6 +247,7 @@ fn infer_purpose() -> Expr {
         .otherwise(lit(Purpose::Consumption.to_string()))
 }
 
+/// Record Type as defined in the sumup sales report
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 enum RecordType {
     Sales,
@@ -261,6 +260,7 @@ impl fmt::Display for RecordType {
     }
 }
 
+/// Payment method as defined in the sumup sales report
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub enum PaymentMethod {
     Cash,
@@ -273,10 +273,14 @@ impl fmt::Display for PaymentMethod {
     }
 }
 
+/// Derived Topics, based on time of day
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub enum Topic {
+    /// "Mittags-Tisch", managed by Verein Mittagstisch, includes the morning café
     MiTi,
+    /// Afternoon café, managed by LoLa
     Cafe,
+    /// ("Vermietung") Room rentals by third parties, managed by LoLa
     Verm,
 }
 
@@ -286,9 +290,12 @@ impl fmt::Display for Topic {
     }
 }
 
+/// Derived purpose
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub enum Purpose {
+    /// Sold products
     Consumption,
+    /// Optional tips
     Tip,
 }
 
@@ -298,9 +305,12 @@ impl fmt::Display for Purpose {
     }
 }
 
+/// Derived main owner of the income
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub enum Owner {
+    /// LoLa as main owner
     LoLa,
+    /// Mittags-Tisch as main owner
     MiTi,
 }
 
@@ -320,7 +330,7 @@ mod tests {
     use super::*;
 
     #[rstest]
-    fn test_collect_data() {
+    fn test_combine_input_dfs() {
         let df = df!(
             "Account" => &["a@b.ch"],
             "Date" => &["17.04.23"],
@@ -375,7 +385,7 @@ mod tests {
             "Comment" => &[AnyValue::Null, AnyValue::Null],
         );
 
-        let out = build_df(&df, &raw_commission_df).expect("should parse");
+        let out = combine_input_dfs(&df, &raw_commission_df).expect("should parse");
 
         assert_eq!(out, expected.expect("valid data frame"));
     }
