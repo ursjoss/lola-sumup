@@ -248,7 +248,8 @@ fn infer_owner() -> Expr {
                 .or(col("Description").str().contains(lit("Kinderteller"), true))
                 .or(col("Description").str().contains(lit("Menü"), true))
                 .or(col("Description").str().contains(lit("Dessert"), true))
-                .or(col("Description").str().contains(lit("Vorspeise"), true)),
+                .or(col("Description").str().contains(lit("Vorspeise"), true))
+                .or(col("Description").str().contains(lit("Trinkgeld"), true)),
         )
         .then(lit(Owner::MiTi.to_string()))
         .otherwise(lit(Owner::LoLa.to_string()))
@@ -398,7 +399,7 @@ mod tests {
             "Transaction refunded" => &["", ""],
             "Commission" => &[0.2259, 0.0141],
             "Topic" => &["MiTi", "MiTi"],
-            "Owner" => &["LoLa", "LoLa"],
+            "Owner" => &["LoLa", "MiTi"],
             "Purpose" => &["Consumption", "Tip"],
             "Comment" => &[AnyValue::Null, AnyValue::Null],
         );
