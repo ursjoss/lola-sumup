@@ -22,9 +22,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Prepares an enriched intermediate file from the original sumup sales report CSV and transaction report CSV.
+    /// Prepares an enriched intermediate file from the original SumUp sales report CSV and transaction report CSV.
     Prepare {
-        /// the month for which transactions are to be processed (<yyyymm>, e.g. 202305)
+        /// the month for which transactions are to be processed (`<yyyymm>`, e.g. 202305)
         #[arg(value_parser = month_in_range)]
         month: String,
 
