@@ -39,7 +39,6 @@ enum Commands {
     /// Consumes the (potentially redacted) intermediate file and exports to different special purpose CSV files.
     Export {
         /// the intermediate file to process
-        #[arg(short, long)]
         intermediate_file: PathBuf,
     },
 }

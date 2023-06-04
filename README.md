@@ -68,12 +68,14 @@ The `lola-sumup export` command:
 ```
 Consumes the (potentially redacted) intermediate file and exports to different special purpose CSV files
 
-Usage: lola-sumup export --intermediate-file <INTERMEDIATE_FILE>
+Usage: lola-sumup export <INTERMEDIATE_FILE>
+
+Arguments:
+  <INTERMEDIATE_FILE>  the intermediate file to process
 
 Options:
-  -i, --intermediate-file <INTERMEDIATE_FILE>  the intermediate file to process
-  -h, --help                                   Print help
-  -V, --version                                Print version
+  -h, --help     Print help
+  -V, --version  Print version
 ```
 
 It produces three exports (with month and execution timestamp accordingly):
