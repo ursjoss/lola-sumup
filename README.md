@@ -137,6 +137,9 @@ The columns of the resulting summary file are defined as follows:
   - `Net MiTi (MiTi) Card `: Net Income Mittagstisch Menus w/O commission paid by card [`Gross MiTi (MiTi) Card` - `MiTi_Commission`]
   - `Contribution LoLa`: Share MiTi from selling LoLa items [20% * (`Gross MiTi (LoLa)` - `LoLa_Commission_MiTi`)]
   - `Debt to MiTi`: Money from MiTi sales via Card w/o commission + contribution Lola sales + tips paid via Card [`Net MiTi (MiTi) Card` + `Contribution LoLa` + `MiTi_Tips_Card`]
+- Statistics relevant for Mittagstisch:
+  - `MealCount_Regular`: Number of regular meals per day
+  - `MealCount_Children`: Number of children meals per day
 
 ### Mittagstisch Report
 
@@ -168,6 +171,8 @@ The columns of the resulting file are defined as follows:
   - `Contribution LoLa`: 20% share on net income from selling lola items [0.2 * `Net Income LoLa`]
   - `Tips Due`: Copy of [`Tips Card`] further up
   - `Total Payment Due`: Total credit, i.e. [`Net Card MiTi` + `Contribution LoLa` + `Tips Card`, or `Debt to MiTi`]
+  - `MealCount_Regular`: Number of regular meals per day
+  - `MealCount_Children`: Number of children meals per day
 
 ### Accounting Report
 
