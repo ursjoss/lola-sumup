@@ -1,5 +1,6 @@
 use polars::prelude::*;
 
+use crate::export::export_summary::MitiMealType::{Children, Regular};
 use crate::prepare::{Owner, PaymentMethod, Purpose, Topic};
 
 /// Produces the Summary dataframe from the `raw_df` read from the file
@@ -71,8 +72,10 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     let miti_lola = price_by_date_for(miti_by(&Owner::LoLa), ldf.clone());
     let gross_miti_miti_card = price_by_date_for(
         owned_consumption_of(&Topic::MiTi, &Owner::MiTi, &PaymentMethod::Card),
-        ldf,
+        ldf.clone(),
     );
+    let meal_count_regular = meal_count(for_meals_of_type(&Regular), ldf.clone());
+    let meal_count_children = meal_count(for_meals_of_type(&Children), ldf);
 
     let with_cafe_cash = all_dates.join(cafe_cash, [col("Date")], [col("Date")], JoinType::Left);
     let with_cafe_card =
@@ -115,8 +118,20 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         [col("Date")],
         JoinType::Left,
     );
+    let with_meal_count_regular = with_gross_miti_miti_card.join(
+        meal_count_regular,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left,
+    );
+    let with_meal_count_children = with_meal_count_regular.join(
+        meal_count_children,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left,
+    );
 
-    with_gross_miti_miti_card
+    with_meal_count_children
         .with_column(
             (col("MiTi_Cash").fill_null(0.0) + col("MiTi_Card").fill_null(0.0))
                 .round(2)
@@ -267,6 +282,8 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Net MiTi (MiTi) Card"),
             col("Contribution LoLa"),
             col("Debt to MiTi"),
+            col("MealCount_Regular"),
+            col("MealCount_Children"),
         ])
         .collect()
 }
@@ -388,6 +405,72 @@ fn owned_consumption_of(
     (expr, alias)
 }
 
+/// Daily meal count
+fn meal_count(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> LazyFrame {
+    count_by_date_for(predicate_and_alias, ldf)
+}
+
+/// Aggregates daily values for a particular key figure, rounded to a two decimals
+fn count_by_date_for(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> LazyFrame {
+    let (predicate, alias) = predicate_and_alias;
+    ldf.filter(predicate)
+        .groupby(["Date"])
+        .agg([col("Quantity").sum()])
+        .select([
+            col("Date"),
+            col("Quantity").fill_null(0).alias(alias.as_str()),
+        ])
+        .sort(
+            "Date",
+            SortOptions {
+                descending: false,
+                nulls_last: false,
+                multithreaded: false,
+            },
+        )
+}
+
+/// Predicate and alias for `MealCount` of different types of meals
+fn for_meals_of_type(meal_type: &MitiMealType) -> (Expr, String) {
+    let expr = (col("Topic").eq(lit(Topic::MiTi.to_string())))
+        .and(col("Owner").eq(lit(Owner::MiTi.to_string())))
+        .and(meal_type.expr());
+    let alias = format!("MealCount_{}", meal_type.label());
+    (expr, alias)
+}
+
+trait FilterExpressionProvider {
+    fn expr(&self) -> Expr;
+    fn label(&self) -> &str;
+}
+
+// Types of Meals for statistics
+#[derive(Debug)]
+enum MitiMealType {
+    /// Regular Menus (Adults)
+    Regular,
+    /// Kids menus
+    Children,
+}
+
+impl FilterExpressionProvider for MitiMealType {
+    fn expr(&self) -> Expr {
+        match self {
+            Regular => col("Description")
+                .str()
+                .starts_with(lit("Hauptgang"))
+                .or(col("Description").str().starts_with(lit("Menü"))),
+            Children => col("Description").str().starts_with(lit("Kinder")),
+        }
+    }
+    fn label(&self) -> &str {
+        match self {
+            Regular => "Regular",
+            Children => "Children",
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use chrono::NaiveDate;
@@ -455,7 +538,7 @@ mod tests {
             "Receipt Number" => &["S20230000303"],
             "Payment Method" => &["Card"],
             "Quantity" => &[1],
-            "Description" => &["foo"],
+            "Description" => &["Hauptgang, normal"],
             "Currency" => &["CHF"],
             "Price (Gross)" => &[16.0],
             "Price (Net)" => &[16.0],
@@ -512,6 +595,8 @@ mod tests {
             "Net MiTi (MiTi) Card" => &[15.76],
             "Contribution LoLa" => &[0.0],
             "Debt to MiTi" => &[15.76],
+            "MealCount_Regular" => &[1],
+            "MealCount_Children" => &[None::<i32>],
         )
         .expect("valid data frame")
         .lazy()
