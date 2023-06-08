@@ -135,8 +135,11 @@ The columns of the resulting summary file are defined as follows:
   - `Gross MiTi (LoLa)`: Gross Income Mittagstisch with LoLa-items (Beverages...) (paid via Card or Cash)
   - `Gross MiTi (MiTi) Card`: Gross Income Mittagstisch from their own Menus (paid via Card only)
   - `Net MiTi (MiTi) Card `: Net Income Mittagstisch Menus w/o commission paid by card [`Gross MiTi (MiTi) Card` - `MiTi_Commission`]
-  - `Contribution LoLa`: Share MiTi from selling LoLa items [20% * (`Gross MiTi (LoLa)` - `LoLa_Commission_MiTi`)]
+  - `Net MiTi (LoLa) Card `: Net Income Mittagstisch with LoLa items w/o commission paid by card [`Net Card MiTi` - `Net MiTi (MiTi) Card`]
+  - `Net MiTi (LoLa)`: Net total income Mittagstisch with LoLa items w/o commission [`Gross MiTi (LoLa)` - `LoLa_Commission_MiTi`]
+  - `Contribution LoLa`: Share MiTi from selling LoLa items [20% * `Net MiTi (LoLa)`]
   - `Debt to MiTi`: Money from MiTi sales via Card w/o commission + contribution Lola sales + tips paid via Card [`Net MiTi (MiTi) Card` + `Contribution LoLa` + `MiTi_Tips_Card`]
+  - `Income LoLa MiTi`: Income LoLa from MiTi selling LoLa [`Net MiTi (LoLa) Card` - `Contribution LoLa`]
 - Statistics relevant for Mittagstisch:
   - `MealCount_Regular`: Number of regular meals per day
   - `MealCount_Children`: Number of children meals per day
@@ -183,13 +186,14 @@ The columns of the resulting accounting.csv file are defined as follows:
 - Generic columns
   - `Date`: [`Date`]
 - Debit statements in transitory account
-  - `Gross Card LoLa`: Total Gross Payments Card w/o MiTi
-  - `Net Card Total MiTi`: Net Card income + tips (card) Mittagstisch [`Net Card MiTi` + `MiTi_Tips_Card`]
-  - `Tips Card LoLa`: Tips LoLa paid via Card [`Tips_Card` - `MiTi_Tips_Card`]
+  - `Gross Card LoLa`: `10920/30200` - Total Gross Payments Card w/o MiTi
+  - `Net Card Total MiTi`: `10920/DLKMiti` - Net Card income + tips (card) Mittagstisch [`Net Card MiTi` + `MiTi_Tips_Card`]
+  - `Tips Card LoLa`: `10920/10910` - Tips LoLa paid via Card [`Tips_Card` - `MiTi_Tips_Card`]
 - Credit statements in transitory account
-  - `Payment SumUp`: Total Net Income plus tips paid via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]
-  - `Commission LoLa`: Commission for Café and Vermietung, i.e. w/o Mittagstisch
+  - `Payment SumUp`: `10110/10920` - Total Net Income plus tips paid via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]
+  - `Commission LoLa`: `68450/10920` - Commission for Café and Vermietung, i.e. w/o Mittagstisch
 - Debt to Mittagstisch
-  - `Debt to MiTi`: Amount LoLa owes to Mittagstisch (`Net Card MiTi` + `Contribution LoLa` + `Tips Due` or `Total Payment Due`)
+  - `Debt to MiTi`: `DLKMiti/10100` - Amount LoLa owes to Mittagstisch (`Net Card MiTi` + `Contribution LoLa` + `Tips Due` or `Total Payment Due`)
+  - `Income LoLa MiTi`: `DLKMiti/30200` - Income LoLa from MiTi selling LoLa [`Net MiTi (LoLa)` - `Contribution LoLa`]
 
 Where `Gross Card LoLa` + `Net Card MiTi` + `Tips Card LoLa` must be equal to `Payment Sumup` + `Commission LoLa`.

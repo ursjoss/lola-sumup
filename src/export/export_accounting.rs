@@ -29,6 +29,7 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Payment SumUp"),
             col("LoLa_Commission").alias("Commission LoLa"),
             col("Debt to MiTi"),
+            col("Income LoLa MiTi"),
         ])
         .collect()
 }
@@ -105,8 +106,13 @@ mod tests {
             "Gross MiTi (LoLa)" => &[Some(53.0)],
             "Gross MiTi (MiTi) Card" => &[Some(167.0)],
             "Net MiTi (MiTi) Card" => &[164.25],
+            "Net MiTi (LoLa) Card" => &[24.0],
+            "Net MiTi (LoLa)" => &[52.56],
             "Contribution LoLa" => &[10.51],
             "Debt to MiTi" => &[175.76],
+            "Income LoLa MiTi" => &[13.49],
+            "MealCount_Regular" => &[14],
+            "MealCount_Children" => &[3],
         )
         .expect("valid data frame");
         let expected = df!(
@@ -117,6 +123,7 @@ mod tests {
             "Payment SumUp" => &[220.21],
             "Commission LoLa" => &[Some(1.04)],
             "Debt to MiTi" => &[175.76],
+            "Income LoLa MiTi" => &[13.49],
         )
         .expect("valid data frame")
         .lazy()
