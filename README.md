@@ -134,7 +134,7 @@ The columns of the resulting summary file are defined as follows:
   - `Gross MiTi (MiTi)`: Gross Income Mittagstisch from their own Menus (paid via Card or Cash)
   - `Gross MiTi (LoLa)`: Gross Income Mittagstisch with LoLa-items (Beverages...) (paid via Card or Cash)
   - `Gross MiTi (MiTi) Card`: Gross Income Mittagstisch from their own Menus (paid via Card only)
-  - `Net MiTi (MiTi) Card `: Net Income Mittagstisch Menus w/O commission paid by card [`Gross MiTi (MiTi) Card` - `MiTi_Commission`]
+  - `Net MiTi (MiTi) Card `: Net Income Mittagstisch Menus w/o commission paid by card [`Gross MiTi (MiTi) Card` - `MiTi_Commission`]
   - `Contribution LoLa`: Share MiTi from selling LoLa items [20% * (`Gross MiTi (LoLa)` - `LoLa_Commission_MiTi`)]
   - `Debt to MiTi`: Money from MiTi sales via Card w/o commission + contribution Lola sales + tips paid via Card [`Net MiTi (MiTi) Card` + `Contribution LoLa` + `MiTi_Tips_Card`]
 - Statistics relevant for Mittagstisch:
