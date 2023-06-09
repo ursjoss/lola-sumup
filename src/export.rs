@@ -33,11 +33,14 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
     write_to_file(&mut df_acc, &path_with_prefix("accounting", month, ts))
 }
 
+/// returns two dataframes, one for summary/miti, the other for the accounting export.
 fn crunch_data(raw_df: DataFrame) -> Result<(DataFrame, DataFrame), Box<dyn Error>> {
     validation_topic_owner(&raw_df)?;
 
     let mut df = collect_data(raw_df)?;
+    print!("{df}");
     df.extend(&df.sum())?;
+    print!("{df}");
 
     let df_acc = gather_df_accounting(&df)?;
     validate_acc_constraint(&df_acc)?;
@@ -57,4 +60,45 @@ fn write_to_file(df: &mut DataFrame, path: &dyn AsRef<Path>) -> Result<(), Box<d
         .with_delimiter(b';')
         .finish(&mut df.clone())?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use polars::df;
+    use polars::prelude::{AnyValue, NamedFrom};
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    fn can_crunch_data_without_panic() {
+        let raw_df = df!(
+            "Account" => &["a@b.ch", "a@b.ch"],
+            "Date" => &["17.4.2023", "17.4.2023"],
+            "Time" => &["12:32:00", "12:32:00"],
+            "Type" => &["Sales", "Sales"],
+            "Transaction ID" => &["TEGUCXAGDE", "TEGUCXAGDE"],
+            "Receipt Number" => &["S20230000303", "S20230000303"],
+            "Payment Method" => &["Card", "Card"],
+            "Quantity" => &[1_i64, 1_i64],
+            "Description" => &["foo", "Trinkgeld"],
+            "Currency" => &["CHF", "CHF"],
+            "Price (Gross)" => &[16.0, 1.0],
+            "Price (Net)" => &[16.0, 1.0],
+            "Tax" => &[0.0, 0.0],
+            "Tax rate" => &["", ""],
+            "Transaction refunded" => &["", ""],
+            "Commission" => &[0.2259, 0.0141],
+            "Topic" => &["MiTi", "MiTi"],
+            "Owner" => &["LoLa", "MiTi"],
+            "Purpose" => &["Consumption", "Tip"],
+            "Comment" => &[AnyValue::Null, AnyValue::Null],
+        )
+        .expect("valid dataframe");
+
+        let (df1, df2) = crunch_data(raw_df).expect("should crunch");
+
+        assert_ne!(df1.shape().0, 0, "df1 does not contain records");
+        assert_ne!(df2.shape().0, 0, "df2 does not contain records");
+    }
 }
