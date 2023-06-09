@@ -23,13 +23,13 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
         )
         .select([
             col("Date"),
-            col("Gross Card LoLa"),
-            col("Net Card Total MiTi"),
-            col("Tips Card LoLa"),
+            col("Gross Card LoLa").alias("10920/30200"),
+            col("Net Card Total MiTi").alias("10920/20051"),
+            col("Tips Card LoLa").alias("10920/10910"),
             col("Payment SumUp"),
-            col("LoLa_Commission").alias("Commission LoLa"),
-            col("Debt to MiTi"),
-            col("Income LoLa MiTi"),
+            col("LoLa_Commission").alias("68450/10920"),
+            col("Debt to MiTi").alias("20051/10900"),
+            col("Income LoLa MiTi").alias("20051/30200"),
         ])
         .collect()
 }
@@ -117,13 +117,13 @@ mod tests {
         .expect("valid data frame");
         let expected = df!(
             "Date" => &[date],
-            "Gross Card LoLa" => &[32.0],
-            "Net Card Total MiTi" => &[189.25],
-            "Tips Card LoLa" => &[0.0],
+            "10920/30200" => &[32.0],
+            "10920/20051" => &[189.25],
+            "10920/10910" => &[0.0],
             "Payment SumUp" => &[220.21],
-            "Commission LoLa" => &[Some(1.04)],
-            "Debt to MiTi" => &[175.76],
-            "Income LoLa MiTi" => &[13.49],
+            "68450/10920" => &[Some(1.04)],
+            "20051/10900" => &[175.76],
+            "20051/30200" => &[13.49],
         )
         .expect("valid data frame")
         .lazy()
