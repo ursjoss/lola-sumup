@@ -34,30 +34,48 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
         .collect()
 }
 
-/// validates the accounting constraint net 0
 pub fn validate_acc_constraint(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
+    validate_acc_constraint_10920(df_acc)?;
+    validate_acc_constraint_20051(df_acc)
+}
+
+/// validates the transitory account 10920 nets to 0
+fn validate_acc_constraint_10920(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
+    let net_expr = col("Gross Card LoLa") + col("Net Card Total MiTi") + col("Tips Card LoLa")
+        - col("Payment SumUp")
+        - col("Commission LoLa");
+    validate_constraint(df_acc, net_expr, "10920")?
+}
+
+/// validates the transitory account 10920 nets to 0
+fn validate_acc_constraint_20051(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
+    let net_expr = col("Net Card Total MiTi") - col("Debt to MiTi") - col("Income LoLa MiTi");
+    validate_constraint(df_acc, net_expr, "20051")?
+}
+
+fn validate_constraint(
+    df_acc: &DataFrame,
+    net_expr: Expr,
+    account: &str,
+) -> Result<Result<(), Box<dyn Error>>, Box<dyn Error>> {
     let violations = df_acc
         .clone()
         .lazy()
-        .with_column(
-            (col("Gross Card LoLa") + col("Net Card Total MiTi") + col("Tips Card LoLa")
-                - col("Payment SumUp")
-                - col("Commission LoLa"))
-            .alias("Net"),
-        )
+        .with_column(net_expr.alias("Net"))
         .filter(col("Net").round(2).neq(lit(0.0)))
         .collect()?;
-    if violations.shape().0 > 0 {
+    Ok(if violations.shape().0 > 0 {
         let row_vec = violations.get_row(0).unwrap().0;
         let date = row_vec.get(0).unwrap().clone();
-        let net = row_vec.get(6).unwrap().clone();
-        Err(format!("Constraint violation for accounting export on {date}: net value is {net} instead of 0.0").into())
+        let net = row_vec.get(8).unwrap().clone();
+        Err(format!("Constraint violation for accounting export on {date}: net value of account {account} is {net} instead of 0.0").into())
     } else {
         Ok(())
-    }
+    })
 }
 
 #[cfg(test)]
+#[allow(clippy::too_many_arguments)]
 mod tests {
     use chrono::NaiveDate;
     use rstest::rstest;
@@ -134,19 +152,29 @@ mod tests {
     }
 
     #[rstest]
-    #[case(32.0, 189.25, 1.0, 221.21, 1.04, None)]
-    #[case(32.1, 189.25, 1.0, 221.21, 1.04, Some(0.1))]
-    #[case(32.0, 188.15, 1.0, 221.21, 1.04, Some(-1.1))]
-    #[case(32.0, 189.25, 0.5, 221.21, 1.04, Some(-0.5))]
-    #[case(32.0, 189.25, 1.0, 121.01, 1.04, Some(100.2))]
-    #[case(32.0, 189.25, 1.0, 221.21, 10.14, Some(-9.1))]
+    // fully valid case
+    #[case(32.0, 189.25, 1.0, 221.21, 1.04, 174.76, 14.49, None, "")]
+    // violations of account 10920
+    #[case(32.1, 189.25, 1.0, 221.21, 1.04, 174.76, 14.49, Some(0.1), "10920")]
+    #[case(32.0, 188.15, 1.0, 221.21, 1.04, 174.76, 14.49, Some(-1.1), "10920")]
+    #[case(32.0, 189.25, 0.5, 221.21, 1.04, 174.76, 14.49, Some(-0.5), "10920")]
+    #[case(32.0, 189.25, 1.0, 121.01, 1.04, 174.76, 14.49, Some(100.2), "10920")]
+    #[case(32.0, 189.25, 1.0, 221.21, 10.14, 174.76, 14.49, Some(-9.1), "10920")]
+    // violations of account 20051
+    #[case(32.0, 189.25, 1.0, 221.21, 1.04, 174.75, 14.49, Some(0.01), "20051")]
+    #[case(32.0, 189.25, 1.0, 221.21, 1.04, 174.77, 14.49, Some(-0.01), "20051")]
+    #[case(32.0, 189.25, 1.0, 221.21, 1.04, 174.76, 14.48, Some(0.01), "20051")]
+    #[case(32.0, 189.25, 1.0, 221.21, 1.04, 174.76, 14.50, Some(-0.01), "20051")]
     fn test_violations(
         #[case] gcl: f64,
         #[case] nctm: f64,
         #[case] tcl: f64,
         #[case] psu: f64,
         #[case] cl: f64,
+        #[case] dtm: f64,
+        #[case] ilm: f64,
         #[case] delta: Option<f64>,
+        #[case] account: &str,
     ) {
         let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
         let df = df!(
@@ -156,6 +184,8 @@ mod tests {
             "Tips Card LoLa" => &[tcl],
             "Payment SumUp" => &[psu],
             "Commission LoLa" => &[Some(cl)],
+            "Debt to MiTi" => &[dtm],
+            "Income LoLa MiTi" => &[ilm],
         )
         .expect("valid data frame");
         match validate_acc_constraint(&df) {
@@ -163,7 +193,7 @@ mod tests {
             Err(e) => match delta {
                 Some(d) => assert_eq!(
                     e.to_string(),
-                    format!("Constraint violation for accounting export on {date}: net value is {d} instead of 0.0")
+                    format!("Constraint violation for accounting export on {date}: net value of account {account} is {d} instead of 0.0")
                 ),
                 None => panic!("Would have expected delta on {date}."),
             },
