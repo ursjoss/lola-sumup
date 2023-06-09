@@ -248,6 +248,7 @@ fn infer_owner() -> Expr {
                 .or(col("Description").str().contains(lit("Kinderteller"), true))
                 .or(col("Description").str().contains(lit("Menü"), true))
                 .or(col("Description").str().contains(lit("Dessert"), true))
+                .or(col("Description").str().contains(lit("Praktika"), true))
                 .or(col("Description").str().contains(lit("Vorspeise"), true))
                 .or(col("Description").str().contains(lit("Trinkgeld"), true)),
         )
