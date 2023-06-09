@@ -41,15 +41,15 @@ pub fn validate_acc_constraint(df_acc: &DataFrame) -> Result<(), Box<dyn Error>>
 
 /// validates the transitory account 10920 nets to 0
 fn validate_acc_constraint_10920(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
-    let net_expr = col("Gross Card LoLa") + col("Net Card Total MiTi") + col("Tips Card LoLa")
+    let net_expr = col("10920/30200") + col("10920/20051") + col("10920/10910")
         - col("Payment SumUp")
-        - col("Commission LoLa");
+        - col("68450/10920");
     validate_constraint(df_acc, net_expr, "10920")?
 }
 
 /// validates the transitory account 10920 nets to 0
 fn validate_acc_constraint_20051(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
-    let net_expr = col("Net Card Total MiTi") - col("Debt to MiTi") - col("Income LoLa MiTi");
+    let net_expr = col("10920/20051") - col("20051/10900") - col("20051/30200");
     validate_constraint(df_acc, net_expr, "20051")?
 }
 
@@ -179,13 +179,13 @@ mod tests {
         let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
         let df = df!(
             "Date" => &[date],
-            "Gross Card LoLa" => &[gcl],
-            "Net Card Total MiTi" => &[nctm],
-            "Tips Card LoLa" => &[tcl],
+            "10920/30200" => &[gcl],
+            "10920/20051" => &[nctm],
+            "10920/10910" => &[tcl],
             "Payment SumUp" => &[psu],
-            "Commission LoLa" => &[Some(cl)],
-            "Debt to MiTi" => &[dtm],
-            "Income LoLa MiTi" => &[ilm],
+            "68450/10920" => &[Some(cl)],
+            "20051/10900" => &[dtm],
+            "20051/30200" => &[ilm],
         )
         .expect("valid data frame");
         match validate_acc_constraint(&df) {
@@ -195,7 +195,7 @@ mod tests {
                     e.to_string(),
                     format!("Constraint violation for accounting export on {date}: net value of account {account} is {d} instead of 0.0")
                 ),
-                None => panic!("Would have expected delta on {date}."),
+                None => panic!("Would have expected delta on {date} but not in fixture: {e}"),
             },
         }
     }
