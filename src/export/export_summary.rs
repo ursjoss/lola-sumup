@@ -228,11 +228,19 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .alias("Net MiTi (MiTi) Card"),
         )
         .with_column(
-            (lit(0.2)
-                * (col("Gross MiTi (LoLa)").fill_null(0.0)
-                    - col("LoLa_Commission_MiTi").fill_null(0.0)))
-            .round(2)
-            .alias("Contribution LoLa"),
+            (col("Net Card MiTi").fill_null(0.0) - col("Net MiTi (MiTi) Card").fill_null(0.0))
+                .round(2)
+                .alias("Net MiTi (LoLa) Card"),
+        )
+        .with_column(
+            (col("Gross MiTi (LoLa)").fill_null(0.0) - col("LoLa_Commission_MiTi").fill_null(0.0))
+                .round(2)
+                .alias("Net MiTi (LoLa)"),
+        )
+        .with_column(
+            (lit(0.2) * col("Net MiTi (LoLa)").fill_null(0.0))
+                .round(2)
+                .alias("Contribution LoLa"),
         )
         .with_column(
             (col("Net MiTi (MiTi) Card").fill_null(0.0)
@@ -240,6 +248,11 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 + col("MiTi_Tips_Card").fill_null(0.0))
             .round(2)
             .alias("Debt to MiTi"),
+        )
+        .with_column(
+            (col("Net MiTi (LoLa) Card").fill_null(0.0) - col("Contribution LoLa").fill_null(0.0))
+                .round(2)
+                .alias("Income LoLa MiTi"),
         )
         .select([
             col("Date"),
@@ -280,8 +293,11 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Gross MiTi (LoLa)"),
             col("Gross MiTi (MiTi) Card"),
             col("Net MiTi (MiTi) Card"),
+            col("Net MiTi (LoLa) Card"),
+            col("Net MiTi (LoLa)"),
             col("Contribution LoLa"),
             col("Debt to MiTi"),
+            col("Income LoLa MiTi"),
             col("MealCount_Regular"),
             col("MealCount_Children"),
         ])
@@ -530,71 +546,74 @@ mod tests {
     #[rstest]
     fn test_collect_data() {
         let df = df!(
-            "Account" => &["a@b.ch"],
-            "Date" => &["17.04.2023"],
-            "Time" => &["12:32:00"],
-            "Type" => &["Sales"],
-            "Transaction ID" => &["TEGUCXAGDE"],
-            "Receipt Number" => &["S20230000303"],
-            "Payment Method" => &["Card"],
-            "Quantity" => &[1],
-            "Description" => &["Hauptgang, normal"],
-            "Currency" => &["CHF"],
-            "Price (Gross)" => &[16.0],
-            "Price (Net)" => &[16.0],
-            "Tax" => &["0.0%"],
-            "Tax rate" => &[""],
-            "Transaction refunded" => &[""],
-            "Commission" =>[0.24123],
-            "Topic" => &["MiTi"],
-            "Owner" => &["MiTi"],
-            "Purpose" => &["Consumption"],
-            "Comment" => &[None::<String>],
+            "Account" => &["a@b.ch", "a@b.ch", "a@b.ch"],
+            "Date" => &["17.04.2023", "17.04.2023", "17.04.2023"],
+            "Time" => &["12:32:00", "12:33:00", "12:34:00"],
+            "Type" => &["Sales", "Sales", "Sales"],
+            "Transaction ID" => &["TEGUCXAGDE", "TEGUCXAGDF", "TEGUCXAGDG"],
+            "Receipt Number" => &["S20230000303", "S20230000304", "S20230000305"],
+            "Payment Method" => &["Card", "Cash", "Card"],
+            "Quantity" => &[1, 1, 4],
+            "Description" => &["Hauptgang, normal", "Kaffe", "Cappucino"],
+            "Currency" => &["CHF", "CHF", "CHF"],
+            "Price (Gross)" => &[16.0, 3.50, 20.0],
+            "Price (Net)" => &[16.0, 3.50, 20.0],
+            "Tax" => &["0.0%", "0.0%", "0.0%"],
+            "Tax rate" => &["", "", ""],
+            "Transaction refunded" => &["", "", ""],
+            "Commission" =>[0.24123, 0.0, 0.3],
+            "Topic" => &["MiTi", "MiTi", "MiTi"],
+            "Owner" => &["MiTi", "LoLa", "LoLa"],
+            "Purpose" => &["Consumption", "Consumption", "Consumption"],
+            "Comment" => &[None::<String>, None::<String>, None::<String>],
         )
         .expect("Misconfigured test data frame");
         let out = collect_data(df).expect("should be able to collect the data");
         let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
         let expected = df!(
             "Date" => &[date],
-            "MiTi_Cash" => &[None::<f64>],
-            "MiTi_Card" => &[Some(16.0)],
-            "MiTi Total" => &[16.0],
+            "MiTi_Cash" => &[Some(3.5)],
+            "MiTi_Card" => &[Some(36.0)],
+            "MiTi Total" => &[39.5],
             "Cafe_Cash" => &[None::<f64>],
             "Cafe_Card" => &[None::<f64>],
             "Cafe Total" => &[0.0],
             "Verm_Cash" => &[None::<f64>],
             "Verm_Card" => &[None::<f64>],
             "Verm Total" => &[0.0],
-            "Gross Cash" => &[0.0],
+            "Gross Cash" => &[3.5],
             "Tips_Cash" => &[None::<f64>],
-            "Sumup Cash" => &[0.0],
-            "Gross Card" => &[16.0],
+            "Sumup Cash" => &[3.5],
+            "Gross Card" => &[36.0],
             "Tips_Card" => &[None::<f64>],
-            "Sumup Card" => &[16.0],
-            "Gross Total" => &[16.0],
+            "Sumup Card" => &[36.0],
+            "Gross Total" => &[39.5],
             "Tips Total" => &[0.0],
-            "SumUp Total" => &[16.0],
-            "Gross Card MiTi" => &[16.0],
+            "SumUp Total" => &[39.5],
+            "Gross Card MiTi" => &[36.0],
             "MiTi_Commission" => &[Some(0.24)],
-            "Net Card MiTi" => &[15.76],
+            "Net Card MiTi" => &[35.76],
             "Gross Card LoLa" => &[0.0],
-            "LoLa_Commission" => &[None::<f64>],
-            "LoLa_Commission_MiTi" => &[None::<f64>],
-            "Net Card LoLa" => &[0.0],
-            "Gross Card Total" => &[16.0],
-            "Total Commission" => &[0.24],
-            "Net Card Total" => &[15.76],
+            "LoLa_Commission" => &[0.3],
+            "LoLa_Commission_MiTi" => &[0.3],
+            "Net Card LoLa" => &[-0.3],
+            "Gross Card Total" => &[36.0],
+            "Total Commission" => &[0.54],
+            "Net Card Total" => &[35.46],
             "MiTi_Tips_Cash" => &[None::<f64>],
             "MiTi_Tips_Card" => &[None::<f64>],
             "MiTi_Tips" => &[None::<f64>],
             "Cafe_Tips" => &[None::<f64>],
             "Verm_Tips" => &[None::<f64>],
             "Gross MiTi (MiTi)" => &[Some(16.0)],
-            "Gross MiTi (LoLa)" => &[None::<f64>],
+            "Gross MiTi (LoLa)" => &[Some(23.5)],
             "Gross MiTi (MiTi) Card" => &[Some(16.0)],
             "Net MiTi (MiTi) Card" => &[15.76],
-            "Contribution LoLa" => &[0.0],
-            "Debt to MiTi" => &[15.76],
+            "Net MiTi (LoLa) Card" => &[20.0],
+            "Net MiTi (LoLa)" => &[23.2],
+            "Contribution LoLa" => &[4.64],
+            "Debt to MiTi" => &[20.40],
+            "Income LoLa MiTi" => &[15.36],
             "MealCount_Regular" => &[1],
             "MealCount_Children" => &[None::<i32>],
         )
