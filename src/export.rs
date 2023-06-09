@@ -22,19 +22,26 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
         .with_delimiter(b';')
         .with_try_parse_dates(true)
         .finish()?;
-    validation_topic_owner(&raw_df)?;
 
-    let mut df = collect_data(raw_df)?;
-    df.extend(&df.sum())?;
+    let (mut df, mut df_acc) = crunch_data(raw_df)?;
 
     write_to_file(&mut df, &path_with_prefix("summary", month, ts))?;
     write_to_file(
         &mut gather_df_miti(&df)?,
         &path_with_prefix("mittagstisch", month, ts),
     )?;
-    let mut df_acc = gather_df_accounting(&df)?;
-    validate_acc_constraint(&df_acc)?;
     write_to_file(&mut df_acc, &path_with_prefix("accounting", month, ts))
+}
+
+fn crunch_data(raw_df: DataFrame) -> Result<(DataFrame, DataFrame), Box<dyn Error>> {
+    validation_topic_owner(&raw_df)?;
+
+    let mut df = collect_data(raw_df)?;
+    df.extend(&df.sum())?;
+
+    let df_acc = gather_df_accounting(&df)?;
+    validate_acc_constraint(&df_acc)?;
+    Ok((df, df_acc))
 }
 
 /// Constructs a path for a CSV file from `prefix`, `month` and `ts` (timestamp).
