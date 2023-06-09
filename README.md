@@ -185,15 +185,14 @@ The columns of the resulting accounting.csv file are defined as follows:
 
 - Generic columns
   - `Date`: [`Date`]
-- Debit statements in transitory account
-  - `Gross Card LoLa`: `10920/30200` - Total Gross Payments Card w/o MiTi
-  - `Net Card Total MiTi`: `10920/20051` - Net Card income + tips (card) Mittagstisch [`Net Card MiTi` + `MiTi_Tips_Card`]
-  - `Tips Card LoLa`: `10920/10910` - Tips LoLa paid via Card [`Tips_Card` - `MiTi_Tips_Card`]
-- Credit statements in transitory account
-  - `Payment SumUp`: `10110/10920` - Total Net Income plus tips paid via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]
-  - `Commission LoLa`: `68450/10920` - Commission for Café and Vermietung, i.e. w/o Mittagstisch
-- Debt to Mittagstisch
-  - `Debt to MiTi`: `20051/10900` - Amount LoLa owes to Mittagstisch (`Net Card MiTi` + `Contribution LoLa` + `Tips Due` or `Total Payment Due`)
-  - `Income LoLa MiTi`: `20051/30200` - Income LoLa from MiTi selling LoLa [`Net MiTi (LoLa)` - `Contribution LoLa`]
+  - `10920/30200`:  Total Gross Payments Card w/o MiTi [`Gross Card LoLa`]
+  - `10920/20051`: Net Card income + tips (card) Mittagstisch [`Net Card MiTi` + `MiTi_Tips_Card`]
+  - `10920/10910`: Tips LoLa paid via Card [`Tips_Card` - `MiTi_Tips_Card`]
+  - `Payment SumUp`: Total Net Income plus tips paid via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]. Will be posted `10110/10920`, but based on Account Statement, not this report.
+  - `68450/10920`:  Commission for Café and Vermietung, i.e. w/o Mittagstisch [`Commission LoLa`]
+  - `20051/10900`:  - Amount LoLa owes to Mittagstisch (`Net Card MiTi` + `Contribution LoLa` + `Tips Due` or `Total Payment Due`)
+  - `20051/30200`:  - Income LoLa from MiTi selling LoLa [`Net MiTi (LoLa)` - `Contribution LoLa` = `Income LoLa MiTi`]
 
-Where `Gross Card LoLa` + `Net Card MiTi` + `Tips Card LoLa` must be equal to `Payment Sumup` + `Commission LoLa`.
+Where the net sum for the transitory accounts must be 0.0, i.e.:
+- for `10920`: `10920/30200` + `10920/20051` + `10920/10910` - `Payment Sumup` - `68450/10920` = 0.0
+- for `20051`: `10920/20051` - `20051/10900` - `20051/30200` = 0.0
