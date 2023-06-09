@@ -238,19 +238,24 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .alias("Net MiTi (LoLa)"),
         )
         .with_column(
-            (lit(0.2) * col("Net MiTi (LoLa)").fill_null(0.0))
+            (lit(0.8) * col("Net MiTi (LoLa)").fill_null(0.0))
                 .round(2)
                 .alias("Contribution LoLa"),
         )
         .with_column(
+            (lit(0.2) * col("Net MiTi (LoLa)").fill_null(0.0))
+                .round(2)
+                .alias("Contribution MiTi"),
+        )
+        .with_column(
             (col("Net MiTi (MiTi) Card").fill_null(0.0)
-                + col("Contribution LoLa").fill_null(0.0)
+                + col("Contribution MiTi").fill_null(0.0)
                 + col("MiTi_Tips_Card").fill_null(0.0))
             .round(2)
             .alias("Debt to MiTi"),
         )
         .with_column(
-            (col("Net MiTi (LoLa) Card").fill_null(0.0) - col("Contribution LoLa").fill_null(0.0))
+            (col("Net MiTi (LoLa) Card").fill_null(0.0) - col("Contribution MiTi").fill_null(0.0))
                 .round(2)
                 .alias("Income LoLa MiTi"),
         )
@@ -296,6 +301,7 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Net MiTi (LoLa) Card"),
             col("Net MiTi (LoLa)"),
             col("Contribution LoLa"),
+            col("Contribution MiTi"),
             col("Debt to MiTi"),
             col("Income LoLa MiTi"),
             col("MealCount_Regular"),
@@ -611,7 +617,8 @@ mod tests {
             "Net MiTi (MiTi) Card" => &[15.76],
             "Net MiTi (LoLa) Card" => &[20.0],
             "Net MiTi (LoLa)" => &[23.2],
-            "Contribution LoLa" => &[4.64],
+            "Contribution LoLa" => &[18.56],
+            "Contribution MiTi" => &[4.64],
             "Debt to MiTi" => &[20.40],
             "Income LoLa MiTi" => &[15.36],
             "MealCount_Regular" => &[1],

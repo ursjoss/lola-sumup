@@ -38,9 +38,7 @@ fn crunch_data(raw_df: DataFrame) -> Result<(DataFrame, DataFrame), Box<dyn Erro
     validation_topic_owner(&raw_df)?;
 
     let mut df = collect_data(raw_df)?;
-    print!("{df}");
     df.extend(&df.sum())?;
-    print!("{df}");
 
     let df_acc = gather_df_accounting(&df)?;
     validate_acc_constraint(&df_acc)?;
