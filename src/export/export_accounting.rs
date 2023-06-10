@@ -23,7 +23,8 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
         )
         .select([
             col("Date"),
-            col("Gross Card LoLa").alias("10920/30200"),
+            col("Cafe_Card").alias("10920/30200"),
+            col("Verm_Card").alias("10920/30700"),
             col("Net Card Total MiTi").alias("10920/20051"),
             col("Tips Card LoLa").alias("10920/10910"),
             col("Payment SumUp"),
@@ -41,9 +42,10 @@ pub fn validate_acc_constraint(df_acc: &DataFrame) -> Result<(), Box<dyn Error>>
 
 /// validates the transitory account 10920 nets to 0
 fn validate_acc_constraint_10920(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
-    let net_expr = col("10920/30200") + col("10920/20051") + col("10920/10910")
-        - col("Payment SumUp")
-        - col("68450/10920");
+    let net_expr =
+        col("10920/30200") + col("10920/30700") + col("10920/20051") + col("10920/10910")
+            - col("Payment SumUp")
+            - col("68450/10920");
     validate_constraint(df_acc, net_expr, "10920")?
 }
 
@@ -67,7 +69,7 @@ fn validate_constraint(
     Ok(if violations.shape().0 > 0 {
         let row_vec = violations.get_row(0).unwrap().0;
         let date = row_vec.get(0).unwrap().clone();
-        let net = row_vec.get(8).unwrap().clone();
+        let net = row_vec.last().unwrap().clone();
         Err(format!("Constraint violation for accounting export on {date}: net value of account {account} is {net} instead of 0.0").into())
     } else {
         Ok(())
@@ -136,7 +138,8 @@ mod tests {
         .expect("valid data frame");
         let expected = df!(
             "Date" => &[date],
-            "10920/30200" => &[32.0],
+            "10920/30200" => &[20.0],
+            "10920/30700" => &[12.0],
             "10920/20051" => &[189.25],
             "10920/10910" => &[0.0],
             "Payment SumUp" => &[220.21],
@@ -154,20 +157,77 @@ mod tests {
 
     #[rstest]
     // fully valid case
-    #[case(32.0, 189.25, 1.0, 221.21, 1.04, 174.76, 14.49, None, "")]
+    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 174.76, 14.49, None, "")]
     // violations of account 10920
-    #[case(32.1, 189.25, 1.0, 221.21, 1.04, 174.76, 14.49, Some(0.1), "10920")]
-    #[case(32.0, 188.15, 1.0, 221.21, 1.04, 174.76, 14.49, Some(-1.1), "10920")]
-    #[case(32.0, 189.25, 0.5, 221.21, 1.04, 174.76, 14.49, Some(-0.5), "10920")]
-    #[case(32.0, 189.25, 1.0, 121.01, 1.04, 174.76, 14.49, Some(100.2), "10920")]
-    #[case(32.0, 189.25, 1.0, 221.21, 10.14, 174.76, 14.49, Some(-9.1), "10920")]
+    #[case(
+        20.1,
+        12.0,
+        189.25,
+        1.0,
+        221.21,
+        1.04,
+        174.76,
+        14.49,
+        Some(0.1),
+        "10920"
+    )]
+    #[case(
+        20.0,
+        12.1,
+        189.25,
+        1.0,
+        221.21,
+        1.04,
+        174.76,
+        14.49,
+        Some(0.1),
+        "10920"
+    )]
+    #[case(20.0, 12.0, 188.15, 1.0, 221.21, 1.04, 174.76, 14.49, Some(-1.1), "10920")]
+    #[case(20.0, 12.0, 189.25, 0.5, 221.21, 1.04, 174.76, 14.49, Some(-0.5), "10920")]
+    #[case(
+        20.0,
+        12.0,
+        189.25,
+        1.0,
+        121.01,
+        1.04,
+        174.76,
+        14.49,
+        Some(100.2),
+        "10920"
+    )]
+    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 10.14, 174.76, 14.49, Some(-9.1), "10920")]
     // violations of account 20051
-    #[case(32.0, 189.25, 1.0, 221.21, 1.04, 174.75, 14.49, Some(0.01), "20051")]
-    #[case(32.0, 189.25, 1.0, 221.21, 1.04, 174.77, 14.49, Some(-0.01), "20051")]
-    #[case(32.0, 189.25, 1.0, 221.21, 1.04, 174.76, 14.48, Some(0.01), "20051")]
-    #[case(32.0, 189.25, 1.0, 221.21, 1.04, 174.76, 14.50, Some(-0.01), "20051")]
+    #[case(
+        20.0,
+        12.0,
+        189.25,
+        1.0,
+        221.21,
+        1.04,
+        174.75,
+        14.49,
+        Some(0.01),
+        "20051"
+    )]
+    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 174.77, 14.49, Some(-0.01), "20051")]
+    #[case(
+        20.0,
+        12.0,
+        189.25,
+        1.0,
+        221.21,
+        1.04,
+        174.76,
+        14.48,
+        Some(0.01),
+        "20051"
+    )]
+    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 174.76, 14.50, Some(-0.01), "20051")]
     fn test_violations(
-        #[case] gcl: f64,
+        #[case] cc: f64,
+        #[case] vc: f64,
         #[case] nctm: f64,
         #[case] tcl: f64,
         #[case] psu: f64,
@@ -180,7 +240,8 @@ mod tests {
         let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
         let df = df!(
             "Date" => &[date],
-            "10920/30200" => &[gcl],
+            "10920/30200" => &[cc],
+            "10920/30700" => &[vc],
             "10920/20051" => &[nctm],
             "10920/10910" => &[tcl],
             "Payment SumUp" => &[psu],
