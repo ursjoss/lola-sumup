@@ -162,10 +162,10 @@ The columns of the resulting file are defined as follows:
   - `Anteil MiTi`: Gross income MiTi from selling LoLa items
   - `Anteil LoLa`: Gross income LoLa from MiTi selling LoLa items
 - Gross totals by payment method, differentiating income and tips:
-  - `Einnahmen barz.`: Income and Tips paid in Cash [`MiTi_Cash`]
-  - `TG barz.`: Total Tips paid in cash [`MiTi_Tips_Cash`]
-  - `Einnahmen Karte`: Income and Tips paid by Card [`MiTi_Card`]
-  - `TG Karte`: Total Tips paid by card [`MiTi_Tips_Card`]
+  - `Einnahmen barz.`: Income and Tips paid in Cash [`MiTi_Cash` + `MiTi_Tips_Cash` = `Total Cash`]
+  - `davon TG barz.`: Total Tips paid in cash [`MiTi_Tips_Cash`]
+  - `Einnahmen Karte`: Income and Tips paid by Card [`MiTi_Card` + `MiTi_Tips_Card` = `Total Card`]
+  - `davon TG Karte`: Total Tips paid by card [`MiTi_Tips_Card`]
   - `Total Einnahmen`: Total payments (Cash + Card including Tips) [`MiTi Total` + `Tips Total` = `Payment Total`]
 - Net totals:
   - `Kommission Bar`: Commission for LoLa payments [`LoLa_Commission_MiTi`]

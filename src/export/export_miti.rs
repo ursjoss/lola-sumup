@@ -5,6 +5,16 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
     df.clone()
         .lazy()
         .with_column(
+            (col("MiTi_Cash").fill_null(0.0) + col("MiTi_Tips_Cash").fill_null(0.0))
+                .round(2)
+                .alias("Total Cash"),
+        )
+        .with_column(
+            (col("MiTi_Card").fill_null(0.0) + col("MiTi_Tips_Card").fill_null(0.0))
+                .round(2)
+                .alias("Total Card"),
+        )
+        .with_column(
             (col("MiTi_Tips_Cash").fill_null(0.0) + col("MiTi_Tips_Card").fill_null(0.0))
                 .round(2)
                 .alias("Tips Total"),
@@ -37,10 +47,10 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Gross MiTi (LoLa)").alias("Total Bar"),
             col("Gross MiTi LoLa (LoLa)").alias("Anteil LoLa"),
             col("Gross MiTi LoLa (MiTi)").alias("Anteil MiTi"),
-            col("MiTi_Cash").alias("Einnahmen barz."),
-            col("MiTi_Tips_Cash").alias("TG barz."),
-            col("MiTi_Card").alias("Einnahmen Karte"),
-            col("MiTi_Tips_Card").alias("TG Karte"),
+            col("Total Cash").alias("Einnahmen barz."),
+            col("MiTi_Tips_Cash").alias("davon TG barz."),
+            col("Total Card").alias("Einnahmen Karte"),
+            col("MiTi_Tips_Card").alias("davon TG Karte"),
             col("Payment Total").alias("Total Einnahmen"),
             col("LoLa_Commission_MiTi").alias("Kommission Bar"),
             col("Net Income LoLa").alias("Netto Bar"),
@@ -119,10 +129,10 @@ mod tests {
             "Total Bar" => &[Some(53)],
             "Anteil LoLa" => &[Some(42.4)],
             "Anteil MiTi" => &[Some(10.6)],
-            "Einnahmen barz." => &[112.0],
-            "TG barz." => &[Some(0.5)],
-            "Einnahmen Karte" => &[191.0],
-            "TG Karte" => &[Some(1.0)],
+            "Einnahmen barz." => &[112.5],
+            "davon TG barz." => &[Some(0.5)],
+            "Einnahmen Karte" => &[192.0],
+            "davon TG Karte" => &[Some(1.0)],
             "Total Einnahmen" => &[304.5],
             "Kommission Bar" => &[0.44],
             "Netto Bar" => &[52.56],
