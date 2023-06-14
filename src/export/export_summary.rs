@@ -481,7 +481,8 @@ impl FilterExpressionProvider for MitiMealType {
             Regular => col("Description")
                 .str()
                 .starts_with(lit("Hauptgang"))
-                .or(col("Description").str().starts_with(lit("Menü"))),
+                .or(col("Description").str().starts_with(lit("Menü")))
+                .or(col("Description").str().starts_with(lit("Praktika"))),
             Children => col("Description").str().starts_with(lit("Kinder")),
         }
     }
