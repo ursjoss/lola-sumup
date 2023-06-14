@@ -192,8 +192,8 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `10920/10910`: Tips LoLa paid via Card [`Tips_Card` - `MiTi_Tips_Card`]
 - `Payment SumUp`: Total Net Income plus tips paid via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]. Will be posted `10110/10920`, but based on Account Statement, not this report.
 - `68450/10920`:  Commission for Café and Vermietung, i.e. w/o Mittagstisch [`Commission LoLa`]
-- `20051/10900`:  - Amount LoLa owes to Mittagstisch (`Net Card MiTi` + `Contribution LoLa` + `Tips Due` or `Total Payment Due`)
-- `20051/30200`:  - Income LoLa from MiTi selling LoLa [`Net MiTi (LoLa)` - `Contribution LoLa` = `Income LoLa MiTi`]
+- `20051/10900`:  Amount LoLa owes to Mittagstisch (`Net Card MiTi` + `Contribution LoLa` + `Tips Due` or `Total Payment Due`)
+- `20051/30200`:  Income LoLa from MiTi selling LoLa [`Net MiTi (LoLa)` - `Contribution LoLa` = `Income LoLa MiTi`]
 
 Where the net sum for the transitory accounts must be 0.0, i.e.:
 - for `10920`: `10920/30200` + `10920/30700` + `10920/20051` + `10920/10910` - `Payment Sumup` - `68450/10920` = 0.0
