@@ -41,8 +41,8 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
         )
         .select([
             col("Date").alias("Datum"),
-            col("MealCount_Children").alias("Kind"),
             col("MealCount_Regular").alias("Hauptgang"),
+            col("MealCount_Children").alias("Kind"),
             col("Gross MiTi (MiTi)").alias("Küche"),
             col("Gross MiTi (LoLa)").alias("Total Bar"),
             col("Gross MiTi LoLa (LoLa)").alias("Anteil LoLa"),
@@ -123,8 +123,8 @@ mod tests {
         .expect("valid data frame");
         let expected = df!(
             "Datum" => &[date],
-            "Kind" => &[1],
             "Hauptgang" => &[14],
+            "Kind" => &[1],
             "Küche" => &[Some(250.0)],
             "Total Bar" => &[Some(53)],
             "Anteil LoLa" => &[Some(42.4)],
