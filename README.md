@@ -166,7 +166,7 @@ The columns of the resulting file are defined as follows:
   - `davon TG barz.`: Total Tips paid in cash [`MiTi_Tips_Cash`]
   - `Einnahmen Karte`: Income and Tips paid by Card [`MiTi_Card` + `MiTi_Tips_Card` = `Total Card`]
   - `davon TG Karte`: Total Tips paid by card [`MiTi_Tips_Card`]
-  - `Total Einnahmen`: Total payments (Cash + Card including Tips) [`MiTi Total` + `Tips Total` = `Payment Total`]
+  - `Total Einnahmen (oT)`: Total payments (Cash + Card - w/o Tips) [`MiTi Total`]
 - Net totals:
   - `Kommission Bar`: Commission for LoLa payments [`LoLa_Commission_MiTi`]
   - `Netto Bar`: Net Income for selling LoLa items [`Gross Income LoLa` - `Commission LoLa`]
