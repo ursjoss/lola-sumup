@@ -154,8 +154,8 @@ The columns of the resulting file are defined as follows:
 - Generic columns
   - `Datum`: [`Date`]
 - Count of Menus
-  - `Kind`: Number of children meals per day [`MealCount_Children`]
   - `Hauptgang`: Number of regular meals per day [`MealCount_Regular`]
+  - `Kind`: Number of children meals per day [`MealCount_Children`]
 - Income by ownership (MiTi or LoLa):
   - `Küche`: Gross income from menus [`Gross MiTi (MiTi)`]
   - `Total Bar`: Gross income from selling LoLa items (Bar) [`Gross MiTi (LoLa)`]
