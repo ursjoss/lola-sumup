@@ -250,7 +250,12 @@ fn infer_owner() -> Expr {
                 .or(col("Description").str().contains(lit("Dessert"), true))
                 .or(col("Description").str().contains(lit("Praktika"), true))
                 .or(col("Description").str().contains(lit("Vorspeise"), true))
-                .or(col("Description").str().contains(lit("Trinkgeld"), true)),
+                .or(col("Description").str().contains(lit("Trinkgeld"), true))
+                .or(col("Description")
+                    .str()
+                    .strip(None)
+                    .eq(lit(""))
+                    .and(col("Price (Gross)").gt_eq(5.0))),
         )
         .then(lit(Owner::MiTi.to_string()))
         .otherwise(lit(Owner::LoLa.to_string()))
