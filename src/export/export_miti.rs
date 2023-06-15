@@ -5,6 +5,16 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
     df.clone()
         .lazy()
         .with_column(
+            (col("MiTi_Cash").fill_null(0.0) + col("MiTi_Tips_Cash").fill_null(0.0))
+                .round(2)
+                .alias("Total Cash"),
+        )
+        .with_column(
+            (col("MiTi_Card").fill_null(0.0) + col("MiTi_Tips_Card").fill_null(0.0))
+                .round(2)
+                .alias("Total Card"),
+        )
+        .with_column(
             (col("MiTi_Tips_Cash").fill_null(0.0) + col("MiTi_Tips_Card").fill_null(0.0))
                 .round(2)
                 .alias("Tips Total"),
@@ -31,17 +41,17 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
         )
         .select([
             col("Date").alias("Datum"),
-            col("MealCount_Children").alias("Kind"),
             col("MealCount_Regular").alias("Hauptgang"),
+            col("MealCount_Children").alias("Kind"),
             col("Gross MiTi (MiTi)").alias("Küche"),
             col("Gross MiTi (LoLa)").alias("Total Bar"),
             col("Gross MiTi LoLa (LoLa)").alias("Anteil LoLa"),
             col("Gross MiTi LoLa (MiTi)").alias("Anteil MiTi"),
-            col("MiTi_Cash").alias("Einnahmen barz."),
-            col("MiTi_Tips_Cash").alias("TG barz."),
-            col("MiTi_Card").alias("Einnahmen Karte"),
-            col("MiTi_Tips_Card").alias("TG Karte"),
-            col("Payment Total").alias("Total Einnahmen"),
+            col("Total Cash").alias("Einnahmen barz."),
+            col("MiTi_Tips_Cash").alias("davon TG barz."),
+            col("Total Card").alias("Einnahmen Karte"),
+            col("MiTi_Tips_Card").alias("davon TG Karte"),
+            col("MiTi Total").alias("Total Einnahmen (oT)"),
             col("LoLa_Commission_MiTi").alias("Kommission Bar"),
             col("Net Income LoLa").alias("Netto Bar"),
             col("Gross MiTi (MiTi) Card").alias("Karte MiTi"),
@@ -113,17 +123,17 @@ mod tests {
         .expect("valid data frame");
         let expected = df!(
             "Datum" => &[date],
-            "Kind" => &[1],
             "Hauptgang" => &[14],
+            "Kind" => &[1],
             "Küche" => &[Some(250.0)],
             "Total Bar" => &[Some(53)],
             "Anteil LoLa" => &[Some(42.4)],
             "Anteil MiTi" => &[Some(10.6)],
-            "Einnahmen barz." => &[112.0],
-            "TG barz." => &[Some(0.5)],
-            "Einnahmen Karte" => &[191.0],
-            "TG Karte" => &[Some(1.0)],
-            "Total Einnahmen" => &[304.5],
+            "Einnahmen barz." => &[112.5],
+            "davon TG barz." => &[Some(0.5)],
+            "Einnahmen Karte" => &[192.0],
+            "davon TG Karte" => &[Some(1.0)],
+            "Total Einnahmen (oT)" => &[303.0],
             "Kommission Bar" => &[0.44],
             "Netto Bar" => &[52.56],
             "Karte MiTi" => &[Some(167.0)],
