@@ -115,8 +115,8 @@ The columns of the resulting summary file are defined as follows:
   - `SumUp Total`: [`Gross Total` + `Tips Total`] or [`Sumup Cash` + `Sumup Card`]
 - Card related payments: Gross values, commission and net values by topic:
   - `Gross Card MiTi`: Gross Card Income Mittagstisch [`MiTi_Card`]
-  - `MiTi_Commission`: Card Commission for Mittagstisch
-  - `Net Card MiTi`: Net Card Income Mitagstisch [`Gross Card MiTi` - `MiTi_Commission`]
+  - `MiTi_Commission`: Card Commission for Mittagstisch (Menus and Tips)
+  - `Net Card MiTi`: Net Card Income Mittagstisch [`Gross Card MiTi` - `MiTi_Commission`] - commission on meals and tips are deducted
   - `Gross Card LoLa`: Gross Card Income LoLa (Café and Vermietungen) [`Cafe_Card` + `Verm_Card`]
   - `LoLa_Commission`: Card Commission for LoLa (including commission for items sold by MiTi)
   - `LoLa_Commission_MiTi`: Card Commission for LoLa items sold by MiTi only
@@ -133,7 +133,7 @@ The columns of the resulting summary file are defined as follows:
 - Split of Topic Mittagstisch by Owner:
   - `Gross MiTi (MiTi)`: Gross Income Mittagstisch from their own Menus (paid via Card or Cash)
   - `Gross MiTi (LoLa)`: Gross Income Mittagstisch with LoLa-items (Beverages...) (paid via Card or Cash)
-  - `Gross MiTi (MiTi) Card`: Gross Income Mittagstisch from their own Menus (paid via Card only)
+  - `Gross MiTi (MiTi) Card`: Gross Income Mittagstisch from their own Menus (paid via Card only) (not including tips)
   - `Net MiTi (MiTi) Card`: Net Income Mittagstisch Menus w/o commission paid by card [`Gross MiTi (MiTi) Card` - `MiTi_Commission`]
   - `Net MiTi (LoLa) Card`: Net Income Mittagstisch with LoLa items w/o commission paid by card [`Net Card MiTi` - `Net MiTi (MiTi) Card`]
   - `Net MiTi (LoLa)`: Net total income Mittagstisch with LoLa items w/o commission [`Gross MiTi (LoLa)` - `LoLa_Commission_MiTi`]
@@ -171,8 +171,8 @@ The columns of the resulting file are defined as follows:
   - `Kommission Bar`: Commission for LoLa payments [`LoLa_Commission_MiTi`]
   - `Netto Bar`: Net Income for selling LoLa items [`Gross Income LoLa` - `Commission LoLa`]
 - Card related income, gross, commission and net, income from selling LoLa and total credit:
-  - `Karte MiTi`: Gross income from menus paid by card [`Gross MiTi (MiTi) Card`]
-  - `Kommission MiTi`: Commission on `Gross Card MiTi` [`MiTi_Commission`]
+  - `Karte MiTi`: Gross income from menus paid by card (not including tips) [`Gross MiTi (MiTi) Card`]
+  - `Kommission MiTi`: Commission on `Gross Card MiTi` (including commission on tips) [`MiTi_Commission`]
   - `Netto Karte MiTi`: Net income from menus paid by card [`Net MiTi (MiTi) Card`]
   - `Netto Anteil LoLa`: 80% share on net income from selling lola items [0.8 * `Netto Bar`]
   - `Netto Anteil MiTi`: 20% share on net income from selling lola items [0.2 * `Netto Bar`]
