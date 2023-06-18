@@ -30,7 +30,7 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Payment SumUp"),
             col("LoLa_Commission").alias("68450/10920"),
             col("Debt to MiTi").alias("20051/10900"),
-            col("Income LoLa MiTi").alias("20051/30200"),
+            col("Income LoLa MiTi").alias("20051/30500"),
         ])
         .collect()
 }
@@ -51,7 +51,7 @@ fn validate_acc_constraint_10920(df_acc: &DataFrame) -> Result<(), Box<dyn Error
 
 /// validates the transitory account 10920 nets to 0
 fn validate_acc_constraint_20051(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
-    let net_expr = col("10920/20051") - col("20051/10900") - col("20051/30200");
+    let net_expr = col("10920/20051") - col("20051/10900") - col("20051/30500");
     validate_constraint(df_acc, net_expr, "20051")?
 }
 
@@ -125,13 +125,12 @@ mod tests {
             "Gross MiTi (MiTi)" => &[Some(250.0)],
             "Gross MiTi (LoLa)" => &[Some(53.0)],
             "Gross MiTi (MiTi) Card" => &[Some(167.0)],
-            "Net MiTi (MiTi) Card" => &[164.25],
-            "Net MiTi (LoLa) Card" => &[24.0],
+            "Gross MiTi (LoLa) Cash" => &[29.5],
             "Net MiTi (LoLa)" => &[52.56],
             "Contribution LoLa" => &[42.04],
             "Contribution MiTi" => &[10.51],
-            "Debt to MiTi" => &[175.76],
-            "Income LoLa MiTi" => &[13.49],
+            "Debt to MiTi" => &[136.26],
+            "Income LoLa MiTi" => &[42.49],
             "MealCount_Regular" => &[14],
             "MealCount_Children" => &[3],
         )
@@ -144,8 +143,8 @@ mod tests {
             "10920/10910" => &[0.0],
             "Payment SumUp" => &[220.21],
             "68450/10920" => &[Some(1.04)],
-            "20051/10900" => &[175.76],
-            "20051/30200" => &[13.49],
+            "20051/10900" => &[136.26],
+            "20051/30500" => &[42.49],
         )
         .expect("valid data frame")
         .lazy()
@@ -157,7 +156,7 @@ mod tests {
 
     #[rstest]
     // fully valid case
-    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 174.76, 14.49, None, "")]
+    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 146.76, 42.49, None, "")]
     // violations of account 10920
     #[case(
         20.1,
@@ -166,8 +165,8 @@ mod tests {
         1.0,
         221.21,
         1.04,
-        174.76,
-        14.49,
+        146.76,
+        42.49,
         Some(0.1),
         "10920"
     )]
@@ -178,13 +177,13 @@ mod tests {
         1.0,
         221.21,
         1.04,
-        174.76,
-        14.49,
+        146.76,
+        42.49,
         Some(0.1),
         "10920"
     )]
-    #[case(20.0, 12.0, 188.15, 1.0, 221.21, 1.04, 174.76, 14.49, Some(-1.1), "10920")]
-    #[case(20.0, 12.0, 189.25, 0.5, 221.21, 1.04, 174.76, 14.49, Some(-0.5), "10920")]
+    #[case(20.0, 12.0, 188.15, 1.0, 221.21, 1.04, 146.76, 42.49, Some(-1.1), "10920")]
+    #[case(20.0, 12.0, 189.25, 0.5, 221.21, 1.04, 146.76, 42.49, Some(-0.5), "10920")]
     #[case(
         20.0,
         12.0,
@@ -192,12 +191,12 @@ mod tests {
         1.0,
         121.01,
         1.04,
-        174.76,
-        14.49,
+        146.76,
+        42.49,
         Some(100.2),
         "10920"
     )]
-    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 10.14, 174.76, 14.49, Some(-9.1), "10920")]
+    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 10.14, 146.76, 42.49, Some(-9.1), "10920")]
     // violations of account 20051
     #[case(
         20.0,
@@ -206,12 +205,12 @@ mod tests {
         1.0,
         221.21,
         1.04,
-        174.75,
-        14.49,
+        146.75,
+        42.49,
         Some(0.01),
         "20051"
     )]
-    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 174.77, 14.49, Some(-0.01), "20051")]
+    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 146.77, 42.49, Some(-0.01), "20051")]
     #[case(
         20.0,
         12.0,
@@ -219,12 +218,12 @@ mod tests {
         1.0,
         221.21,
         1.04,
-        174.76,
-        14.48,
+        146.76,
+        42.48,
         Some(0.01),
         "20051"
     )]
-    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 174.76, 14.50, Some(-0.01), "20051")]
+    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 146.76, 42.50, Some(-0.01), "20051")]
     fn test_violations(
         #[case] cc: f64,
         #[case] vc: f64,
@@ -247,7 +246,7 @@ mod tests {
             "Payment SumUp" => &[psu],
             "68450/10920" => &[Some(cl)],
             "20051/10900" => &[dtm],
-            "20051/30200" => &[ilm],
+            "20051/30500" => &[ilm],
         )
         .expect("valid data frame");
         match validate_acc_constraint(&df) {

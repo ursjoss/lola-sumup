@@ -74,6 +74,10 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         owned_consumption_of(&Topic::MiTi, &Owner::MiTi, &PaymentMethod::Card),
         ldf.clone(),
     );
+    let net_miti_lola_cash = price_by_date_for(
+        owned_consumption_of(&Topic::MiTi, &Owner::LoLa, &PaymentMethod::Cash),
+        ldf.clone(),
+    );
     let meal_count_regular = meal_count(for_meals_of_type(&Regular), ldf.clone());
     let meal_count_children = meal_count(for_meals_of_type(&Children), ldf);
 
@@ -118,7 +122,13 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         [col("Date")],
         JoinType::Left,
     );
-    let with_meal_count_regular = with_gross_miti_miti_card.join(
+    let with_net_miti_lola_cash = with_gross_miti_miti_card.join(
+        net_miti_lola_cash,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left,
+    );
+    let with_meal_count_regular = with_net_miti_lola_cash.join(
         meal_count_regular,
         [col("Date")],
         [col("Date")],
@@ -228,11 +238,6 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .alias("Net MiTi (MiTi) Card"),
         )
         .with_column(
-            (col("Net Card MiTi").fill_null(0.0) - col("Net MiTi (MiTi) Card").fill_null(0.0))
-                .round(2)
-                .alias("Net MiTi (LoLa) Card"),
-        )
-        .with_column(
             (col("Gross MiTi (LoLa)").fill_null(0.0) - col("LoLa_Commission_MiTi").fill_null(0.0))
                 .round(2)
                 .alias("Net MiTi (LoLa)"),
@@ -250,12 +255,13 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         .with_column(
             (col("Net MiTi (MiTi) Card").fill_null(0.0)
                 + col("Contribution MiTi").fill_null(0.0)
-                + col("MiTi_Tips_Card").fill_null(0.0))
+                + col("MiTi_Tips_Card").fill_null(0.0)
+                - col("Gross MiTi (LoLa) Cash").fill_null(0.0))
             .round(2)
             .alias("Debt to MiTi"),
         )
         .with_column(
-            (col("Net MiTi (LoLa) Card").fill_null(0.0) - col("Contribution MiTi").fill_null(0.0))
+            (col("Gross MiTi (LoLa)").fill_null(0.0) - col("Contribution MiTi").fill_null(0.0))
                 .round(2)
                 .alias("Income LoLa MiTi"),
         )
@@ -297,8 +303,8 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Gross MiTi (MiTi)"),
             col("Gross MiTi (LoLa)"),
             col("Gross MiTi (MiTi) Card"),
+            col("Gross MiTi (LoLa) Cash"),
             col("Net MiTi (MiTi) Card"),
-            col("Net MiTi (LoLa) Card"),
             col("Net MiTi (LoLa)"),
             col("Contribution LoLa"),
             col("Contribution MiTi"),
@@ -385,6 +391,9 @@ fn tips_by_payment_method(payment_method: &PaymentMethod) -> (Expr, String) {
 }
 
 /// Predicate and alias for commission by `Owner`
+/// For `Owner::MiTi`: topic and owner `MiTi`
+/// For `Owner::LoLa`: Union of commission from `LoLa` sales via Mittagstisch
+///                    as well as from non-Mittagstisch related sales
 fn commission_by(owner: &Owner, miti_only: Option<bool>) -> (Expr, String) {
     let expr = match owner {
         Owner::MiTi => (col("Topic").eq(lit(Topic::MiTi.to_string())))
@@ -615,13 +624,13 @@ mod tests {
             "Gross MiTi (MiTi)" => &[Some(16.0)],
             "Gross MiTi (LoLa)" => &[Some(23.5)],
             "Gross MiTi (MiTi) Card" => &[Some(16.0)],
+            "Gross MiTi (LoLa) Cash" => &[3.5],
             "Net MiTi (MiTi) Card" => &[15.76],
-            "Net MiTi (LoLa) Card" => &[20.0],
             "Net MiTi (LoLa)" => &[23.2],
             "Contribution LoLa" => &[18.56],
             "Contribution MiTi" => &[4.64],
-            "Debt to MiTi" => &[20.40],
-            "Income LoLa MiTi" => &[15.36],
+            "Debt to MiTi" => &[16.90],
+            "Income LoLa MiTi" => &[18.86],
             "MealCount_Regular" => &[1],
             "MealCount_Children" => &[None::<i32>],
         )

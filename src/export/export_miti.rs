@@ -60,6 +60,7 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Contribution LoLa").alias("Netto Anteil LoLa"),
             col("Contribution MiTi").alias("Netto Anteil MiTi"),
             col("MiTi_Tips_Card").alias("Trinkgeld Karte"),
+            col("Gross MiTi (LoLa) Cash").alias("Bar barz."),
             col("Debt to MiTi").alias("Überweisung"),
         ])
         .collect()
@@ -116,7 +117,8 @@ mod tests {
             "Net MiTi (MiTi) Card" => &[164.25],
             "Contribution LoLa" => &[42.04],
             "Contribution MiTi" => &[10.51],
-            "Debt to MiTi" => &[175.76],
+            "Gross MiTi (LoLa) Cash" => &[29.50],
+            "Debt to MiTi" => &[136.26],
             "MealCount_Regular" => &[14],
             "MealCount_Children" => &[1],
         )
@@ -142,7 +144,8 @@ mod tests {
             "Netto Anteil LoLa" => &[42.04],
             "Netto Anteil MiTi" => &[10.51],
             "Trinkgeld Karte" => &[Some(1.0)],
-            "Überweisung" => &[175.76],
+            "Bar barz." => &[Some(29.50)],
+            "Überweisung" => &[136.26],
         )
         .expect("valid data frame")
         .lazy()
