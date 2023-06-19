@@ -159,8 +159,8 @@ The columns of the resulting file are defined as follows:
 - Income by ownership (MiTi or LoLa):
   - `Küche`: Gross income from menus [`Gross MiTi (MiTi)`]
   - `Total Bar`: Gross income from selling LoLa items (Bar) [`Gross MiTi (LoLa)`]
-  - `Anteil MiTi`: Gross income MiTi from selling LoLa items
   - `Anteil LoLa`: Gross income LoLa from MiTi selling LoLa items
+  - `Anteil MiTi`: Gross income MiTi from selling LoLa items
 - Gross totals by payment method, differentiating income and tips:
   - `Einnahmen barz.`: Income and Tips paid in Cash [`MiTi_Cash` + `MiTi_Tips_Cash`]
   - `davon TG barz.`: Total Tips paid in cash [`MiTi_Tips_Cash`]
