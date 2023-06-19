@@ -205,12 +205,12 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         .with_column(
             (col("Gross Cash").fill_null(0.0) + col("Tips_Cash").fill_null(0.0))
                 .round(2)
-                .alias("Sumup Cash"),
+                .alias("SumUp Cash"),
         )
         .with_column(
             (col("Gross Card").fill_null(0.0) + col("Tips_Card").fill_null(0.0))
                 .round(2)
-                .alias("Sumup Card"),
+                .alias("SumUp Card"),
         )
         .with_column(
             (col("Cafe Total").fill_null(0.0)
@@ -289,10 +289,10 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Verm Total"),
             col("Gross Cash"),
             col("Tips_Cash"),
-            col("Sumup Cash"),
+            col("SumUp Cash"),
             col("Gross Card"),
             col("Tips_Card"),
-            col("Sumup Card"),
+            col("SumUp Card"),
             col("Gross Total"),
             col("Tips Total"),
             col("SumUp Total"),
@@ -617,10 +617,10 @@ mod tests {
             "Verm Total" => &[0.0],
             "Gross Cash" => &[3.5],
             "Tips_Cash" => &[None::<f64>],
-            "Sumup Cash" => &[3.5],
+            "SumUp Cash" => &[3.5],
             "Gross Card" => &[36.0],
             "Tips_Card" => &[None::<f64>],
-            "Sumup Card" => &[36.0],
+            "SumUp Card" => &[36.0],
             "Gross Total" => &[39.5],
             "Tips Total" => &[0.0],
             "SumUp Total" => &[39.5],

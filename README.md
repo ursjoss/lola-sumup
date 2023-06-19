@@ -106,13 +106,13 @@ The columns of the resulting summary file are defined as follows:
 - Gross values consumption, Tips and total reported values by payment method:
   - `Gross Cash`: Total Gross Income Cash [`MiTi_Cash` + `Cafe_Cash` + `Verm_Cash`]
   - `Tips_Cash`: Tips Cash
-  - `Sumup Cash`: Total Income Cash [`Gross Cash` + `Tips_Cash`]
+  - `SumUp Cash`: Total Income Cash [`Gross Cash` + `Tips_Cash`]
   - `Gross Card`: Gross Gross Income Card [`MiTi_Card` + `Cafe_Card` + `Verm_Card`]
   - `Tips_Card`: Tips Card
-  - `Sumup Card`: Total Gross Income Card [`Gross Card` + `Tips_Card`]
+  - `SumUp Card`: Total Gross Income Card [`Gross Card` + `Tips_Card`]
   - `Gross Total`: Gross Total Income [`Gross Cash` + `Gross Card`]
   - `Tips Total`: [`Tips_Cash` + `Tips_Card`]
-  - `SumUp Total`: [`Gross Total` + `Tips Total`] or [`Sumup Cash` + `Sumup Card`]
+  - `SumUp Total`: [`Gross Total` + `Tips Total`] or [`SumUp Cash` + `SumUp Card`]
 - Card related payments: Gross values, commission and net values by topic:
   - `Gross Card MiTi`: Gross Card Income Mittagstisch [`MiTi_Card`] (including beverages LoLa)
   - `MiTi_Commission`: Card Commission for Mittagstisch (Menus and Tips, but not from LoLa beverages)
@@ -195,5 +195,5 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `20051/30500`:  Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi` = `Income LoLa MiTi`]
 
 Where the net sum for the transitory accounts must be 0.0, i.e.:
-- for `10920`: `10920/30200` + `10920/30700` + `10920/20051` + `10920/10910` - `Payment Sumup` - `68450/10920` = 0.0
+- for `10920`: `10920/30200` + `10920/30700` + `10920/20051` + `10920/10910` - `Payment SumUp` - `68450/10920` = 0.0
 - for `20051`: `10920/20051` - `20051/10900` - `20051/30200` = 0.0
