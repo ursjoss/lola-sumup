@@ -94,9 +94,9 @@ The columns of the resulting summary file are defined as follows:
 - Generic Columns:
   - `Date`: Calendar Date
 - Gross Values of consumptions of topics `MiTi`, `Cafe`, `Verm` (commissions not subtracted) split by payment method
-  - `MiTi_Cash`: Gross Cash Income Mitagstisch
-  - `MiTi_Card`: Gross Card Income Mitagstisch
-  - `MiTi Total`: Total Gross Income Mitagstisch [`MiTi_Cash` + `MiTi_Card`], also [`Gross MiTi (MiTi)` + `Gross MiTi (LoLa)`]
+  - `MiTi_Cash`: Gross Cash Income Mittagstisch (including LoLa beverages)
+  - `MiTi_Card`: Gross Card Income Mittagstisch (including LoLa beverages)
+  - `MiTi Total`: Total Gross Income Mittagstisch (including LoLa beverages) [`MiTi_Cash` + `MiTi_Card`], also [`Gross MiTi (MiTi)` + `Gross MiTi (LoLa)`]
   - `Cafe_Cash`: Gross Cash Income Café
   - `Cafe_Card`: Gross Card Income Café
   - `Cafe Total`: Total Gross Income Café [`Cafe_Cash` + `Cafe_Card`]
@@ -106,24 +106,25 @@ The columns of the resulting summary file are defined as follows:
 - Gross values consumption, Tips and total reported values by payment method:
   - `Gross Cash`: Total Gross Income Cash [`MiTi_Cash` + `Cafe_Cash` + `Verm_Cash`]
   - `Tips_Cash`: Tips Cash
-  - `Sumup Cash`: Total Income Cash [`Gross Cash` + `Tips_Cash`]
+  - `SumUp Cash`: Total Income Cash [`Gross Cash` + `Tips_Cash`]
   - `Gross Card`: Gross Gross Income Card [`MiTi_Card` + `Cafe_Card` + `Verm_Card`]
   - `Tips_Card`: Tips Card
-  - `Sumup Card`: Total Gross Income Card [`Gross Card` + `Tips_Card`]
+  - `SumUp Card`: Total Gross Income Card [`Gross Card` + `Tips_Card`]
   - `Gross Total`: Gross Total Income [`Gross Cash` + `Gross Card`]
   - `Tips Total`: [`Tips_Cash` + `Tips_Card`]
-  - `SumUp Total`: [`Gross Total` + `Tips Total`] or [`Sumup Cash` + `Sumup Card`]
+  - `SumUp Total`: [`Gross Total` + `Tips Total`] or [`SumUp Cash` + `SumUp Card`]
 - Card related payments: Gross values, commission and net values by topic:
-  - `Gross Card MiTi`: Gross Card Income Mittagstisch [`MiTi_Card`]
-  - `MiTi_Commission`: Card Commission for Mittagstisch (Menus and Tips)
-  - `Net Card MiTi`: Net Card Income Mittagstisch [`Gross Card MiTi` - `MiTi_Commission`] - commission on meals and tips are deducted
+  - `Gross Card MiTi`: Gross Card Income Mittagstisch [`MiTi_Card`] (including beverages LoLa)
+  - `MiTi_Commission`: Card Commission for Mittagstisch (Menus and Tips, but not from LoLa beverages)
+  - `Net Card MiTi`: Net Card Income Mittagstisch [`Gross Card MiTi` - `MiTi_Commission`] - commission on meals and tips are deducted, sales of beverages still included
   - `Gross Card LoLa`: Gross Card Income LoLa (Café and Vermietungen) [`Cafe_Card` + `Verm_Card`]
-  - `LoLa_Commission`: Card Commission for LoLa (including commission for items sold by MiTi)
-  - `LoLa_Commission_MiTi`: Card Commission for LoLa items sold by MiTi only
+  - `LoLa_Commission`: Card Commission for LoLa (non-Mittagstisch related, but including commission for items sold by MiTi)
+  - `LoLa_Commission_MiTi`: Card Commission for LoLa items sold by MiTi only, so not from Café or Rentals
   - `Net Card LoLa`: Net Card Income LoLa (Café and Vermietungen) [`Gross Card LoLa` - `LoLa_Commission`]
   - `Gross Card Total`: Gross Card Income (MiTi, Café, Vermietungen) [`Gross Card MiTi` + `Gross Card LoLa`]
   - `Total Commission`: Card Commission Total (MiTi, Café, Vermietungen) [`MiTi_Commission` + `LoLa_Commission`]
   - `Net Card Total`: Total Net Card Income [`Gross Card Total` - `Total Commission`]
+  - `Net Payment SumUp MiTi`: Total Net Payment SumUp Mittagstisch related (Net card payments concerning Mittagstisch (Sales from meals, tips, sales of LoLa goods paid via card)) [`MiTi_Card` + `MiTi_Tips_Card` - `MiTi_Total_Commission`]
 - Tips by Topic:
   - `MiTi_Tips_Cash`: Tips for Mittagstisch paid in Cash
   - `MiTi_Tips_Card`: Tips for Mittagstisch paid by Card
@@ -135,12 +136,11 @@ The columns of the resulting summary file are defined as follows:
   - `Gross MiTi (LoLa)`: Gross Income Mittagstisch with LoLa-items (Beverages...) (paid via Card or Cash)
   - `Gross MiTi (MiTi) Card`: Gross Income Mittagstisch from their own Menus (paid via Card only) (not including tips)
   - `Net MiTi (MiTi) Card`: Net Income Mittagstisch Menus w/o commission paid by card [`Gross MiTi (MiTi) Card` - `MiTi_Commission`]
-  - `Net MiTi (LoLa) Card`: Net Income Mittagstisch with LoLa items w/o commission paid by card [`Net Card MiTi` - `Net MiTi (MiTi) Card`]
   - `Net MiTi (LoLa)`: Net total income Mittagstisch with LoLa items w/o commission [`Gross MiTi (LoLa)` - `LoLa_Commission_MiTi`]
-  - `Contribution LoLa`: Share LoLa from selling LoLa items [80% * `Net MiTi (LoLa)`]
   - `Contribution MiTi`: Share MiTi from selling LoLa items [20% * `Net MiTi (LoLa)`]
-  - `Debt to MiTi`: Money from MiTi sales via Card w/o commission + contribution Lola sales + tips paid via Card [`Net MiTi (MiTi) Card` + `Contribution MiTi` + `MiTi_Tips_Card`]
-  - `Income LoLa MiTi`: Income LoLa from MiTi selling LoLa [`Net MiTi (LoLa) Card` - `Contribution LoLa`]
+  - `Net MiTi (LoLA) - Share LoLa`: 80% of Net total income Mittagstisch with LoLa items w/o commission [`Net MiTi (LoLa)` * 0.8]
+  - `Debt to MiTi`: Net amount LoLa needs to pay out to Mittagstisch [`Net Payment SumUp MiTi` - `Net MiTi (LoLA) - Share LoLa`]
+  - `Income LoLa MiTi`: Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi`]
 - Statistics relevant for Mittagstisch:
   - `MealCount_Regular`: Number of regular meals per day
   - `MealCount_Children`: Number of children meals per day
@@ -159,29 +159,28 @@ The columns of the resulting file are defined as follows:
 - Income by ownership (MiTi or LoLa):
   - `Küche`: Gross income from menus [`Gross MiTi (MiTi)`]
   - `Total Bar`: Gross income from selling LoLa items (Bar) [`Gross MiTi (LoLa)`]
-  - `Anteil MiTi`: Gross income MiTi from selling LoLa items
   - `Anteil LoLa`: Gross income LoLa from MiTi selling LoLa items
+  - `Anteil MiTi`: Gross income MiTi from selling LoLa items
 - Gross totals by payment method, differentiating income and tips:
-  - `Einnahmen barz.`: Income and Tips paid in Cash [`MiTi_Cash` + `MiTi_Tips_Cash` = `Total Cash`]
+  - `Einnahmen barz.`: Income and Tips paid in Cash [`MiTi_Cash` + `MiTi_Tips_Cash`]
   - `davon TG barz.`: Total Tips paid in cash [`MiTi_Tips_Cash`]
-  - `Einnahmen Karte`: Income and Tips paid by Card [`MiTi_Card` + `MiTi_Tips_Card` = `Total Card`]
+  - `Einnahmen Karte`: Income and Tips paid by Card [`MiTi_Card` + `MiTi_Tips_Card`]
   - `davon TG Karte`: Total Tips paid by card [`MiTi_Tips_Card`]
   - `Total Einnahmen (oT)`: Total payments (Cash + Card - w/o Tips) [`MiTi Total`]
 - Net totals:
   - `Kommission Bar`: Commission for LoLa payments [`LoLa_Commission_MiTi`]
-  - `Netto Bar`: Net Income for selling LoLa items [`Gross Income LoLa` - `Commission LoLa`]
-- Card related income, gross, commission and net, income from selling LoLa and total credit:
+  - `Netto Bar`: Net Income for selling LoLa items [`Total Bar` - `Kommission Bar`]
   - `Karte MiTi`: Gross income from menus paid by card (not including tips) [`Gross MiTi (MiTi) Card`]
   - `Kommission MiTi`: Commission on `Gross Card MiTi` (including commission on tips) [`MiTi_Commission`]
   - `Netto Karte MiTi`: Net income from menus paid by card [`Net MiTi (MiTi) Card`]
-  - `Netto Anteil LoLa`: 80% share on net income from selling lola items [0.8 * `Netto Bar`]
-  - `Netto Anteil MiTi`: 20% share on net income from selling lola items [0.2 * `Netto Bar`]
-  - `Trinkgeld Karte`: Copy of [`Tips Card`] further up
-  - `Überweisung`: Total credit, i.e. [`Netto Karte MiTi` + `Netto Anteil MiTi` + `Trinkgeld Karte`, or `Debt to MiTi`]
+- Netting with LoLa
+  - `Net Total Karte`: Net card payments concerning Mittagstisch (Sales from meals, tips, sales of LoLa goods paid via card) [`Net Paymnet SumUp MiTi`]
+  - `Verkauf LoLa (80%)` 80% of net sales lola goods [-`Net MiTi (LoLA) - Share LoLa`]
+  - `Überweisung`: Net Payment LoLa to Mittagstisch [`Debt to MiTi`]
 
 ### Accounting Report
 
-The purpose of the accounting export is to provide the relevant information on monthly level to the book keeper.
+The purpose of the accounting export is to provide the relevant information on monthly level to the book-keeper.
 
 The columns of the resulting accounting.csv file are defined as follows:
 
@@ -192,9 +191,9 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `10920/10910`: Tips LoLa paid via Card [`Tips_Card` - `MiTi_Tips_Card`]
 - `Payment SumUp`: Total Net Income plus tips paid via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]. Will be posted `10110/10920`, but based on Account Statement, not this report.
 - `68450/10920`:  Commission for Café and Vermietung, i.e. w/o Mittagstisch [`Commission LoLa`]
-- `20051/10900`:  Amount LoLa owes to Mittagstisch (`Net Card MiTi` + `Contribution LoLa` + `Tips Due` or `Total Payment Due`)
-- `20051/30200`:  Income LoLa from MiTi selling LoLa [`Net MiTi (LoLa)` - `Contribution LoLa` = `Income LoLa MiTi`]
+- `20051/10900`:  Amount LoLa owes to Mittagstisch (`Debt to MiTi`)
+- `20051/30500`:  Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi` = `Income LoLa MiTi`]
 
-Where the net sum for the transitory accounts must be 0.0, i.e.:
-- for `10920`: `10920/30200` + `10920/30700` + `10920/20051` + `10920/10910` - `Payment Sumup` - `68450/10920` = 0.0
-- for `20051`: `10920/20051` - `20051/10900` - `20051/30200` = 0.0
+Where the absolute net sum for the transitory accounts must not be > 0.01, i.e.:
+- for `10920`: abs(`10920/30200` + `10920/30700` + `10920/20051` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.02
+- for `20051`: abs(`10920/20051` - `20051/10900` - `20051/30200`) < 0.02

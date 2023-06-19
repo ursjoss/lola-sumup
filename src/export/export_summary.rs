@@ -65,6 +65,7 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     let tips_cash = price_by_date_for(tips_by_payment_method(&PaymentMethod::Cash), ldf.clone());
     let tips_card = price_by_date_for(tips_by_payment_method(&PaymentMethod::Card), ldf.clone());
     let miti_comm = commission_by_date_for(commission_by(&Owner::MiTi, None), ldf.clone());
+    let miti_total_comm = commission_by_date_for(commission_by_topic(&Topic::MiTi), ldf.clone());
     let lola_comm = commission_by_date_for(commission_by(&Owner::LoLa, Some(false)), ldf.clone());
     let lola_comm_miti =
         commission_by_date_for(commission_by(&Owner::LoLa, Some(true)), ldf.clone());
@@ -74,6 +75,11 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         owned_consumption_of(&Topic::MiTi, &Owner::MiTi, &PaymentMethod::Card),
         ldf.clone(),
     );
+    let net_miti_lola_cash = price_by_date_for(
+        owned_consumption_of(&Topic::MiTi, &Owner::LoLa, &PaymentMethod::Cash),
+        ldf.clone(),
+    );
+
     let meal_count_regular = meal_count(for_meals_of_type(&Regular), ldf.clone());
     let meal_count_children = meal_count(for_meals_of_type(&Children), ldf);
 
@@ -112,13 +118,25 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         with_tips_cash.join(tips_card, [col("Date")], [col("Date")], JoinType::Left);
     let with_lola_comm_miti =
         with_tips_card.join(lola_comm_miti, [col("Date")], [col("Date")], JoinType::Left);
-    let with_gross_miti_miti_card = with_lola_comm_miti.join(
+    let with_miti_total_commission = with_lola_comm_miti.join(
+        miti_total_comm,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left,
+    );
+    let with_gross_miti_miti_card = with_miti_total_commission.join(
         gross_miti_miti_card,
         [col("Date")],
         [col("Date")],
         JoinType::Left,
     );
-    let with_meal_count_regular = with_gross_miti_miti_card.join(
+    let with_net_miti_lola_cash = with_gross_miti_miti_card.join(
+        net_miti_lola_cash,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left,
+    );
+    let with_meal_count_regular = with_net_miti_lola_cash.join(
         meal_count_regular,
         [col("Date")],
         [col("Date")],
@@ -187,12 +205,12 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         .with_column(
             (col("Gross Cash").fill_null(0.0) + col("Tips_Cash").fill_null(0.0))
                 .round(2)
-                .alias("Sumup Cash"),
+                .alias("SumUp Cash"),
         )
         .with_column(
             (col("Gross Card").fill_null(0.0) + col("Tips_Card").fill_null(0.0))
                 .round(2)
-                .alias("Sumup Card"),
+                .alias("SumUp Card"),
         )
         .with_column(
             (col("Cafe Total").fill_null(0.0)
@@ -223,14 +241,15 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .alias("Net Card Total"),
         )
         .with_column(
+            (col("MiTi_Card").fill_null(0.0) + col("MiTi_Tips_Card").fill_null(0.0)
+                - col("MiTi_Total_Commission").fill_null(0.0))
+            .round(2)
+            .alias("Net Payment SumUp MiTi"),
+        )
+        .with_column(
             (col("Gross MiTi (MiTi) Card").fill_null(0.0) - col("MiTi_Commission").fill_null(0.0))
                 .round(2)
                 .alias("Net MiTi (MiTi) Card"),
-        )
-        .with_column(
-            (col("Net Card MiTi").fill_null(0.0) - col("Net MiTi (MiTi) Card").fill_null(0.0))
-                .round(2)
-                .alias("Net MiTi (LoLa) Card"),
         )
         .with_column(
             (col("Gross MiTi (LoLa)").fill_null(0.0) - col("LoLa_Commission_MiTi").fill_null(0.0))
@@ -238,26 +257,24 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .alias("Net MiTi (LoLa)"),
         )
         .with_column(
-            (lit(0.8) * col("Net MiTi (LoLa)").fill_null(0.0))
-                .round(2)
-                .alias("Contribution LoLa"),
-        )
-        .with_column(
             (lit(0.2) * col("Net MiTi (LoLa)").fill_null(0.0))
                 .round(2)
                 .alias("Contribution MiTi"),
         )
         .with_column(
-            (col("Net MiTi (MiTi) Card").fill_null(0.0)
-                + col("Contribution MiTi").fill_null(0.0)
-                + col("MiTi_Tips_Card").fill_null(0.0))
-            .round(2)
-            .alias("Debt to MiTi"),
-        )
-        .with_column(
-            (col("Net MiTi (LoLa) Card").fill_null(0.0) - col("Contribution MiTi").fill_null(0.0))
+            (col("Gross MiTi (LoLa)").fill_null(0.0) - col("Contribution MiTi").fill_null(0.0))
                 .round(2)
                 .alias("Income LoLa MiTi"),
+        )
+        .with_column(
+            (col("Net MiTi (LoLa)") * lit(0.8))
+                .round(2)
+                .alias("Net MiTi (LoLA) - Share LoLa"),
+        )
+        .with_column(
+            (col("Net Payment SumUp MiTi") - col("Net MiTi (LoLA) - Share LoLa"))
+                .round(2)
+                .alias("Debt to MiTi"),
         )
         .select([
             col("Date"),
@@ -272,10 +289,10 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Verm Total"),
             col("Gross Cash"),
             col("Tips_Cash"),
-            col("Sumup Cash"),
+            col("SumUp Cash"),
             col("Gross Card"),
             col("Tips_Card"),
-            col("Sumup Card"),
+            col("SumUp Card"),
             col("Gross Total"),
             col("Tips Total"),
             col("SumUp Total"),
@@ -289,6 +306,7 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Gross Card").alias("Gross Card Total"),
             col("Total Commission"),
             col("Net Card Total"),
+            col("Net Payment SumUp MiTi"),
             col("MiTi_Tips_Cash"),
             col("MiTi_Tips_Card"),
             col("MiTi_Tips"),
@@ -298,10 +316,9 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Gross MiTi (LoLa)"),
             col("Gross MiTi (MiTi) Card"),
             col("Net MiTi (MiTi) Card"),
-            col("Net MiTi (LoLa) Card"),
             col("Net MiTi (LoLa)"),
-            col("Contribution LoLa"),
             col("Contribution MiTi"),
+            col("Net MiTi (LoLA) - Share LoLa"),
             col("Debt to MiTi"),
             col("Income LoLa MiTi"),
             col("MealCount_Regular"),
@@ -385,6 +402,9 @@ fn tips_by_payment_method(payment_method: &PaymentMethod) -> (Expr, String) {
 }
 
 /// Predicate and alias for commission by `Owner`
+/// For `Owner::MiTi`: topic and owner `MiTi`
+/// For `Owner::LoLa`: Union of commission from `LoLa` sales via Mittagstisch
+///                    as well as from non-Mittagstisch related sales
 fn commission_by(owner: &Owner, miti_only: Option<bool>) -> (Expr, String) {
     let expr = match owner {
         Owner::MiTi => (col("Topic").eq(lit(Topic::MiTi.to_string())))
@@ -401,6 +421,13 @@ fn commission_by(owner: &Owner, miti_only: Option<bool>) -> (Expr, String) {
         None | Some(false) => format!("{owner}_Commission"),
         Some(true) => format!("{owner}_Commission_MiTi"),
     };
+    (expr, alias)
+}
+
+/// Total commission for topic
+fn commission_by_topic(topic: &Topic) -> (Expr, String) {
+    let expr = col("Topic").eq(lit(topic.to_string()));
+    let alias = format!("{topic}_Total_Commission");
     (expr, alias)
 }
 
@@ -590,10 +617,10 @@ mod tests {
             "Verm Total" => &[0.0],
             "Gross Cash" => &[3.5],
             "Tips_Cash" => &[None::<f64>],
-            "Sumup Cash" => &[3.5],
+            "SumUp Cash" => &[3.5],
             "Gross Card" => &[36.0],
             "Tips_Card" => &[None::<f64>],
-            "Sumup Card" => &[36.0],
+            "SumUp Card" => &[36.0],
             "Gross Total" => &[39.5],
             "Tips Total" => &[0.0],
             "SumUp Total" => &[39.5],
@@ -607,6 +634,7 @@ mod tests {
             "Gross Card Total" => &[36.0],
             "Total Commission" => &[0.54],
             "Net Card Total" => &[35.46],
+            "Net Payment SumUp MiTi" => &[35.46],
             "MiTi_Tips_Cash" => &[None::<f64>],
             "MiTi_Tips_Card" => &[None::<f64>],
             "MiTi_Tips" => &[None::<f64>],
@@ -616,12 +644,11 @@ mod tests {
             "Gross MiTi (LoLa)" => &[Some(23.5)],
             "Gross MiTi (MiTi) Card" => &[Some(16.0)],
             "Net MiTi (MiTi) Card" => &[15.76],
-            "Net MiTi (LoLa) Card" => &[20.0],
             "Net MiTi (LoLa)" => &[23.2],
-            "Contribution LoLa" => &[18.56],
             "Contribution MiTi" => &[4.64],
-            "Debt to MiTi" => &[20.40],
-            "Income LoLa MiTi" => &[15.36],
+            "Net MiTi (LoLA) - Share LoLa" => &[18.56],
+            "Debt to MiTi" => &[16.9],
+            "Income LoLa MiTi" => &[18.86],
             "MealCount_Regular" => &[1],
             "MealCount_Children" => &[None::<i32>],
         )
