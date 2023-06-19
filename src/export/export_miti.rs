@@ -39,6 +39,11 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
                 .round(2)
                 .alias("Gross MiTi LoLa (MiTi)"),
         )
+        .with_column(
+            (col("Net MiTi (LoLA) - Share LoLa").fill_null(0.0) * lit(-1))
+                .round(2)
+                .alias("Verkauf LoLa (80%)"),
+        )
         .select([
             col("Date").alias("Datum"),
             col("MealCount_Regular").alias("Hauptgang"),
@@ -57,10 +62,8 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Gross MiTi (MiTi) Card").alias("Karte MiTi"),
             col("MiTi_Commission").alias("Kommission MiTi"),
             col("Net MiTi (MiTi) Card").alias("Netto Karte MiTi"),
-            col("Contribution LoLa").alias("Netto Anteil LoLa"),
-            col("Contribution MiTi").alias("Netto Anteil MiTi"),
-            col("MiTi_Tips_Card").alias("Trinkgeld Karte"),
-            col("Gross MiTi (LoLa) Cash").alias("Bar barz."),
+            col("Net Payment SumUp MiTi").alias("Net Total Karte"),
+            col("Verkauf LoLa (80%)"),
             col("Debt to MiTi").alias("Überweisung"),
         ])
         .collect()
@@ -75,11 +78,11 @@ mod tests {
 
     #[rstest]
     fn test_gather_df_miti() {
-        let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
+        let date = NaiveDate::parse_from_str("24.3.2023", "%d.%m.%Y").expect("valid date");
         let df_summary = df!(
             "Date" => &[date],
             "MiTi_Cash" => &[Some(112.0)],
-            "MiTi_Card" => &[Some(191.0 )],
+            "MiTi_Card" => &[Some(191.0)],
             "MiTi Total" => &[303.0],
             "Cafe_Cash" => &[Some(29.5)],
             "Cafe_Card" => &[Some(20)],
@@ -106,6 +109,7 @@ mod tests {
             "Gross Card Total" => &[223],
             "Total Commission" => &[3.79],
             "Net Card Total" => &[219.21],
+            "Net Payment SumUp MiTi" => &[187.81],
             "MiTi_Tips_Cash" => &[Some(0.5)],
             "MiTi_Tips_Card" => &[Some(1.0)],
             "MiTi_Tips" => &[Some(1.5)],
@@ -115,10 +119,11 @@ mod tests {
             "Gross MiTi (LoLa)" => &[Some(53.0)],
             "Gross MiTi (MiTi) Card" => &[Some(167.0)],
             "Net MiTi (MiTi) Card" => &[164.25],
-            "Contribution LoLa" => &[42.04],
+            "Net MiTi (LoLa)" => &[52.56],
             "Contribution MiTi" => &[10.51],
-            "Gross MiTi (LoLa) Cash" => &[29.50],
-            "Debt to MiTi" => &[136.26],
+            "Net MiTi (LoLA) - Share LoLa" => &[42.05],
+            "Debt to MiTi" => &[145.76],
+            "Income LoLa MiTi" => &[42.49],
             "MealCount_Regular" => &[14],
             "MealCount_Children" => &[1],
         )
@@ -141,11 +146,9 @@ mod tests {
             "Karte MiTi" => &[Some(167.0)],
             "Kommission MiTi" => &[2.75],
             "Netto Karte MiTi" => &[164.25],
-            "Netto Anteil LoLa" => &[42.04],
-            "Netto Anteil MiTi" => &[10.51],
-            "Trinkgeld Karte" => &[Some(1.0)],
-            "Bar barz." => &[Some(29.50)],
-            "Überweisung" => &[136.26],
+            "Net Total Karte" => &[187.81],
+            "Verkauf LoLa (80%)" => &[-42.05],
+            "Überweisung" => &[145.76],
         )
         .expect("valid data frame")
         .lazy()

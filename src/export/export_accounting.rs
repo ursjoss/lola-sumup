@@ -64,7 +64,7 @@ fn validate_constraint(
         .clone()
         .lazy()
         .with_column(net_expr.alias("Net"))
-        .filter(col("Net").round(2).neq(lit(0.0)))
+        .filter(col("Net").round(2).abs().gt(lit(0.01)))
         .collect()?;
     Ok(if violations.shape().0 > 0 {
         let row_vec = violations.get_row(0).unwrap().0;
@@ -86,11 +86,11 @@ mod tests {
 
     #[rstest]
     fn test_gather_df_accounting() {
-        let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
+        let date = NaiveDate::parse_from_str("24.3.2023", "%d.%m.%Y").expect("valid date");
         let df_summary = df!(
             "Date" => &[date],
             "MiTi_Cash" => &[Some(112.0)],
-            "MiTi_Card" => &[Some(191.0 )],
+            "MiTi_Card" => &[Some(191.0)],
             "MiTi Total" => &[303.0],
             "Cafe_Cash" => &[Some(29.5)],
             "Cafe_Card" => &[Some(20)],
@@ -117,6 +117,7 @@ mod tests {
             "Gross Card Total" => &[223],
             "Total Commission" => &[3.79],
             "Net Card Total" => &[219.21],
+            "Net Payment SumUp MiTi" => &[187.81],
             "MiTi_Tips_Cash" => &[Some(0.5)],
             "MiTi_Tips_Card" => &[Some(1.0)],
             "MiTi_Tips" => &[Some(1.5)],
@@ -125,14 +126,14 @@ mod tests {
             "Gross MiTi (MiTi)" => &[Some(250.0)],
             "Gross MiTi (LoLa)" => &[Some(53.0)],
             "Gross MiTi (MiTi) Card" => &[Some(167.0)],
-            "Gross MiTi (LoLa) Cash" => &[29.5],
+            "Net MiTi (MiTi) Card" => &[164.25],
             "Net MiTi (LoLa)" => &[52.56],
-            "Contribution LoLa" => &[42.04],
             "Contribution MiTi" => &[10.51],
+            "Net MiTi (LoLA) - Share LoLa" => &[52.56],
             "Debt to MiTi" => &[136.26],
             "Income LoLa MiTi" => &[42.49],
             "MealCount_Regular" => &[14],
-            "MealCount_Children" => &[3],
+            "MealCount_Children" => &[1],
         )
         .expect("valid data frame");
         let expected = df!(
@@ -157,6 +158,11 @@ mod tests {
     #[rstest]
     // fully valid case
     #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 146.76, 42.49, None, "")]
+    // still valid, as we accept a deviation of 0.1/-0.1
+    #[case(19.99, 12.0, 189.25, 1.0, 221.21, 1.04, 146.76, 42.49, None, "")]
+    #[case(20.01, 12.0, 189.25, 1.0, 221.21, 1.04, 146.76, 42.49, None, "")]
+    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 146.76, 42.48, None, "")]
+    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 146.76, 42.50, None, "")]
     // violations of account 10920
     #[case(
         20.1,
@@ -198,6 +204,7 @@ mod tests {
     )]
     #[case(20.0, 12.0, 189.25, 1.0, 221.21, 10.14, 146.76, 42.49, Some(-9.1), "10920")]
     // violations of account 20051
+    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 146.76, 42.49, None, "")]
     #[case(
         20.0,
         12.0,
@@ -205,12 +212,11 @@ mod tests {
         1.0,
         221.21,
         1.04,
-        146.75,
+        146.74,
         42.49,
-        Some(0.01),
+        Some(0.02),
         "20051"
     )]
-    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 146.77, 42.49, Some(-0.01), "20051")]
     #[case(
         20.0,
         12.0,
@@ -219,11 +225,11 @@ mod tests {
         221.21,
         1.04,
         146.76,
-        42.48,
-        Some(0.01),
+        42.47,
+        Some(0.02),
         "20051"
     )]
-    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 146.76, 42.50, Some(-0.01), "20051")]
+    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 146.76, 42.51, Some(-0.02), "20051")]
     fn test_violations(
         #[case] cc: f64,
         #[case] vc: f64,
