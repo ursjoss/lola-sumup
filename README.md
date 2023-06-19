@@ -124,7 +124,7 @@ The columns of the resulting summary file are defined as follows:
   - `Gross Card Total`: Gross Card Income (MiTi, Café, Vermietungen) [`Gross Card MiTi` + `Gross Card LoLa`]
   - `Total Commission`: Card Commission Total (MiTi, Café, Vermietungen) [`MiTi_Commission` + `LoLa_Commission`]
   - `Net Card Total`: Total Net Card Income [`Gross Card Total` - `Total Commission`]
-  - `Net Paymnet SumUp MiTi`: Total Net Payment SumUp Mittagstisch related (Net card payments concerning Mittagstisch (Sales from meals, tips, sales of LoLa goods payed via card)) [`MiTi_Card` + `MiTi_Tips_Card` - `MiTi_Total_Commission`]
+  - `Net Payment SumUp MiTi`: Total Net Payment SumUp Mittagstisch related (Net card payments concerning Mittagstisch (Sales from meals, tips, sales of LoLa goods payed via card)) [`MiTi_Card` + `MiTi_Tips_Card` - `MiTi_Total_Commission`]
 - Tips by Topic:
   - `MiTi_Tips_Cash`: Tips for Mittagstisch paid in Cash
   - `MiTi_Tips_Card`: Tips for Mittagstisch paid by Card
