@@ -25,6 +25,7 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Date"),
             col("Cafe_Card").alias("10920/30200"),
             col("Verm_Card").alias("10920/30700"),
+            col("Deposit_Card").alias("10920/23050"),
             col("Net Card Total MiTi").alias("10920/20051"),
             col("Tips Card LoLa").alias("10920/10910"),
             col("Payment SumUp"),
@@ -42,10 +43,13 @@ pub fn validate_acc_constraint(df_acc: &DataFrame) -> Result<(), Box<dyn Error>>
 
 /// validates the transitory account 10920 nets to 0
 fn validate_acc_constraint_10920(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
-    let net_expr =
-        col("10920/30200") + col("10920/30700") + col("10920/20051") + col("10920/10910")
-            - col("Payment SumUp")
-            - col("68450/10920");
+    let net_expr = col("10920/30200")
+        + col("10920/30700")
+        + col("10920/23050")
+        + col("10920/20051")
+        + col("10920/10910")
+        - col("Payment SumUp")
+        - col("68450/10920");
     validate_constraint(df_acc, net_expr, "10920")?
 }
 
@@ -98,24 +102,27 @@ mod tests {
             "Verm_Cash" => &[Some(102.5)],
             "Verm_Card" => &[Some(12.0)],
             "Verm Total" => &[114.5],
+            "Deposit_Cash" => &[None::<f64>],
+            "Deposit_Card" => &[Some(100.0)],
+            "Deposit Total" => &[100.0],
             "Gross Cash" => &[244.0],
             "Tips_Cash" => &[Some(4.0)],
             "SumUp Cash" => &[248.0],
-            "Gross Card" => &[223.0],
+            "Gross Card" => &[323.0],
             "Tips_Card" => &[Some(1.0)],
-            "SumUp Card" => &[224.0],
-            "Gross Total" => &[467.0],
+            "SumUp Card" => &[324.0],
+            "Gross Total" => &[567.0],
             "Tips Total" => &[5.0],
-            "SumUp Total" => &[472.0],
+            "SumUp Total" => &[572.0],
             "Gross Card MiTi" => &[191.0],
             "MiTi_Commission" => &[Some(2.75)],
             "Net Card MiTi" => &[188.25],
-            "Gross Card LoLa" => &[32.0],
-            "LoLa_Commission" => &[1.04],
+            "Gross Card LoLa" => &[132.0],
+            "LoLa_Commission" => &[2.54],
             "LoLa_Commission_MiTi" => &[0.44],
-            "Net Card LoLa" => &[30.96],
-            "Gross Card Total" => &[223],
-            "Total Commission" => &[3.79],
+            "Net Card LoLa" => &[129.46],
+            "Gross Card Total" => &[323],
+            "Total Commission" => &[5.29],
             "Net Card Total" => &[219.21],
             "Net Payment SumUp MiTi" => &[187.81],
             "MiTi_Tips_Cash" => &[Some(0.5)],
@@ -130,7 +137,7 @@ mod tests {
             "Net MiTi (LoLa)" => &[52.56],
             "Contribution MiTi" => &[10.51],
             "Net MiTi (LoLA) - Share LoLa" => &[52.56],
-            "Debt to MiTi" => &[136.26],
+            "Debt to MiTi" => &[145.76],
             "Income LoLa MiTi" => &[42.49],
             "MealCount_Regular" => &[14],
             "MealCount_Children" => &[1],
@@ -140,11 +147,12 @@ mod tests {
             "Date" => &[date],
             "10920/30200" => &[20.0],
             "10920/30700" => &[12.0],
+            "10920/23050" => &[100.0],
             "10920/20051" => &[189.25],
             "10920/10910" => &[0.0],
             "Payment SumUp" => &[220.21],
-            "68450/10920" => &[Some(1.04)],
-            "20051/10900" => &[136.26],
+            "68450/10920" => &[Some(2.54)],
+            "20051/10900" => &[145.76],
             "20051/30500" => &[42.49],
         )
         .expect("valid data frame")
@@ -157,20 +165,21 @@ mod tests {
 
     #[rstest]
     // fully valid case
-    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 146.76, 42.49, None, "")]
+    #[case(20.0, 12.0, 100.0, 189.25, 1.0, 319.71, 2.54, 146.76, 42.49, None, "")]
     // still valid, as we accept a deviation of 0.1/-0.1
-    #[case(19.99, 12.0, 189.25, 1.0, 221.21, 1.04, 146.76, 42.49, None, "")]
-    #[case(20.01, 12.0, 189.25, 1.0, 221.21, 1.04, 146.76, 42.49, None, "")]
-    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 146.76, 42.48, None, "")]
-    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 146.76, 42.50, None, "")]
+    #[case(19.99, 12.0, 100.0, 189.25, 1.0, 319.71, 2.54, 146.76, 42.49, None, "")]
+    #[case(20.01, 12.0, 100.0, 189.25, 1.0, 319.71, 2.54, 146.76, 42.49, None, "")]
+    #[case(20.0, 12.0, 100.0, 189.25, 1.0, 319.71, 2.54, 146.76, 42.48, None, "")]
+    #[case(20.0, 12.0, 100.0, 189.25, 1.0, 319.71, 2.54, 146.76, 42.50, None, "")]
     // violations of account 10920
     #[case(
         20.1,
         12.0,
+        100.0,
         189.25,
         1.0,
-        221.21,
-        1.04,
+        319.71,
+        2.54,
         146.76,
         42.49,
         Some(0.1),
@@ -179,39 +188,42 @@ mod tests {
     #[case(
         20.0,
         12.1,
+        100.0,
         189.25,
         1.0,
-        221.21,
-        1.04,
+        319.71,
+        2.54,
         146.76,
         42.49,
         Some(0.1),
         "10920"
     )]
-    #[case(20.0, 12.0, 188.15, 1.0, 221.21, 1.04, 146.76, 42.49, Some(-1.1), "10920")]
-    #[case(20.0, 12.0, 189.25, 0.5, 221.21, 1.04, 146.76, 42.49, Some(-0.5), "10920")]
+    #[case(20.0, 12.0, 100.0, 188.15, 1.0, 319.71, 2.54, 146.76, 42.49, Some(-1.1), "10920")]
+    #[case(20.0, 12.0, 100.0, 189.25, 0.5, 319.71, 2.54, 146.76, 42.49, Some(-0.5), "10920")]
     #[case(
         20.0,
         12.0,
+        100.0,
         189.25,
         1.0,
-        121.01,
-        1.04,
+        219.51,
+        2.54,
         146.76,
         42.49,
         Some(100.2),
         "10920"
     )]
-    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 10.14, 146.76, 42.49, Some(-9.1), "10920")]
+    #[case(20.0, 12.0, 100.0, 189.25, 1.0, 319.71, 11.64, 146.76, 42.49, Some(-9.1), "10920")]
     // violations of account 20051
-    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 146.76, 42.49, None, "")]
+    #[case(20.0, 12.0, 100.0, 189.25, 1.0, 319.71, 2.54, 146.76, 42.49, None, "")]
     #[case(
         20.0,
         12.0,
+        100.0,
         189.25,
         1.0,
-        221.21,
-        1.04,
+        319.71,
+        2.54,
         146.74,
         42.49,
         Some(0.02),
@@ -220,19 +232,21 @@ mod tests {
     #[case(
         20.0,
         12.0,
+        100.0,
         189.25,
         1.0,
-        221.21,
-        1.04,
+        319.71,
+        2.54,
         146.76,
         42.47,
         Some(0.02),
         "20051"
     )]
-    #[case(20.0, 12.0, 189.25, 1.0, 221.21, 1.04, 146.76, 42.51, Some(-0.02), "20051")]
+    #[case(20.0, 12.0, 100.0, 189.25, 1.0, 319.71, 2.54, 146.76, 42.51, Some(-0.02), "20051")]
     fn test_violations(
         #[case] cc: f64,
         #[case] vc: f64,
+        #[case] dc: f64,
         #[case] nctm: f64,
         #[case] tcl: f64,
         #[case] psu: f64,
@@ -247,6 +261,7 @@ mod tests {
             "Date" => &[date],
             "10920/30200" => &[cc],
             "10920/30700" => &[vc],
+            "10920/23050" => &[dc],
             "10920/20051" => &[nctm],
             "10920/10910" => &[tcl],
             "Payment SumUp" => &[psu],
