@@ -308,6 +308,8 @@ pub enum Topic {
     Verm,
     /// Key deposit
     Deposit,
+    /// Cultural Payments
+    Culture,
 }
 
 impl fmt::Display for Topic {
