@@ -308,6 +308,8 @@ pub enum Topic {
     Verm,
     /// Key deposit
     Deposit,
+    /// Rental fee
+    Rental,
     /// Cultural Payments
     Culture,
 }

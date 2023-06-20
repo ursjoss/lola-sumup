@@ -59,6 +59,14 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         consumption_of(&Topic::Deposit, &PaymentMethod::Card),
         ldf.clone(),
     );
+    let rental_cash = price_by_date_for(
+        consumption_of(&Topic::Rental, &PaymentMethod::Cash),
+        ldf.clone(),
+    );
+    let rental_card = price_by_date_for(
+        consumption_of(&Topic::Rental, &PaymentMethod::Card),
+        ldf.clone(),
+    );
     let culture_cash = price_by_date_for(
         consumption_of(&Topic::Culture, &PaymentMethod::Cash),
         ldf.clone(),
@@ -86,6 +94,7 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     let lola_comm_miti =
         commission_by_date_for(commission_by(&Owner::LoLa, Some(true)), ldf.clone());
     let deposit_comm = commission_by_date_for(commission_by_topic(&Topic::Deposit), ldf.clone());
+    let rental_comm = commission_by_date_for(commission_by_topic(&Topic::Rental), ldf.clone());
     let culture_comm = commission_by_date_for(commission_by_topic(&Topic::Culture), ldf.clone());
     let miti_miti = price_by_date_for(miti_by(&Owner::MiTi), ldf.clone());
     let miti_lola = price_by_date_for(miti_by(&Owner::LoLa), ldf.clone());
@@ -116,8 +125,12 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         with_verm_card.join(deposit_cash, [col("Date")], [col("Date")], JoinType::Left);
     let with_deposit_card =
         with_deposit_cash.join(deposit_card, [col("Date")], [col("Date")], JoinType::Left);
+    let with_rental_cash =
+        with_deposit_card.join(rental_cash, [col("Date")], [col("Date")], JoinType::Left);
+    let with_rental_card =
+        with_rental_cash.join(rental_card, [col("Date")], [col("Date")], JoinType::Left);
     let with_culture_cash =
-        with_deposit_card.join(culture_cash, [col("Date")], [col("Date")], JoinType::Left);
+        with_rental_card.join(culture_cash, [col("Date")], [col("Date")], JoinType::Left);
     let with_culture_card =
         with_culture_cash.join(culture_card, [col("Date")], [col("Date")], JoinType::Left);
     let with_cafe_tips =
@@ -140,8 +153,10 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         with_comm_miti.join(lola_comm, [col("Date")], [col("Date")], JoinType::Left);
     let with_comm_deposit =
         with_comm_lola.join(deposit_comm, [col("Date")], [col("Date")], JoinType::Left);
+    let with_comm_rental =
+        with_comm_deposit.join(rental_comm, [col("Date")], [col("Date")], JoinType::Left);
     let with_comm_culture =
-        with_comm_deposit.join(culture_comm, [col("Date")], [col("Date")], JoinType::Left);
+        with_comm_rental.join(culture_comm, [col("Date")], [col("Date")], JoinType::Left);
     let with_tips_cash =
         with_comm_culture.join(tips_cash, [col("Date")], [col("Date")], JoinType::Left);
     let with_tips_card =
@@ -201,6 +216,11 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .alias("Deposit Total"),
         )
         .with_column(
+            (col("Rental_Cash").fill_null(0.0) + col("Rental_Card").fill_null(0.0))
+                .round(2)
+                .alias("Rental Total"),
+        )
+        .with_column(
             (col("Culture_Cash").fill_null(0.0) + col("Culture_Card").fill_null(0.0))
                 .round(2)
                 .alias("Culture Total"),
@@ -210,6 +230,7 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 + col("Cafe_Cash").fill_null(0.0)
                 + col("Verm_Cash").fill_null(0.0)
                 + col("Deposit_Cash").fill_null(0.0)
+                + col("Rental_Cash").fill_null(0.0)
                 + col("Culture_Cash").fill_null(0.0))
             .round(2)
             .alias("Gross Cash"),
@@ -219,6 +240,7 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 + col("Cafe_Card").fill_null(0.0)
                 + col("Verm_Card").fill_null(0.0)
                 + col("Deposit_Card").fill_null(0.0)
+                + col("Rental_Card").fill_null(0.0)
                 + col("Culture_Card").fill_null(0.0))
             .round(2)
             .alias("Gross Card"),
@@ -230,12 +252,9 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .alias("Gross Card MiTi"),
         )
         .with_column(
-            (col("Cafe_Card").fill_null(0.0)
-                + col("Verm_Card").fill_null(0.0)
-                + col("Deposit_Card").fill_null(0.0)
-                + col("Culture_Card").fill_null(0.0))
-            .round(2)
-            .alias("Gross Card LoLa"),
+            (col("Gross Card").fill_null(0.0) - col("MiTi_Card").fill_null(0.0))
+                .round(2)
+                .alias("Gross Card LoLa"),
         )
         .with_column(
             (col("Gross Cash").fill_null(0.0) + col("Gross Card").fill_null(0.0))
@@ -258,14 +277,9 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .alias("SumUp Card"),
         )
         .with_column(
-            (col("Cafe Total").fill_null(0.0)
-                + col("MiTi Total").fill_null(0.0)
-                + col("Verm Total").fill_null(0.0)
-                + col("Deposit Total").fill_null(0.0)
-                + col("Culture Total").fill_null(0.0)
-                + col("Tips Total").fill_null(0.0))
-            .round(2)
-            .alias("SumUp Total"),
+            (col("SumUp Cash") + col("SumUp Card"))
+                .round(2)
+                .alias("SumUp Total"),
         )
         .with_column(
             (col("MiTi_Commission").fill_null(0.0) + col("LoLa_Commission").fill_null(0.0))
@@ -337,6 +351,9 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Deposit_Cash"),
             col("Deposit_Card"),
             col("Deposit Total"),
+            col("Rental_Cash"),
+            col("Rental_Card"),
+            col("Rental Total"),
             col("Culture_Cash"),
             col("Culture_Card"),
             col("Culture Total"),
@@ -618,6 +635,12 @@ mod tests {
             "Culture_Card" => &[400.0]),
         )
     ]
+    #[case(Topic::Rental, PaymentMethod::Card, Purpose::Consumption,
+        df!(
+            "Date" => &["23.03.2023"],
+            "Rental_Card" => &[500.0]),
+        )
+    ]
     fn test_collect_by(
         #[case] topic: Topic,
         #[case] payment_method: PaymentMethod,
@@ -625,11 +648,11 @@ mod tests {
         #[case] expected: PolarsResult<DataFrame>,
     ) {
         let df_in = df!(
-            "Date" => &["16.03.2023", "14.03.2023", "15.03.2023", "28.03.2023", "20.03.2023", "14.03.2023", "20.03.2023", "22.03.2023"],
-            "Price (Gross)" => &[None, Some(1.3), Some(5.2), Some(3.6), Some(4.7), Some(0.5), Some(100.0), Some(400.0)],
-            "Topic" => &["Cafe", "Cafe", "MiTi", "Cafe", "Cafe", "Cafe", "Deposit", "Culture"],
-            "Payment Method" => &["Card", "Card", "Card", "Card", "Cash", "Cash", "Card", "Card"],
-            "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Tip", "Consumption", "Consumption"],
+            "Date" => &["16.03.2023", "14.03.2023", "15.03.2023", "28.03.2023", "20.03.2023", "14.03.2023", "20.03.2023", "22.03.2023", "23.03.2023"],
+            "Price (Gross)" => &[None, Some(1.3), Some(5.2), Some(3.6), Some(4.7), Some(0.5), Some(100.0), Some(400.0), Some(500.0)],
+            "Topic" => &["Cafe", "Cafe", "MiTi", "Cafe", "Cafe", "Cafe", "Deposit", "Culture", "Rental"],
+            "Payment Method" => &["Card", "Card", "Card", "Card", "Cash", "Cash", "Card", "Card", "Card"],
+            "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Tip", "Consumption", "Consumption", "Consumption"],
         )
             .expect("Misconfigured dataframe");
         let paa = match purpose {
@@ -645,26 +668,26 @@ mod tests {
     #[rstest]
     fn test_collect_data() {
         let df = df!(
-            "Account" => &["a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch"],
-            "Date" => &["17.04.2023", "17.04.2023", "17.04.2023", "17.04.2023", "17.04.2023"],
-            "Time" => &["12:32:00", "12:33:00", "12:34:00", "12:35:00", "12:36:00"],
-            "Type" => &["Sales", "Sales", "Sales", "Sales", "Sales"],
-            "Transaction ID" => &["TEGUCXAGDE", "TEGUCXAGDF", "TEGUCXAGDG", "TEGUCXAGDH", "TEGUCXAGDI"],
-            "Receipt Number" => &["S20230000303", "S20230000304", "S20230000305", "S20230000306", "S20230000307"],
-            "Payment Method" => &["Card", "Cash", "Card", "Card", "Card"],
-            "Quantity" => &[1, 1, 4, 1, 1],
-            "Description" => &["Hauptgang, normal", "Kaffee", "Cappuccino", "Schlüsseldepot", "Kulturevent"],
-            "Currency" => &["CHF", "CHF", "CHF", "CHF", "CHF"],
-            "Price (Gross)" => &[16.0, 3.50, 20.0, 100.0, 400.0],
-            "Price (Net)" => &[16.0, 3.50, 20.0, 100.0, 400.0],
-            "Tax" => &["0.0%", "0.0%", "0.0%", "0.0%", "0.0%"],
-            "Tax rate" => &["", "", "", "", ""],
-            "Transaction refunded" => &["", "", "", "", ""],
-            "Commission" =>[0.24123, 0.0, 0.3, 1.5, 6.0],
-            "Topic" => &["MiTi", "MiTi", "MiTi", "Deposit", "Culture"],
-            "Owner" => &["MiTi", "LoLa", "LoLa", "", ""],
-            "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption"],
-            "Comment" => &[None::<String>, None::<String>, None::<String>, None::<String>, None::<String>],
+            "Account" => &["a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@B.ch"],
+            "Date" => &["17.04.2023", "17.04.2023", "17.04.2023", "17.04.2023", "17.04.2023", "17.04.2023"],
+            "Time" => &["12:32:00", "12:33:00", "12:34:00", "12:35:00", "12:36:00", "12:37:00"],
+            "Type" => &["Sales", "Sales", "Sales", "Sales", "Sales", "Sales"],
+            "Transaction ID" => &["TEGUCXAGDE", "TEGUCXAGDF", "TEGUCXAGDG", "TEGUCXAGDH", "TEGUCXAGDI", "TEGUCXAGDJ"],
+            "Receipt Number" => &["S20230000303", "S20230000304", "S20230000305", "S20230000306", "S20230000307", "S20230000308"],
+            "Payment Method" => &["Card", "Cash", "Card", "Card", "Card", "Card"],
+            "Quantity" => &[1, 1, 4, 1, 1, 1],
+            "Description" => &["Hauptgang, normal", "Kaffee", "Cappuccino", "Schlüsseldepot", "Kulturevent", "Rental fee"],
+            "Currency" => &["CHF", "CHF", "CHF", "CHF", "CHF", "CHF"],
+            "Price (Gross)" => &[16.0, 3.50, 20.0, 100.0, 400.0, 500.0],
+            "Price (Net)" => &[16.0, 3.50, 20.0, 100.0, 400.0, 500.0],
+            "Tax" => &["0.0%", "0.0%", "0.0%", "0.0%", "0.0%", "0.0%"],
+            "Tax rate" => &["", "", "", "", "", ""],
+            "Transaction refunded" => &["", "", "", "", "", ""],
+            "Commission" =>[0.24123, 0.0, 0.3, 1.5, 6.0, 7.5],
+            "Topic" => &["MiTi", "MiTi", "MiTi", "Deposit", "Culture", "Rental"],
+            "Owner" => &["MiTi", "LoLa", "LoLa", "", "", ""],
+            "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption"],
+            "Comment" => &[None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>],
         )
         .expect("Misconfigured test data frame");
         let out = collect_data(df).expect("should be able to collect the data");
@@ -683,28 +706,31 @@ mod tests {
             "Deposit_Cash" => &[None::<f64>],
             "Deposit_Card" => &[100.0],
             "Deposit Total" => &[100.0],
+            "Rental_Cash" => &[None::<f64>],
+            "Rental_Card" => &[500.0],
+            "Rental Total" => &[500.0],
             "Culture_Cash" => &[None::<f64>],
             "Culture_Card" => &[400.0],
             "Culture Total" => &[400.0],
             "Gross Cash" => &[3.5],
             "Tips_Cash" => &[None::<f64>],
             "SumUp Cash" => &[3.5],
-            "Gross Card" => &[536.0],
+            "Gross Card" => &[1036.0],
             "Tips_Card" => &[None::<f64>],
-            "SumUp Card" => &[536.0],
-            "Gross Total" => &[539.5],
+            "SumUp Card" => &[1036.0],
+            "Gross Total" => &[1039.5],
             "Tips Total" => &[0.0],
-            "SumUp Total" => &[539.5],
+            "SumUp Total" => &[1039.5],
             "Gross Card MiTi" => &[36.0],
             "MiTi_Commission" => &[Some(0.24)],
             "Net Card MiTi" => &[35.76],
-            "Gross Card LoLa" => &[500.0],
-            "LoLa_Commission" => &[7.8],
+            "Gross Card LoLa" => &[1000.0],
+            "LoLa_Commission" => &[15.3],
             "LoLa_Commission_MiTi" => &[0.3],
-            "Net Card LoLa" => &[492.2],
-            "Gross Card Total" => &[536.0],
-            "Total Commission" => &[8.04],
-            "Net Card Total" => &[527.96],
+            "Net Card LoLa" => &[984.7],
+            "Gross Card Total" => &[1036.0],
+            "Total Commission" => &[15.54],
+            "Net Card Total" => &[1020.46],
             "Net Payment SumUp MiTi" => &[35.46],
             "MiTi_Tips_Cash" => &[None::<f64>],
             "MiTi_Tips_Card" => &[None::<f64>],
