@@ -61,6 +61,59 @@ It produces a file named e.g. `intermediate_202305_20230603142215.csv`,
 where `202305` is the processed month with the timestamp indicating when the process was executed
 (03. June 2023 14:22:15).
 
+#### Manual redaction of existing transactions
+
+The last four columns of the file are pre-filled using sensible heuristics.
+The derived values may or may not be correct though and can be redacted.
+If modified, ensure certain constraints are met, otherwise further processing will fail during the export step.
+
+The four columns that may be modified are:
+
+- `Topic`: The main topic of the transaction, one of
+  - `MiTi`: Items sold by Mittagstisch. Automatically assigned if the transaction occurred before 14:15.
+  - `Café`: Items sold by LoLa Café. Automatically assigned if the transaction occurred between 14:15 and 18:00.
+  - `Vermiet`: Items sold by Renters of the rooms. Automatically assigned if the transaction occurred after 18:00.
+  - `Deposit`: Key deposit.
+  - `Rental`: Rental fee.
+  - `Culture`: Items sold in context of cultural events.
+- `Owner`: Only relevant for Topic `MiTi`: `MiTi` (for menus produced and sold by Mittagstisch) or `LoLa` (LoLa beverages and food from LoLa, sold by Mittagstisch)
+- `Purpose`: `Consumption` or `Tip` (the former is also used for Topics `Deposit`, `Rental` or `Culture`)
+- `Comment`: Empty, can be manually filled to keep some context
+
+#### Adding artificial transactions for Cash payments that were not entered into SumUp
+
+It is also possible to add lines to capture transactions that were not entered into the SumUp System.
+
+If you do so, ensure some fields are filled correctly, and some fields are left blank. I.e.
+
+- `Account`: Provide an email address that clearly identifies who created the "artificial" transaction
+- `Date`
+- `Time`: Best guess
+- `Type`: "Sales"
+- `Transaction ID`: Leave blank
+- `Receipt Number`: Leave blank - unless you do have some receipt
+- `Payment Method`: `Cash` (as `Card` would never be missing in the SumUp Transactions)
+- `Quantity`: Best guess
+- `Description`: Best effort - ideally copy one of the existing descriptions to be precise
+- `Currency`: "CHF"
+- `Price (Gross)`: The paid amount
+- `Price (Net)`: Copy of the previous value in `Price (Gross)`
+- `Tax`: Leave blank
+- `Tax rate`: Leave blank
+- `Transaction refunded`: Leave blank
+- `Commission`: 0 (it's a cash payment)
+- `Topic`: See list of Topics above
+- `Owner`: Blank if Topic is not `MiTi`. `MiTi` or `LoLa` if topic is `MiTi`
+- `Purpose`: Likely `Consumption` unless it's a tip
+- `Comment`: Provide some reference for later audit as to why the transaction is artificially created (e.g. reference to email)
+
+#### Constraints for manual redactions
+
+For all items (existing SumUp transactions and artificially added transactions), it must be true that:
+
+- for `Topic` `MiTi`: `Owner` must be either `MiTi` or `LoLa`
+- for `Topic` other than `MiTi`: `Owner` must be blank
+
 ### The export step
 
 The `lola-sumup export` command:
