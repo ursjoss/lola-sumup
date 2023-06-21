@@ -306,6 +306,12 @@ pub enum Topic {
     Cafe,
     /// ("Vermietung") Room rentals by third parties, managed by LoLa
     Verm,
+    /// Key deposit
+    Deposit,
+    /// Rental fee
+    Rental,
+    /// Cultural Payments
+    Culture,
 }
 
 impl fmt::Display for Topic {

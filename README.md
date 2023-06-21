@@ -61,6 +61,59 @@ It produces a file named e.g. `intermediate_202305_20230603142215.csv`,
 where `202305` is the processed month with the timestamp indicating when the process was executed
 (03. June 2023 14:22:15).
 
+#### Manual redaction of existing transactions
+
+The last four columns of the file are pre-filled using sensible heuristics.
+The derived values may or may not be correct though and can be redacted.
+If modified, ensure certain constraints are met, otherwise further processing will fail during the export step.
+
+The four columns that may be modified are:
+
+- `Topic`: The main topic of the transaction, one of
+  - `MiTi`: Items sold by Mittagstisch. Automatically assigned if the transaction occurred before 14:15.
+  - `Café`: Items sold by LoLa Café. Automatically assigned if the transaction occurred between 14:15 and 18:00.
+  - `Vermiet`: Items sold by Renters of the rooms. Automatically assigned if the transaction occurred after 18:00.
+  - `Deposit`: Key deposit.
+  - `Rental`: Rental fee.
+  - `Culture`: Items sold in context of cultural events.
+- `Owner`: Only relevant for Topic `MiTi`: `MiTi` (for menus produced and sold by Mittagstisch) or `LoLa` (LoLa beverages and food from LoLa, sold by Mittagstisch)
+- `Purpose`: `Consumption` or `Tip` (the former is also used for Topics `Deposit`, `Rental` or `Culture`)
+- `Comment`: Empty, can be manually filled to keep some context
+
+#### Adding artificial transactions for Cash payments that were not entered into SumUp
+
+It is also possible to add lines to capture transactions that were not entered into the SumUp System.
+
+If you do so, ensure some fields are filled correctly, and some fields are left blank. I.e.
+
+- `Account`: Provide an email address that clearly identifies who created the "artificial" transaction
+- `Date`
+- `Time`: Best guess
+- `Type`: "Sales"
+- `Transaction ID`: Leave blank
+- `Receipt Number`: Leave blank - unless you do have some receipt
+- `Payment Method`: `Cash` (as `Card` would never be missing in the SumUp Transactions)
+- `Quantity`: Best guess
+- `Description`: Best effort - ideally copy one of the existing descriptions to be precise
+- `Currency`: "CHF"
+- `Price (Gross)`: The paid amount
+- `Price (Net)`: Copy of the previous value in `Price (Gross)`
+- `Tax`: Leave blank
+- `Tax rate`: Leave blank
+- `Transaction refunded`: Leave blank
+- `Commission`: 0 (it's a cash payment)
+- `Topic`: See list of Topics above
+- `Owner`: Blank if Topic is not `MiTi`. `MiTi` or `LoLa` if topic is `MiTi`
+- `Purpose`: Likely `Consumption` unless it's a tip
+- `Comment`: Provide some reference for later audit as to why the transaction is artificially created (e.g. reference to email)
+
+#### Constraints for manual redactions
+
+For all items (existing SumUp transactions and artificially added transactions), it must be true that:
+
+- for `Topic` `MiTi`: `Owner` must be either `MiTi` or `LoLa`
+- for `Topic` other than `MiTi`: `Owner` must be blank
+
 ### The export step
 
 The `lola-sumup export` command:
@@ -103,11 +156,20 @@ The columns of the resulting summary file are defined as follows:
   - `Verm_Cash`: Gross Cash Income Rentals
   - `Verm_Card`: Gross Card Income Rentals
   - `Verm Total`: Total Gross Income Rentals [`Verm_Cash` + `Verm_Card`]
+  - `Deposit_Cash`: Gross Cash Key Deposit
+  - `Deposit_Card`: Gross Card Key Deposit
+  - `Deposit Total`: Total Gross Key Deposit [`Deposit_Cash` + `Deposit_Card`]
+  - `Rental_Cash`: Gross Cash Rental Payment
+  - `Rental_Card`: Gross Card Rental Payment
+  - `Rental Total`: Total Gross Rental Payment [`Rental_Cash` + `Rental_Card`]
+  - `Culture_Cash`: Gross Cash Culture
+  - `Culture_Card`: Gross Card Culture
+  - `Culture Total`: Total Gross Culture [`Culture_Cash` + `Culture_Card`]
 - Gross values consumption, Tips and total reported values by payment method:
-  - `Gross Cash`: Total Gross Income Cash [`MiTi_Cash` + `Cafe_Cash` + `Verm_Cash`]
+  - `Gross Cash`: Total Gross Income Cash [`MiTi_Cash` + `Cafe_Cash` + `Verm_Cash` + `Deposit_Cash` + `Rental_Cash` + `Culture_Cash`]
   - `Tips_Cash`: Tips Cash
   - `SumUp Cash`: Total Income Cash [`Gross Cash` + `Tips_Cash`]
-  - `Gross Card`: Gross Gross Income Card [`MiTi_Card` + `Cafe_Card` + `Verm_Card`]
+  - `Gross Card`: Gross Gross Income Card [`MiTi_Card` + `Cafe_Card` + `Verm_Card` + `Deposit_Card` + `Rental_Card` + `Culture_Card`]
   - `Tips_Card`: Tips Card
   - `SumUp Card`: Total Gross Income Card [`Gross Card` + `Tips_Card`]
   - `Gross Total`: Gross Total Income [`Gross Cash` + `Gross Card`]
@@ -117,7 +179,7 @@ The columns of the resulting summary file are defined as follows:
   - `Gross Card MiTi`: Gross Card Income Mittagstisch [`MiTi_Card`] (including beverages LoLa)
   - `MiTi_Commission`: Card Commission for Mittagstisch (Menus and Tips, but not from LoLa beverages)
   - `Net Card MiTi`: Net Card Income Mittagstisch [`Gross Card MiTi` - `MiTi_Commission`] - commission on meals and tips are deducted, sales of beverages still included
-  - `Gross Card LoLa`: Gross Card Income LoLa (Café and Vermietungen) [`Cafe_Card` + `Verm_Card`]
+  - `Gross Card LoLa`: Gross Card Income LoLa (Café, Vermietungen, Deposit, Rental, Culture) [`Cafe_Card` + `Verm_Card` + `Deposit_Card` + `Rental_Card` + `Culture_Card`]
   - `LoLa_Commission`: Card Commission for LoLa (non-Mittagstisch related, but including commission for items sold by MiTi)
   - `LoLa_Commission_MiTi`: Card Commission for LoLa items sold by MiTi only, so not from Café or Rentals
   - `Net Card LoLa`: Net Card Income LoLa (Café and Vermietungen) [`Gross Card LoLa` - `LoLa_Commission`]
@@ -187,13 +249,16 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `Date`: [`Date`]
 - `10920/30200`:  Total Gross Payments Card Cafe [`Cafe_Card`]
 - `10920/30700`:  Total Gross Payments Card Rentals [`Verm_Card`]
+- `10920/23050`:  Total Gross Payments Card Key Deposit [`Deposit_Card`]
+- `10920/21X00`:  Total Gross Payments Card Rental Fee [`Rental_Card`]
+- `10920/32000`:  Total Gross Payments Card Cultural Payments [`Culture_Card`]
 - `10920/20051`: Net Card income + tips (card) Mittagstisch [`Net Card MiTi` + `MiTi_Tips_Card`]
 - `10920/10910`: Tips LoLa paid via Card [`Tips_Card` - `MiTi_Tips_Card`]
 - `Payment SumUp`: Total Net Income plus tips paid via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]. Will be posted `10110/10920`, but based on Account Statement, not this report.
-- `68450/10920`:  Commission for Café and Vermietung, i.e. w/o Mittagstisch [`Commission LoLa`]
+- `68450/10920`:  Commission for Café, Vermietung, Deposit, Rental, and Cultural Payments, i.e. w/o Mittagstisch [`Commission LoLa`]
 - `20051/10900`:  Amount LoLa owes to Mittagstisch (`Debt to MiTi`)
 - `20051/30500`:  Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi` = `Income LoLa MiTi`]
 
 Where the absolute net sum for the transitory accounts must not be > 0.01, i.e.:
-- for `10920`: abs(`10920/30200` + `10920/30700` + `10920/20051` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.02
+- for `10920`: abs(`10920/30200` + `10920/30700` + `10920/23050` + `10920/21X00` + `10920/32000` + `10920/20051` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.02
 - for `20051`: abs(`10920/20051` - `20051/10900` - `20051/30200`) < 0.02
