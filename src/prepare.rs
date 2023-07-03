@@ -42,6 +42,7 @@ fn process_input(
     let sr_df = CsvReader::from_path(sales_report)?
         .has_header(true)
         .with_delimiter(b',')
+        .infer_schema(Some(1500))
         .finish()?;
     let txr_df = CsvReader::from_path(transaction_report)?
         .has_header(true)
