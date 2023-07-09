@@ -166,11 +166,14 @@ The columns of the resulting summary file are defined as follows:
   - `Culture_Cash`: Gross Cash Culture
   - `Culture_Card`: Gross Card Culture
   - `Culture Total`: Total Gross Culture [`Culture_Cash` + `Culture_Card`]
+  - `PaidOut_Cash`: Gross Cash PaidOut
+  - `PaidOut_Card`: Gross Card PaidOut
+  - `PaidOut Total`: Total Gross PaidOut [`PaidOut_Cash` + `PaidOut_Card`]
 - Gross values consumption, Tips and total reported values by payment method:
-  - `Gross Cash`: Total Gross Income Cash [`MiTi_Cash` + `Cafe_Cash` + `Verm_Cash` + `Deposit_Cash` + `Rental_Cash` + `Culture_Cash`]
+  - `Gross Cash`: Total Gross Income Cash [`MiTi_Cash` + `Cafe_Cash` + `Verm_Cash` + `Deposit_Cash` + `Rental_Cash` + `Culture_Cash` + `PaidOut_Cash`]
   - `Tips_Cash`: Tips Cash
   - `SumUp Cash`: Total Income Cash [`Gross Cash` + `Tips_Cash`]
-  - `Gross Card`: Gross Gross Income Card [`MiTi_Card` + `Cafe_Card` + `Verm_Card` + `Deposit_Card` + `Rental_Card` + `Culture_Card`]
+  - `Gross Card`: Gross Gross Income Card [`MiTi_Card` + `Cafe_Card` + `Verm_Card` + `Deposit_Card` + `Rental_Card` + `Culture_Card` + `PaidOut_Card`]
   - `Tips_Card`: Tips Card
   - `SumUp Card`: Total Gross Income Card [`Gross Card` + `Tips_Card`]
   - `Gross Total`: Gross Total Income [`Gross Cash` + `Gross Card`]
@@ -180,7 +183,7 @@ The columns of the resulting summary file are defined as follows:
   - `Gross Card MiTi`: Gross Card Income Mittagstisch [`MiTi_Card`] (including beverages LoLa)
   - `MiTi_Commission`: Card Commission for Mittagstisch (Menus and Tips, but not from LoLa beverages)
   - `Net Card MiTi`: Net Card Income Mittagstisch [`Gross Card MiTi` - `MiTi_Commission`] - commission on meals and tips are deducted, sales of beverages still included
-  - `Gross Card LoLa`: Gross Card Income LoLa (Café, Vermietungen, Deposit, Rental, Culture) [`Cafe_Card` + `Verm_Card` + `Deposit_Card` + `Rental_Card` + `Culture_Card`]
+  - `Gross Card LoLa`: Gross Card Income LoLa (Café, Vermietungen, Deposit, Rental, Culture) [`Cafe_Card` + `Verm_Card` + `Deposit_Card` + `Rental_Card` + `Culture_Card` + `PaidOut_Card`]
   - `LoLa_Commission`: Card Commission for LoLa (non-Mittagstisch related, but including commission for items sold by MiTi)
   - `LoLa_Commission_MiTi`: Card Commission for LoLa items sold by MiTi only, so not from Café or Rentals
   - `Net Card LoLa`: Net Card Income LoLa (Café and Vermietungen) [`Gross Card LoLa` - `LoLa_Commission`]
