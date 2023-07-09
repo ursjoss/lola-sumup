@@ -254,15 +254,16 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `10920/30200`:  Total Gross Payments Card Cafe [`Cafe_Card`]
 - `10920/30700`:  Total Gross Payments Card Rentals [`Verm_Card`]
 - `10920/23050`:  Total Gross Payments Card Key Deposit [`Deposit_Card`]
-- `10920/21X00`:  Total Gross Payments Card Rental Fee [`Rental_Card`]
+- `10920/31X00`:  Total Gross Payments Card Rental Fee [`Rental_Card`]
 - `10920/32000`:  Total Gross Payments Card Cultural Payments [`Culture_Card`]
+- `10920/10000`:  Total Gross Payments Paid out to external parties [`PaidOut_Card`]
 - `10920/20051`: Net Card income + tips (card) Mittagstisch [`Net Card MiTi` + `MiTi_Tips_Card`]
 - `10920/10910`: Tips LoLa paid via Card [`Tips_Card` - `MiTi_Tips_Card`]
 - `Payment SumUp`: Total Net Income plus tips paid via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]. Will be posted `10110/10920`, but based on Account Statement, not this report.
-- `68450/10920`:  Commission for Café, Vermietung, Deposit, Rental, and Cultural Payments, i.e. w/o Mittagstisch [`Commission LoLa`]
+- `68450/10920`:  Commission for Café, Vermietung, Deposit, Rental, Cultural Payments, and `PaidOut`, i.e. w/o Mittagstisch [`Commission LoLa`]
 - `20051/10900`:  Amount LoLa owes to Mittagstisch (`Debt to MiTi`)
 - `20051/30500`:  Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi` = `Income LoLa MiTi`]
 
 Where the absolute net sum for the transitory accounts must not be > 0.01, i.e.:
-- for `10920`: abs(`10920/30200` + `10920/30700` + `10920/23050` + `10920/21X00` + `10920/32000` + `10920/20051` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.02
+- for `10920`: abs(`10920/30200` + `10920/30700` + `10920/23050` + `10920/31X00` + `10920/32000` + `10920/10000` + `10920/20051` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.02
 - for `20051`: abs(`10920/20051` - `20051/10900` - `20051/30200`) < 0.02
