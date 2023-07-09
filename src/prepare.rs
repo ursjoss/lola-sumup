@@ -313,6 +313,8 @@ pub enum Topic {
     Rental,
     /// Cultural Payments
     Culture,
+    /// Paid out to external party in cash
+    PaidOut,
 }
 
 impl fmt::Display for Topic {
