@@ -76,8 +76,9 @@ The four columns that may be modified are:
   - `Deposit`: Key deposit.
   - `Rental`: Rental fee.
   - `Culture`: Items sold in context of cultural events.
+  - `PaidOut`: Income paid out in cash to external party.
 - `Owner`: Only relevant for Topic `MiTi`: `MiTi` (for menus produced and sold by Mittagstisch) or `LoLa` (LoLa beverages and food from LoLa, sold by Mittagstisch)
-- `Purpose`: `Consumption` or `Tip` (the former is also used for Topics `Deposit`, `Rental` or `Culture`)
+- `Purpose`: `Consumption` or `Tip` (the former is also used for Topics `Deposit`, `Rental`, `Culture`, or `PaidOut`)
 - `Comment`: Empty, can be manually filled to keep some context
 
 #### Adding artificial transactions for Cash payments that were not entered into SumUp
