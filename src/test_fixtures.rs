@@ -1,7 +1,7 @@
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveTime};
 use polars::df;
 use polars::frame::DataFrame;
-use polars::prelude::NamedFrom;
+use polars::prelude::{AnyValue, NamedFrom};
 use rstest::fixture;
 
 #[fixture]
@@ -9,13 +9,23 @@ pub fn sample_date() -> NaiveDate {
     NaiveDate::parse_from_str("24.3.2023", "%d.%m.%Y").expect("valid date")
 }
 
+#[fixture]
+pub fn sample_time() -> NaiveTime {
+    NaiveTime::parse_from_str("12:32", "%H:%M").expect("valid time")
+}
+
 /// Sample record matching the structure of the sumup sales report csv file
 #[fixture]
-pub fn sales_report_df_01() -> DataFrame {
+pub fn sales_report_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> DataFrame {
+    let date = sample_date.format("%d.%m.%y").to_string();
+    let time = sample_time.format("%H:%M").to_string();
+
+    println!("date: ${date}");
+    println!("time: ${time}");
     df!(
         "Account" => &["a@b.ch"],
-        "Date" => &["17.04.23"],
-        "Time" => &["12:32"],
+        "Date" => &[date],
+        "Time" => &[time],
         "Type" => &["Sales"],
         "Transaction ID" => &["TEGUCXAGDE"],
         "Receipt Number" => &["S20230000303"],
@@ -46,6 +56,35 @@ pub fn transaction_report_df_01() -> DataFrame {
     .expect("valid dataframe transaction report data frame 01")
 }
 
+/// Sample record matching the structure of the intermediate csv file,
+/// created out of sales_report_df_01 and transaction_report_df_01
+#[fixture]
+pub fn intermediate_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> DataFrame {
+    df!(
+        "Account" => &["a@b.ch", "a@b.ch"],
+        "Date" => &[sample_date, sample_date],
+        "Time" => &[sample_time, sample_time],
+        "Type" => &["Sales", "Sales"],
+        "Transaction ID" => &["TEGUCXAGDE", "TEGUCXAGDE"],
+        "Receipt Number" => &["S20230000303", "S20230000303"],
+        "Payment Method" => &["Card", "Card"],
+        "Quantity" => &[1_i64, 1_i64],
+        "Description" => &["foo", "Trinkgeld"],
+        "Currency" => &["CHF", "CHF"],
+        "Price (Gross)" => &[16.0, 1.0],
+        "Price (Net)" => &[16.0, 1.0],
+        "Tax" => &[0.0, 0.0],
+        "Tax rate" => &["", ""],
+        "Transaction refunded" => &["", ""],
+        "Commission" => &[0.2259, 0.0141],
+        "Topic" => &["MiTi", "MiTi"],
+        "Owner" => &["LoLa", "MiTi"],
+        "Purpose" => &["Consumption", "Tip"],
+        "Comment" => &[AnyValue::Null, AnyValue::Null],
+    )
+    .expect("valid intermediate dataframe 01")
+}
+
 /// Sample record matching the structure of the intermediate csv file
 #[fixture]
 pub fn intermediate_df_03(sample_date: NaiveDate) -> DataFrame {
@@ -72,7 +111,7 @@ pub fn intermediate_df_03(sample_date: NaiveDate) -> DataFrame {
         "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption"],
         "Comment" => &[None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>],
     )
-        .expect("valid intermediate dataframe 01")
+    .expect("valid intermediate dataframe 03")
 }
 
 /// Sample record matching the summary df, created from `intermediate_df_03`

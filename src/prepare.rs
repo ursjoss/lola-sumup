@@ -356,13 +356,9 @@ impl fmt::Display for Owner {
 
 #[cfg(test)]
 mod tests {
-    use chrono::{NaiveDate, NaiveTime};
-    use polars::df;
-    use polars::error::PolarsResult;
-    use polars::prelude::{AnyValue, NamedFrom};
     use rstest::rstest;
 
-    use crate::test_fixtures::{sales_report_df_01, transaction_report_df_01};
+    use crate::test_fixtures::{intermediate_df_01, sales_report_df_01, transaction_report_df_01};
     use crate::test_utils::assert_dataframe;
 
     use super::*;
@@ -371,37 +367,10 @@ mod tests {
     fn test_combine_input_dfs(
         sales_report_df_01: DataFrame,
         transaction_report_df_01: DataFrame,
-    ) -> PolarsResult<()> {
-        let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
-        let time = NaiveTime::parse_from_str("12:32:00", "%H:%M:%S").expect("valid time");
-        let expected = df!(
-            "Account" => &["a@b.ch", "a@b.ch"],
-            "Date" => &[date, date],
-            "Time" => &[time, time],
-            "Type" => &["Sales", "Sales"],
-            "Transaction ID" => &["TEGUCXAGDE", "TEGUCXAGDE"],
-            "Receipt Number" => &["S20230000303", "S20230000303"],
-            "Payment Method" => &["Card", "Card"],
-            "Quantity" => &[1_i64, 1_i64],
-            "Description" => &["foo", "Trinkgeld"],
-            "Currency" => &["CHF", "CHF"],
-            "Price (Gross)" => &[16.0, 1.0],
-            "Price (Net)" => &[16.0, 1.0],
-            "Tax" => &[0.0, 0.0],
-            "Tax rate" => &["", ""],
-            "Transaction refunded" => &["", ""],
-            "Commission" => &[0.2259, 0.0141],
-            "Topic" => &["MiTi", "MiTi"],
-            "Owner" => &["LoLa", "MiTi"],
-            "Purpose" => &["Consumption", "Tip"],
-            "Comment" => &[AnyValue::Null, AnyValue::Null],
-        )?;
-
+        intermediate_df_01: DataFrame,
+    ) {
         let out = combine_input_dfs(&sales_report_df_01, &transaction_report_df_01)
-            .expect("should parse");
-
-        assert_dataframe(&out, &expected);
-
-        Ok(())
+            .expect("should be able to combine input dfs");
+        assert_dataframe(&out, &intermediate_df_01);
     }
 }
