@@ -93,14 +93,14 @@ mod tests {
     use pretty_assertions::assert_eq;
     use rstest::rstest;
 
-    use crate::test_fixtures::{sample_date, summary_df_01};
+    use crate::test_fixtures::{sample_date, summary_df_03};
     use crate::test_utils::assert_dataframe;
 
     use super::*;
 
     #[rstest]
     fn test_gather_df_accounting(
-        summary_df_01: DataFrame,
+        summary_df_03: DataFrame,
         sample_date: NaiveDate,
     ) -> PolarsResult<()> {
         let expected = df!(
@@ -119,7 +119,7 @@ mod tests {
             "20051/30500" => &[42.49],
         )?;
         let out =
-            gather_df_accounting(&summary_df_01).expect("should be able to collect accounting_df");
+            gather_df_accounting(&summary_df_03).expect("should be able to collect accounting_df");
 
         assert_dataframe(&out, &expected);
 

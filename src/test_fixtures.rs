@@ -181,10 +181,10 @@ pub fn summary_df_02(sample_date: NaiveDate) -> DataFrame {
     .expect("valid summary dataframe 03")
 }
 
-/// Sample record 01 matching the summary dataframe created from the intermediate csv file
+/// Sample record 03 matching the summary dataframe created from the intermediate csv file
 /// accounting
 #[fixture]
-pub fn summary_df_01(sample_date: NaiveDate) -> DataFrame {
+pub fn summary_df_03(sample_date: NaiveDate) -> DataFrame {
     df!(
         "Date" => &[sample_date],
         "MiTi_Cash" => &[Some(112.0)],
