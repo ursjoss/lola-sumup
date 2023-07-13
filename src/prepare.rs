@@ -356,43 +356,21 @@ impl fmt::Display for Owner {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::assert_dataframe;
     use chrono::{NaiveDate, NaiveTime};
     use polars::df;
     use polars::error::PolarsResult;
     use polars::prelude::{AnyValue, NamedFrom};
+    use rstest::rstest;
+
+    use crate::test_utils::{assert_dataframe, sales_report_df_01, transaction_report_df_01};
 
     use super::*;
 
-    #[test]
-    fn test_combine_input_dfs() -> PolarsResult<()> {
-        let df = df!(
-            "Account" => &["a@b.ch"],
-            "Date" => &["17.04.23"],
-            "Time" => &["12:32"],
-            "Type" => &["Sales"],
-            "Transaction ID" => &["TEGUCXAGDE"],
-            "Receipt Number" => &["S20230000303"],
-            "Payment Method" => &["Card"],
-            "Quantity" => &[1_i64],
-            "Description" => &[" foo "],
-            "Currency" => &["CHF"],
-            "Price (Gross)" => &[16.0],
-            "Price (Net)" => &[16.0],
-            "Tax" => &[0.0],
-            "Tax rate" => &[""],
-            "Transaction refunded" => &[""],
-        )?;
-
-        let raw_commission_df = df!(
-            "Transaktions-ID" => &["TEGUCXAGDE"],
-            "Zahlungsart" => &["Umsatz"],
-            "Status" => &["Erfolgreich"],
-            "Betrag inkl. MwSt." => &[17.0],
-            "Trinkgeldbetrag" => &[1.0],
-            "Gebühr" => &[0.24],
-        )?;
-
+    #[rstest]
+    fn test_combine_input_dfs(
+        sales_report_df_01: DataFrame,
+        transaction_report_df_01: DataFrame,
+    ) -> PolarsResult<()> {
         let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
         let time = NaiveTime::parse_from_str("12:32:00", "%H:%M:%S").expect("valid time");
         let expected = df!(
@@ -418,7 +396,8 @@ mod tests {
             "Comment" => &[AnyValue::Null, AnyValue::Null],
         )?;
 
-        let out = combine_input_dfs(&df, &raw_commission_df).expect("should parse");
+        let out = combine_input_dfs(&sales_report_df_01, &transaction_report_df_01)
+            .expect("should parse");
 
         assert_dataframe(&out, &expected);
 
