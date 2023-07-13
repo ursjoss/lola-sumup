@@ -62,38 +62,16 @@ fn write_to_file(df: &mut DataFrame, path: &dyn AsRef<Path>) -> Result<(), Box<d
 
 #[cfg(test)]
 mod tests {
-    use polars::df;
-    use polars::prelude::{AnyValue, NamedFrom};
     use pretty_assertions::assert_ne;
+    use rstest::rstest;
+
+    use crate::test_utils::intermediate_df_01;
 
     use super::*;
 
-    #[test]
-    fn can_crunch_data_without_panic() -> PolarsResult<()> {
-        let raw_df = df!(
-            "Account" => &["a@b.ch", "a@b.ch"],
-            "Date" => &["17.4.2023", "17.4.2023"],
-            "Time" => &["12:32:00", "12:32:00"],
-            "Type" => &["Sales", "Sales"],
-            "Transaction ID" => &["TEGUCXAGDE", "TEGUCXAGDE"],
-            "Receipt Number" => &["S20230000303", "S20230000303"],
-            "Payment Method" => &["Card", "Card"],
-            "Quantity" => &[1_i64, 1_i64],
-            "Description" => &["foo", "Trinkgeld"],
-            "Currency" => &["CHF", "CHF"],
-            "Price (Gross)" => &[16.0, 1.0],
-            "Price (Net)" => &[16.0, 1.0],
-            "Tax" => &[0.0, 0.0],
-            "Tax rate" => &["", ""],
-            "Transaction refunded" => &["", ""],
-            "Commission" => &[0.2259, 0.0141],
-            "Topic" => &["MiTi", "MiTi"],
-            "Owner" => &["LoLa", "MiTi"],
-            "Purpose" => &["Consumption", "Tip"],
-            "Comment" => &[AnyValue::Null, AnyValue::Null],
-        )?;
-
-        let (df1, df2) = crunch_data(raw_df).expect("should crunch");
+    #[rstest]
+    fn can_crunch_data_without_panic(intermediate_df_01: DataFrame) -> PolarsResult<()> {
+        let (df1, df2) = crunch_data(intermediate_df_01).expect("should crunch");
 
         assert_ne!(df1.shape().0, 0, "df1 does not contain records");
         assert_ne!(df2.shape().0, 0, "df2 does not contain records");
