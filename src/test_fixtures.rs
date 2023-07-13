@@ -14,7 +14,7 @@ pub fn sample_time() -> NaiveTime {
     NaiveTime::parse_from_str("12:32", "%H:%M").expect("valid time")
 }
 
-/// Sample record matching the structure of the sumup sales report csv file
+/// Sample record 01 matching the structure of the sumup sales report csv file
 #[fixture]
 pub fn sales_report_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> DataFrame {
     let date = sample_date.format("%d.%m.%y").to_string();
@@ -42,7 +42,7 @@ pub fn sales_report_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> Dat
     .expect("valid dataframe sales report data frame 01")
 }
 
-/// Sample record matching the structure of the sumup transaction report csv file
+/// Sample record 01 matching the structure of the sumup transaction report csv file
 #[fixture]
 pub fn transaction_report_df_01() -> DataFrame {
     df!(
@@ -56,8 +56,8 @@ pub fn transaction_report_df_01() -> DataFrame {
     .expect("valid dataframe transaction report data frame 01")
 }
 
-/// Sample record matching the structure of the intermediate csv file,
-/// created out of sales_report_df_01 and transaction_report_df_01
+/// Sample record 01 matching the structure of the intermediate csv file,
+/// It is the result of processing sales_report_df_01 and transaction_report_df_01
 #[fixture]
 pub fn intermediate_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> DataFrame {
     df!(
@@ -115,6 +115,7 @@ pub fn intermediate_df_03(sample_date: NaiveDate) -> DataFrame {
 }
 
 /// Sample record matching the summary df, created from `intermediate_df_03`
+/// summary
 #[fixture]
 pub fn summary_df_03(sample_date: NaiveDate) -> DataFrame {
     df!(
@@ -181,6 +182,7 @@ pub fn summary_df_03(sample_date: NaiveDate) -> DataFrame {
 }
 
 /// Sample record 01 matching the summary dataframe created from the intermediate csv file
+/// accounting
 #[fixture]
 pub fn summary_df_01(sample_date: NaiveDate) -> DataFrame {
     df!(
@@ -247,8 +249,9 @@ pub fn summary_df_01(sample_date: NaiveDate) -> DataFrame {
 }
 
 /// Sample record 02 matching the summary dataframe created from the intermediate csv file
+/// miti
 #[fixture]
-pub fn summary_df_02(sample_date: NaiveDate) -> DataFrame {
+pub fn summary_df_04(sample_date: NaiveDate) -> DataFrame {
     df!(
         "Date" => &[sample_date],
         "MiTi_Cash" => &[Some(112.0)],
