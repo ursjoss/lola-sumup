@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use polars::df;
 use polars::frame::DataFrame;
-use polars::prelude::{AnyValue, NamedFrom};
+use polars::prelude::NamedFrom;
 use rstest::fixture;
 
 #[fixture]
@@ -44,34 +44,6 @@ pub fn transaction_report_df_01() -> DataFrame {
         "Gebühr" => &[0.24],
     )
     .expect("valid dataframe transaction report data frame 01")
-}
-
-/// Sample record matching the structure of the intermediate csv file
-#[fixture]
-pub fn intermediate_df_01() -> DataFrame {
-    df!(
-        "Account" => &["a@b.ch", "a@b.ch"],
-        "Date" => &["17.4.2023", "17.4.2023"],
-        "Time" => &["12:32:00", "12:32:00"],
-        "Type" => &["Sales", "Sales"],
-        "Transaction ID" => &["TEGUCXAGDE", "TEGUCXAGDE"],
-        "Receipt Number" => &["S20230000303", "S20230000303"],
-        "Payment Method" => &["Card", "Card"],
-        "Quantity" => &[1_i64, 1_i64],
-        "Description" => &["foo", "Trinkgeld"],
-        "Currency" => &["CHF", "CHF"],
-        "Price (Gross)" => &[16.0, 1.0],
-        "Price (Net)" => &[16.0, 1.0],
-        "Tax" => &[0.0, 0.0],
-        "Tax rate" => &["", ""],
-        "Transaction refunded" => &["", ""],
-        "Commission" => &[0.2259, 0.0141],
-        "Topic" => &["MiTi", "MiTi"],
-        "Owner" => &["LoLa", "MiTi"],
-        "Purpose" => &["Consumption", "Tip"],
-        "Comment" => &[AnyValue::Null, AnyValue::Null],
-    )
-    .expect("valid intermediate dataframe 01")
 }
 
 /// Sample record matching the structure of the intermediate csv file
