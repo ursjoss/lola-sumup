@@ -62,15 +62,15 @@ fn write_to_file(df: &mut DataFrame, path: &dyn AsRef<Path>) -> Result<(), Box<d
 
 #[cfg(test)]
 mod tests {
-    use crate::test_fixtures::intermediate_df_03;
+    use crate::test_fixtures::intermediate_df_02;
     use pretty_assertions::assert_ne;
     use rstest::rstest;
 
     use super::*;
 
     #[rstest]
-    fn can_crunch_data_without_panic(intermediate_df_03: DataFrame) {
-        let (df1, df2) = crunch_data(intermediate_df_03).expect("should crunch");
+    fn can_crunch_data_without_panic(intermediate_df_02: DataFrame) {
+        let (df1, df2) = crunch_data(intermediate_df_02).expect("should crunch");
 
         assert_ne!(df1.shape().0, 0, "df1 does not contain records");
         assert_ne!(df2.shape().0, 0, "df2 does not contain records");

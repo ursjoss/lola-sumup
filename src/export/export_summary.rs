@@ -617,7 +617,7 @@ impl FilterExpressionProvider for MitiMealType {
 mod tests {
     use rstest::rstest;
 
-    use crate::test_fixtures::{intermediate_df_03, summary_df_03};
+    use crate::test_fixtures::{intermediate_df_02, summary_df_02};
     use crate::test_utils::assert_dataframe;
 
     use super::*;
@@ -696,8 +696,8 @@ mod tests {
     }
 
     #[rstest]
-    fn test_collect_data(intermediate_df_03: DataFrame, summary_df_03: DataFrame) {
-        let out = collect_data(intermediate_df_03).expect("should be able to collect the data");
-        assert_dataframe(&out, &summary_df_03);
+    fn test_collect_data(intermediate_df_02: DataFrame, summary_df_02: DataFrame) {
+        let out = collect_data(intermediate_df_02).expect("should be able to collect the data");
+        assert_dataframe(&out, &summary_df_02);
     }
 }

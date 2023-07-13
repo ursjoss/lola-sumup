@@ -85,9 +85,9 @@ pub fn intermediate_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> Dat
     .expect("valid intermediate dataframe 01")
 }
 
-/// Sample record matching the structure of the intermediate csv file
+/// Sample record 02 matching the structure of the intermediate csv file
 #[fixture]
-pub fn intermediate_df_03(sample_date: NaiveDate) -> DataFrame {
+pub fn intermediate_df_02(sample_date: NaiveDate) -> DataFrame {
     let date = sample_date.format("%d.%m.%Y").to_string();
     df!(
         "Account" => &["a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@B.ch", "a@B.ch"],
@@ -114,10 +114,10 @@ pub fn intermediate_df_03(sample_date: NaiveDate) -> DataFrame {
     .expect("valid intermediate dataframe 03")
 }
 
-/// Sample record matching the summary df, created from `intermediate_df_03`
+/// Sample record 02 matching the summary df, created from `intermediate_df_02`
 /// summary
 #[fixture]
-pub fn summary_df_03(sample_date: NaiveDate) -> DataFrame {
+pub fn summary_df_02(sample_date: NaiveDate) -> DataFrame {
     df!(
         "Date" => &[sample_date],
         "MiTi_Cash" => &[Some(3.5)],
