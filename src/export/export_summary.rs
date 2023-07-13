@@ -615,10 +615,9 @@ impl FilterExpressionProvider for MitiMealType {
 
 #[cfg(test)]
 mod tests {
-    use chrono::NaiveDate;
     use rstest::rstest;
 
-    use crate::test_utils::assert_dataframe;
+    use crate::test_utils::{assert_dataframe, intermediate_df_03, summary_df_03};
 
     use super::*;
 
@@ -695,94 +694,9 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn test_collect_data() -> PolarsResult<()> {
-        let df = df!(
-            "Account" => &["a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@B.ch", "a@B.ch"],
-            "Date" => &["17.04.2023", "17.04.2023", "17.04.2023", "17.04.2023", "17.04.2023", "17.04.2023", "17.04.2023"],
-            "Time" => &["12:32:00", "12:33:00", "12:34:00", "12:35:00", "12:36:00", "12:37:00", "12:40:00"],
-            "Type" => &["Sales", "Sales", "Sales", "Sales", "Sales", "Sales", "Sales"],
-            "Transaction ID" => &["TEGUCXAGDE", "TEGUCXAGDF", "TEGUCXAGDG", "TEGUCXAGDH", "TEGUCXAGDI", "TEGUCXAGDJ", "EGUCXAGDK"],
-            "Receipt Number" => &["S20230000303", "S20230000304", "S20230000305", "S20230000306", "S20230000307", "S20230000308", "S20230000309"],
-            "Payment Method" => &["Card", "Cash", "Card", "Card", "Card", "Card", "Card"],
-            "Quantity" => &[1, 1, 4, 1, 1, 1, 1],
-            "Description" => &["Hauptgang, normal", "Kaffee", "Cappuccino", "Schlüsseldepot", "Kulturevent", "Rental fee", "Sold by renter, paid out in cash"],
-            "Currency" => &["CHF", "CHF", "CHF", "CHF", "CHF", "CHF", "CHF"],
-            "Price (Gross)" => &[16.0, 3.50, 20.0, 100.0, 400.0, 500.0, 100.0],
-            "Price (Net)" => &[16.0, 3.50, 20.0, 100.0, 400.0, 500.0, 100.0],
-            "Tax" => &["0.0%", "0.0%", "0.0%", "0.0%", "0.0%", "0.0%", "0.0%"],
-            "Tax rate" => &["", "", "", "", "", "", ""],
-            "Transaction refunded" => &["", "", "", "", "", "", ""],
-            "Commission" =>[0.24123, 0.0, 0.3, 1.5, 6.0, 7.5, 1.5],
-            "Topic" => &["MiTi", "MiTi", "MiTi", "Deposit", "Culture", "Rental", "PaidOut"],
-            "Owner" => &["MiTi", "LoLa", "LoLa", "", "", "", ""],
-            "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption"],
-            "Comment" => &[None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>],
-        )?;
-        let out = collect_data(df).expect("should be able to collect the data");
-        let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
-        let expected = df!(
-            "Date" => &[date],
-            "MiTi_Cash" => &[Some(3.5)],
-            "MiTi_Card" => &[Some(36.0)],
-            "MiTi Total" => &[39.5],
-            "Cafe_Cash" => &[None::<f64>],
-            "Cafe_Card" => &[None::<f64>],
-            "Cafe Total" => &[0.0],
-            "Verm_Cash" => &[None::<f64>],
-            "Verm_Card" => &[None::<f64>],
-            "Verm Total" => &[0.0],
-            "Deposit_Cash" => &[None::<f64>],
-            "Deposit_Card" => &[100.0],
-            "Deposit Total" => &[100.0],
-            "Rental_Cash" => &[None::<f64>],
-            "Rental_Card" => &[500.0],
-            "Rental Total" => &[500.0],
-            "Culture_Cash" => &[None::<f64>],
-            "Culture_Card" => &[400.0],
-            "Culture Total" => &[400.0],
-            "PaidOut_Cash" => &[None::<f64>],
-            "PaidOut_Card" => &[100.0],
-            "PaidOut Total" => &[100.0],
-            "Gross Cash" => &[3.5],
-            "Tips_Cash" => &[None::<f64>],
-            "SumUp Cash" => &[3.5],
-            "Gross Card" => &[1136.0],
-            "Tips_Card" => &[None::<f64>],
-            "SumUp Card" => &[1136.0],
-            "Gross Total" => &[1139.5],
-            "Tips Total" => &[0.0],
-            "SumUp Total" => &[1139.5],
-            "Gross Card MiTi" => &[36.0],
-            "MiTi_Commission" => &[Some(0.24)],
-            "Net Card MiTi" => &[35.76],
-            "Gross Card LoLa" => &[1100.0],
-            "LoLa_Commission" => &[16.8],
-            "LoLa_Commission_MiTi" => &[0.3],
-            "Net Card LoLa" => &[1083.2],
-            "Gross Card Total" => &[1136.0],
-            "Total Commission" => &[17.04],
-            "Net Card Total" => &[1118.96],
-            "Net Payment SumUp MiTi" => &[35.46],
-            "MiTi_Tips_Cash" => &[None::<f64>],
-            "MiTi_Tips_Card" => &[None::<f64>],
-            "MiTi_Tips" => &[None::<f64>],
-            "Cafe_Tips" => &[None::<f64>],
-            "Verm_Tips" => &[None::<f64>],
-            "Gross MiTi (MiTi)" => &[Some(16.0)],
-            "Gross MiTi (LoLa)" => &[Some(23.5)],
-            "Gross MiTi (MiTi) Card" => &[Some(16.0)],
-            "Net MiTi (MiTi) Card" => &[15.76],
-            "Net MiTi (LoLa)" => &[23.2],
-            "Contribution MiTi" => &[4.64],
-            "Net MiTi (LoLA) - Share LoLa" => &[18.56],
-            "Debt to MiTi" => &[16.9],
-            "Income LoLa MiTi" => &[18.86],
-            "MealCount_Regular" => &[1],
-            "MealCount_Children" => &[None::<i32>],
-        )?;
-        assert_dataframe(&out, &expected);
-
-        Ok(())
+    #[rstest]
+    fn test_collect_data(intermediate_df_03: DataFrame, summary_df_03: DataFrame) {
+        let out = collect_data(intermediate_df_03).expect("should be able to collect the data");
+        assert_dataframe(&out, &summary_df_03);
     }
 }
