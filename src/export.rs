@@ -70,12 +70,10 @@ mod tests {
     use super::*;
 
     #[rstest]
-    fn can_crunch_data_without_panic(intermediate_df_01: DataFrame) -> PolarsResult<()> {
+    fn can_crunch_data_without_panic(intermediate_df_01: DataFrame) {
         let (df1, df2) = crunch_data(intermediate_df_01).expect("should crunch");
 
         assert_ne!(df1.shape().0, 0, "df1 does not contain records");
         assert_ne!(df2.shape().0, 0, "df2 does not contain records");
-
-        Ok(())
     }
 }
