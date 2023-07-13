@@ -71,42 +71,16 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
 
 #[cfg(test)]
 mod tests {
-    use chrono::NaiveDate;
     use rstest::rstest;
 
-    use crate::test_fixtures::{sample_date, summary_df_03};
+    use crate::test_fixtures::{miti_df_03, summary_df_03};
     use crate::test_utils::assert_dataframe;
 
     use super::*;
 
     #[rstest]
-    fn test_gather_df_miti(summary_df_03: DataFrame, sample_date: NaiveDate) -> PolarsResult<()> {
-        let expected = df!(
-            "Datum" => &[sample_date],
-            "Hauptgang" => &[14],
-            "Kind" => &[1],
-            "Küche" => &[Some(250.0)],
-            "Total Bar" => &[Some(53.0)],
-            "Anteil LoLa" => &[Some(42.4)],
-            "Anteil MiTi" => &[Some(10.6)],
-            "Einnahmen barz." => &[112.5],
-            "davon TG barz." => &[Some(0.5)],
-            "Einnahmen Karte" => &[192.0],
-            "davon TG Karte" => &[Some(1.0)],
-            "Total Einnahmen (oT)" => &[303.0],
-            "Kommission Bar" => &[0.44],
-            "Netto Bar" => &[52.56],
-            "Karte MiTi" => &[Some(167.0)],
-            "Kommission MiTi" => &[2.75],
-            "Netto Karte MiTi" => &[164.25],
-            "Net Total Karte" => &[187.81],
-            "Verkauf LoLa (80%)" => &[-42.05],
-            "Überweisung" => &[145.76],
-        )?;
+    fn test_gather_df_miti(summary_df_03: DataFrame, miti_df_03: DataFrame) {
         let out = gather_df_miti(&summary_df_03).expect("should be able to collect miti_df");
-
-        assert_dataframe(&out, &expected);
-
-        Ok(())
+        assert_dataframe(&out, &miti_df_03);
     }
 }

@@ -14,6 +14,8 @@ pub fn sample_time() -> NaiveTime {
     NaiveTime::parse_from_str("12:32", "%H:%M").expect("valid time")
 }
 
+//region::01 - from raw files to intermediate
+
 /// Sample record 01 matching the structure of the sumup sales report csv file
 #[fixture]
 pub fn sales_report_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> DataFrame {
@@ -84,6 +86,10 @@ pub fn intermediate_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> Dat
     )
     .expect("valid intermediate dataframe 01")
 }
+
+//endregion
+
+//region:02 - from intermediate to summary
 
 /// Sample record 02 matching the structure of the intermediate csv file
 #[fixture]
@@ -181,6 +187,10 @@ pub fn summary_df_02(sample_date: NaiveDate) -> DataFrame {
     .expect("valid summary dataframe 03")
 }
 
+//endregion
+
+//region:03 - from summary to accounting / miti
+
 /// Sample record 03 matching the summary dataframe created from the intermediate csv file
 /// accounting
 /// miti
@@ -248,3 +258,54 @@ pub fn summary_df_03(sample_date: NaiveDate) -> DataFrame {
     )
     .expect("valid summary dataframe 01")
 }
+
+/// Sample record 03 matching the accounting dataframe created from summary_df_03
+#[fixture]
+pub fn accounting_df_03(sample_date: NaiveDate) -> DataFrame {
+    df!(
+        "Date" => &[sample_date],
+        "10920/30200" => &[20.0],
+        "10920/30700" => &[12.0],
+        "10920/23050" => &[100.0],
+        "10920/31X00" => &[500.0],
+        "10920/32000" => &[400.0],
+        "10920/10000" => &[100.0],
+        "10920/20051" => &[189.25],
+        "10920/10910" => &[0.0],
+        "Payment SumUp" => &[1304.21],
+        "68450/10920" => &[Some(17.54)],
+        "20051/10900" => &[145.76],
+        "20051/30500" => &[42.49],
+    )
+    .expect("Valid accounting df")
+}
+
+/// Sample record 03 matching the miti dataframe created from summary_df_03
+#[fixture]
+pub fn miti_df_03(sample_date: NaiveDate) -> DataFrame {
+    df!(
+        "Datum" => &[sample_date],
+        "Hauptgang" => &[14],
+        "Kind" => &[1],
+        "Küche" => &[Some(250.0)],
+        "Total Bar" => &[Some(53.0)],
+        "Anteil LoLa" => &[Some(42.4)],
+        "Anteil MiTi" => &[Some(10.6)],
+        "Einnahmen barz." => &[112.5],
+        "davon TG barz." => &[Some(0.5)],
+        "Einnahmen Karte" => &[192.0],
+        "davon TG Karte" => &[Some(1.0)],
+        "Total Einnahmen (oT)" => &[303.0],
+        "Kommission Bar" => &[0.44],
+        "Netto Bar" => &[52.56],
+        "Karte MiTi" => &[Some(167.0)],
+        "Kommission MiTi" => &[2.75],
+        "Netto Karte MiTi" => &[164.25],
+        "Net Total Karte" => &[187.81],
+        "Verkauf LoLa (80%)" => &[-42.05],
+        "Überweisung" => &[145.76],
+    )
+    .expect("Valid miti df")
+}
+
+//endregion
