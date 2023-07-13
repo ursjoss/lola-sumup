@@ -356,72 +356,21 @@ impl fmt::Display for Owner {
 
 #[cfg(test)]
 mod tests {
-    use chrono::{NaiveDate, NaiveTime};
-    use polars::df;
-    use polars::prelude::{AnyValue, NamedFrom};
-    use pretty_assertions::assert_eq;
     use rstest::rstest;
+
+    use crate::test_fixtures::{intermediate_df_01, sales_report_df_01, transaction_report_df_01};
+    use crate::test_utils::assert_dataframe;
 
     use super::*;
 
     #[rstest]
-    fn test_combine_input_dfs() {
-        let df = df!(
-            "Account" => &["a@b.ch"],
-            "Date" => &["17.04.23"],
-            "Time" => &["12:32"],
-            "Type" => &["Sales"],
-            "Transaction ID" => &["TEGUCXAGDE"],
-            "Receipt Number" => &["S20230000303"],
-            "Payment Method" => &["Card"],
-            "Quantity" => &[1_i64],
-            "Description" => &[" foo "],
-            "Currency" => &["CHF"],
-            "Price (Gross)" => &[16.0],
-            "Price (Net)" => &[16.0],
-            "Tax" => &[0.0],
-            "Tax rate" => &[""],
-            "Transaction refunded" => &[""],
-        )
-        .expect("Misconfigured test data frame");
-
-        let raw_commission_df = df!(
-            "Transaktions-ID" => &["TEGUCXAGDE"],
-            "Zahlungsart" => &["Umsatz"],
-            "Status" => &["Erfolgreich"],
-            "Betrag inkl. MwSt." => &[17.0],
-            "Trinkgeldbetrag" => &[1.0],
-            "Gebühr" => &[0.24],
-        )
-        .expect("Misconfigured commission df");
-
-        let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
-        let time = NaiveTime::parse_from_str("12:32:00", "%H:%M:%S").expect("valid time");
-        let expected = df!(
-            "Account" => &["a@b.ch", "a@b.ch"],
-            "Date" => &[date, date],
-            "Time" => &[time, time],
-            "Type" => &["Sales", "Sales"],
-            "Transaction ID" => &["TEGUCXAGDE", "TEGUCXAGDE"],
-            "Receipt Number" => &["S20230000303", "S20230000303"],
-            "Payment Method" => &["Card", "Card"],
-            "Quantity" => &[1_i64, 1_i64],
-            "Description" => &["foo", "Trinkgeld"],
-            "Currency" => &["CHF", "CHF"],
-            "Price (Gross)" => &[16.0, 1.0],
-            "Price (Net)" => &[16.0, 1.0],
-            "Tax" => &[0.0, 0.0],
-            "Tax rate" => &["", ""],
-            "Transaction refunded" => &["", ""],
-            "Commission" => &[0.2259, 0.0141],
-            "Topic" => &["MiTi", "MiTi"],
-            "Owner" => &["LoLa", "MiTi"],
-            "Purpose" => &["Consumption", "Tip"],
-            "Comment" => &[AnyValue::Null, AnyValue::Null],
-        );
-
-        let out = combine_input_dfs(&df, &raw_commission_df).expect("should parse");
-
-        assert_eq!(out, expected.expect("valid data frame"));
+    fn test_combine_input_dfs(
+        sales_report_df_01: DataFrame,
+        transaction_report_df_01: DataFrame,
+        intermediate_df_01: DataFrame,
+    ) {
+        let out = combine_input_dfs(&sales_report_df_01, &transaction_report_df_01)
+            .expect("should be able to combine input dfs");
+        assert_dataframe(&out, &intermediate_df_01);
     }
 }

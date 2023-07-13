@@ -93,93 +93,16 @@ mod tests {
     use pretty_assertions::assert_eq;
     use rstest::rstest;
 
+    use crate::test_fixtures::{accounting_df_03, summary_df_03};
+    use crate::test_utils::assert_dataframe;
+
     use super::*;
 
     #[rstest]
-    fn test_gather_df_accounting() {
-        let date = NaiveDate::parse_from_str("24.3.2023", "%d.%m.%Y").expect("valid date");
-        let df_summary = df!(
-            "Date" => &[date],
-            "MiTi_Cash" => &[Some(112.0)],
-            "MiTi_Card" => &[Some(191.0)],
-            "MiTi Total" => &[303.0],
-            "Cafe_Cash" => &[Some(29.5)],
-            "Cafe_Card" => &[Some(20.0)],
-            "Cafe Total" => &[49.5],
-            "Verm_Cash" => &[Some(102.5)],
-            "Verm_Card" => &[Some(12.0)],
-            "Verm Total" => &[114.5],
-            "Deposit_Cash" => &[None::<f64>],
-            "Deposit_Card" => &[Some(100.0)],
-            "Deposit Total" => &[100.0],
-            "Rental_Cash" => &[None::<f64>],
-            "Rental_Card" => &[Some(500.0)],
-            "Rental Total" => &[500.0],
-            "Culture_Cash" => &[None::<f64>],
-            "Culture_Card" => &[400.0],
-            "Culture Total" => &[400.0],
-            "PaidOut_Cash" => &[None::<f64>],
-            "PaidOut_Card" => &[100.0],
-            "PaidOut Total" => &[100.0],
-            "Gross Cash" => &[644.0],
-            "Tips_Cash" => &[Some(4.0)],
-            "SumUp Cash" => &[248.0],
-            "Gross Card" => &[1323.0],
-            "Tips_Card" => &[Some(1.0)],
-            "SumUp Card" => &[1324.0],
-            "Gross Total" => &[1567.0],
-            "Tips Total" => &[12.5],
-            "SumUp Total" => &[1554.5],
-            "Gross Card MiTi" => &[191.0],
-            "MiTi_Commission" => &[Some(2.75)],
-            "Net Card MiTi" => &[188.25],
-            "Gross Card LoLa" => &[1132.0],
-            "LoLa_Commission" => &[17.54],
-            "LoLa_Commission_MiTi" => &[0.44],
-            "Net Card LoLa" => &[1114.46],
-            "Gross Card Total" => &[1323],
-            "Total Commission" => &[19.79],
-            "Net Card Total" => &[1303.21],
-            "Net Payment SumUp MiTi" => &[187.81],
-            "MiTi_Tips_Cash" => &[Some(0.5)],
-            "MiTi_Tips_Card" => &[Some(1.0)],
-            "MiTi_Tips" => &[Some(1.5)],
-            "Cafe_Tips" => &[Some(3.5)],
-            "Verm_Tips" => &[None::<f64>],
-            "Gross MiTi (MiTi)" => &[Some(250.0)],
-            "Gross MiTi (LoLa)" => &[Some(53.0)],
-            "Gross MiTi (MiTi) Card" => &[Some(167.0)],
-            "Net MiTi (MiTi) Card" => &[164.25],
-            "Net MiTi (LoLa)" => &[52.56],
-            "Contribution MiTi" => &[10.51],
-            "Net MiTi (LoLA) - Share LoLa" => &[52.56],
-            "Debt to MiTi" => &[145.76],
-            "Income LoLa MiTi" => &[42.49],
-            "MealCount_Regular" => &[14],
-            "MealCount_Children" => &[1],
-        )
-        .expect("valid data frame");
-        let expected = df!(
-            "Date" => &[date],
-            "10920/30200" => &[20.0],
-            "10920/30700" => &[12.0],
-            "10920/23050" => &[100.0],
-            "10920/31X00" => &[500.0],
-            "10920/32000" => &[400.0],
-            "10920/10000" => &[100.0],
-            "10920/20051" => &[189.25],
-            "10920/10910" => &[0.0],
-            "Payment SumUp" => &[1304.21],
-            "68450/10920" => &[Some(17.54)],
-            "20051/10900" => &[145.76],
-            "20051/30500" => &[42.49],
-        )
-        .expect("valid data frame")
-        .lazy()
-        .collect();
+    fn test_gather_df_accounting(summary_df_03: DataFrame, accounting_df_03: DataFrame) {
         let out =
-            gather_df_accounting(&df_summary).expect("should be able to collect accounting_df");
-        assert_eq!(out, expected.expect("valid data frame"));
+            gather_df_accounting(&summary_df_03).expect("should be able to collect accounting_df");
+        assert_dataframe(&out, &accounting_df_03);
     }
 
     #[rstest]
@@ -410,7 +333,7 @@ mod tests {
         #[case] ilm: f64,
         #[case] delta: Option<f64>,
         #[case] account: &str,
-    ) {
+    ) -> PolarsResult<()> {
         let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
         let df = df!(
             "Date" => &[date],
@@ -426,8 +349,7 @@ mod tests {
             "68450/10920" => &[Some(cl)],
             "20051/10900" => &[dtm],
             "20051/30500" => &[ilm],
-        )
-        .expect("valid data frame");
+        )?;
         match validate_acc_constraint(&df) {
             Ok(()) => assert!(delta.is_none(), "Would not have expected delta {} on {date}.", delta.unwrap()),
             Err(e) => match delta {
@@ -438,5 +360,7 @@ mod tests {
                 None => panic!("Would have expected delta on {date} but not in fixture: {e}"),
             },
         }
+
+        Ok(())
     }
 }

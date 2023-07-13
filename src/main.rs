@@ -12,6 +12,11 @@ use crate::prepare::prepare;
 mod export;
 mod prepare;
 
+#[cfg(test)]
+mod test_fixtures;
+#[cfg(test)]
+mod test_utils;
+
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 #[command(propagate_version = true)]
