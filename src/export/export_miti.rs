@@ -74,7 +74,8 @@ mod tests {
     use chrono::NaiveDate;
     use rstest::rstest;
 
-    use crate::test_utils::{assert_dataframe, sample_date_01, summary_df_02};
+    use crate::test_fixtures::{sample_date_01, summary_df_02};
+    use crate::test_utils::assert_dataframe;
 
     use super::*;
 

@@ -362,7 +362,8 @@ mod tests {
     use polars::prelude::{AnyValue, NamedFrom};
     use rstest::rstest;
 
-    use crate::test_utils::{assert_dataframe, sales_report_df_01, transaction_report_df_01};
+    use crate::test_fixtures::{sales_report_df_01, transaction_report_df_01};
+    use crate::test_utils::assert_dataframe;
 
     use super::*;
 

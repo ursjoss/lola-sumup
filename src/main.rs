@@ -13,6 +13,8 @@ mod export;
 mod prepare;
 
 #[cfg(test)]
+mod test_fixtures;
+#[cfg(test)]
 mod test_utils;
 
 #[derive(Parser)]

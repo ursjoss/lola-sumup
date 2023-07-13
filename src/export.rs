@@ -65,7 +65,7 @@ mod tests {
     use pretty_assertions::assert_ne;
     use rstest::rstest;
 
-    use crate::test_utils::intermediate_df_01;
+    use crate::test_fixtures::intermediate_df_01;
 
     use super::*;
 

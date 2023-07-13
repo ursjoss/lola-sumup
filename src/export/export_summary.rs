@@ -617,7 +617,8 @@ impl FilterExpressionProvider for MitiMealType {
 mod tests {
     use rstest::rstest;
 
-    use crate::test_utils::{assert_dataframe, intermediate_df_03, summary_df_03};
+    use crate::test_fixtures::{intermediate_df_03, summary_df_03};
+    use crate::test_utils::assert_dataframe;
 
     use super::*;
 
