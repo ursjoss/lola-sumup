@@ -93,7 +93,7 @@ mod tests {
     use pretty_assertions::assert_eq;
     use rstest::rstest;
 
-    use crate::test_fixtures::{sample_date_01, summary_df_01};
+    use crate::test_fixtures::{sample_date, summary_df_01};
     use crate::test_utils::assert_dataframe;
 
     use super::*;
@@ -101,10 +101,10 @@ mod tests {
     #[rstest]
     fn test_gather_df_accounting(
         summary_df_01: DataFrame,
-        sample_date_01: NaiveDate,
+        sample_date: NaiveDate,
     ) -> PolarsResult<()> {
         let expected = df!(
-            "Date" => &[sample_date_01],
+            "Date" => &[sample_date],
             "10920/30200" => &[20.0],
             "10920/30700" => &[12.0],
             "10920/23050" => &[100.0],

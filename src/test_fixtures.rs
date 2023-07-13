@@ -5,7 +5,7 @@ use polars::prelude::NamedFrom;
 use rstest::fixture;
 
 #[fixture]
-pub fn sample_date_01() -> NaiveDate {
+pub fn sample_date() -> NaiveDate {
     NaiveDate::parse_from_str("24.3.2023", "%d.%m.%Y").expect("valid date")
 }
 
@@ -48,8 +48,8 @@ pub fn transaction_report_df_01() -> DataFrame {
 
 /// Sample record matching the structure of the intermediate csv file
 #[fixture]
-pub fn intermediate_df_03(sample_date_01: NaiveDate) -> DataFrame {
-    let date = sample_date_01.format("%d.%m.%Y").to_string();
+pub fn intermediate_df_03(sample_date: NaiveDate) -> DataFrame {
+    let date = sample_date.format("%d.%m.%Y").to_string();
     df!(
         "Account" => &["a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@B.ch", "a@B.ch"],
         "Date" => &[date.clone(), date.clone(), date.clone(), date.clone(), date.clone(), date.clone(), date],
@@ -77,9 +77,9 @@ pub fn intermediate_df_03(sample_date_01: NaiveDate) -> DataFrame {
 
 /// Sample record matching the summary df, created from `intermediate_df_03`
 #[fixture]
-pub fn summary_df_03(sample_date_01: NaiveDate) -> DataFrame {
+pub fn summary_df_03(sample_date: NaiveDate) -> DataFrame {
     df!(
-        "Date" => &[sample_date_01],
+        "Date" => &[sample_date],
         "MiTi_Cash" => &[Some(3.5)],
         "MiTi_Card" => &[Some(36.0)],
         "MiTi Total" => &[39.5],
@@ -143,9 +143,9 @@ pub fn summary_df_03(sample_date_01: NaiveDate) -> DataFrame {
 
 /// Sample record 01 matching the summary dataframe created from the intermediate csv file
 #[fixture]
-pub fn summary_df_01(sample_date_01: NaiveDate) -> DataFrame {
+pub fn summary_df_01(sample_date: NaiveDate) -> DataFrame {
     df!(
-        "Date" => &[sample_date_01],
+        "Date" => &[sample_date],
         "MiTi_Cash" => &[Some(112.0)],
         "MiTi_Card" => &[Some(191.0)],
         "MiTi Total" => &[303.0],
@@ -209,9 +209,9 @@ pub fn summary_df_01(sample_date_01: NaiveDate) -> DataFrame {
 
 /// Sample record 02 matching the summary dataframe created from the intermediate csv file
 #[fixture]
-pub fn summary_df_02(sample_date_01: NaiveDate) -> DataFrame {
+pub fn summary_df_02(sample_date: NaiveDate) -> DataFrame {
     df!(
-        "Date" => &[sample_date_01],
+        "Date" => &[sample_date],
         "MiTi_Cash" => &[Some(112.0)],
         "MiTi_Card" => &[Some(191.0)],
         "MiTi Total" => &[303.0],

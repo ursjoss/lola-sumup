@@ -74,18 +74,15 @@ mod tests {
     use chrono::NaiveDate;
     use rstest::rstest;
 
-    use crate::test_fixtures::{sample_date_01, summary_df_02};
+    use crate::test_fixtures::{sample_date, summary_df_02};
     use crate::test_utils::assert_dataframe;
 
     use super::*;
 
     #[rstest]
-    fn test_gather_df_miti(
-        summary_df_02: DataFrame,
-        sample_date_01: NaiveDate,
-    ) -> PolarsResult<()> {
+    fn test_gather_df_miti(summary_df_02: DataFrame, sample_date: NaiveDate) -> PolarsResult<()> {
         let expected = df!(
-            "Datum" => &[sample_date_01],
+            "Datum" => &[sample_date],
             "Hauptgang" => &[14],
             "Kind" => &[1],
             "Küche" => &[Some(250.0)],
