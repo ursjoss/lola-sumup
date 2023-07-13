@@ -90,6 +90,7 @@ fn validate_constraint(
 #[allow(clippy::too_many_arguments)]
 mod tests {
     use chrono::NaiveDate;
+    use pretty_assertions::assert_eq;
     use rstest::rstest;
 
     use super::*;

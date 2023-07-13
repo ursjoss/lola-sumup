@@ -131,6 +131,7 @@ fn derive_month_from(file: Option<&str>) -> Result<String, String> {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
     use rstest::rstest;
 
     use super::*;

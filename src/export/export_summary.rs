@@ -616,6 +616,7 @@ impl FilterExpressionProvider for MitiMealType {
 #[cfg(test)]
 mod tests {
     use chrono::NaiveDate;
+    use pretty_assertions::assert_eq;
     use rstest::rstest;
 
     use super::*;
