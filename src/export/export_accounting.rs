@@ -95,7 +95,7 @@ mod tests {
 
     use super::*;
 
-    #[rstest]
+    #[test]
     fn test_gather_df_accounting() {
         let date = NaiveDate::parse_from_str("24.3.2023", "%d.%m.%Y").expect("valid date");
         let df_summary = df!(

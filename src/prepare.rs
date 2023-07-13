@@ -360,11 +360,10 @@ mod tests {
     use polars::df;
     use polars::prelude::{AnyValue, NamedFrom};
     use pretty_assertions::assert_eq;
-    use rstest::rstest;
 
     use super::*;
 
-    #[rstest]
+    #[test]
     fn test_combine_input_dfs() {
         let df = df!(
             "Account" => &["a@b.ch"],

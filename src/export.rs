@@ -65,11 +65,10 @@ mod tests {
     use polars::df;
     use polars::prelude::{AnyValue, NamedFrom};
     use pretty_assertions::assert_ne;
-    use rstest::rstest;
 
     use super::*;
 
-    #[rstest]
+    #[test]
     fn can_crunch_data_without_panic() {
         let raw_df = df!(
             "Account" => &["a@b.ch", "a@b.ch"],

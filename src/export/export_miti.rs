@@ -73,11 +73,10 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
 mod tests {
     use chrono::NaiveDate;
     use pretty_assertions::assert_eq;
-    use rstest::rstest;
 
     use super::*;
 
-    #[rstest]
+    #[test]
     fn test_gather_df_miti() {
         let date = NaiveDate::parse_from_str("24.3.2023", "%d.%m.%Y").expect("valid date");
         let df_summary = df!(

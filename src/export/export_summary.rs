@@ -694,7 +694,7 @@ mod tests {
         assert_eq!(out, expected.expect("Misconfigured expected df"));
     }
 
-    #[rstest]
+    #[test]
     fn test_collect_data() {
         let df = df!(
             "Account" => &["a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@B.ch", "a@B.ch"],
