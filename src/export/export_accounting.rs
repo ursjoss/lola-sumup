@@ -89,6 +89,7 @@ fn validate_constraint(
 #[cfg(test)]
 #[allow(clippy::too_many_arguments)]
 mod tests {
+    use crate::test_utils::assert_dataframe;
     use chrono::NaiveDate;
     use pretty_assertions::assert_eq;
     use rstest::rstest;
@@ -96,7 +97,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_gather_df_accounting() {
+    fn test_gather_df_accounting() -> PolarsResult<()> {
         let date = NaiveDate::parse_from_str("24.3.2023", "%d.%m.%Y").expect("valid date");
         let df_summary = df!(
             "Date" => &[date],
@@ -157,8 +158,7 @@ mod tests {
             "Income LoLa MiTi" => &[42.49],
             "MealCount_Regular" => &[14],
             "MealCount_Children" => &[1],
-        )
-        .expect("valid data frame");
+        )?;
         let expected = df!(
             "Date" => &[date],
             "10920/30200" => &[20.0],
@@ -173,13 +173,13 @@ mod tests {
             "68450/10920" => &[Some(17.54)],
             "20051/10900" => &[145.76],
             "20051/30500" => &[42.49],
-        )
-        .expect("valid data frame")
-        .lazy()
-        .collect();
+        )?;
         let out =
             gather_df_accounting(&df_summary).expect("should be able to collect accounting_df");
-        assert_eq!(out, expected.expect("valid data frame"));
+
+        assert_dataframe(&out, &expected);
+
+        Ok(())
     }
 
     #[rstest]
@@ -410,7 +410,7 @@ mod tests {
         #[case] ilm: f64,
         #[case] delta: Option<f64>,
         #[case] account: &str,
-    ) {
+    ) -> PolarsResult<()> {
         let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
         let df = df!(
             "Date" => &[date],
@@ -426,8 +426,7 @@ mod tests {
             "68450/10920" => &[Some(cl)],
             "20051/10900" => &[dtm],
             "20051/30500" => &[ilm],
-        )
-        .expect("valid data frame");
+        )?;
         match validate_acc_constraint(&df) {
             Ok(()) => assert!(delta.is_none(), "Would not have expected delta {} on {date}.", delta.unwrap()),
             Err(e) => match delta {
@@ -438,5 +437,7 @@ mod tests {
                 None => panic!("Would have expected delta on {date} but not in fixture: {e}"),
             },
         }
+
+        Ok(())
     }
 }

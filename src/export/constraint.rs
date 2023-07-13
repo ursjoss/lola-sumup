@@ -127,7 +127,7 @@ mod tests {
         #[case] owner: Option<&str>,
         #[case] expected_valid: bool,
         #[case] error_msg: Option<&str>,
-    ) {
+    ) -> PolarsResult<()> {
         let df = df!(
             "Account" => &["a@b.ch"],
             "Date" => &["17.04.2023"],
@@ -149,8 +149,7 @@ mod tests {
             "Owner" => &[owner],
             "Purpose" => &["Consumption"],
             "Comment" => &[None::<String>],
-        )
-        .expect("single record df");
+        )?;
         match validation_topic_owner(&df) {
             Ok(()) => assert!(expected_valid),
             Err(e) => {
@@ -159,5 +158,6 @@ mod tests {
                 assert!(e.to_string().starts_with(msg));
             }
         }
+        Ok(())
     }
 }

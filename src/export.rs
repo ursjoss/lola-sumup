@@ -69,7 +69,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn can_crunch_data_without_panic() {
+    fn can_crunch_data_without_panic() -> PolarsResult<()> {
         let raw_df = df!(
             "Account" => &["a@b.ch", "a@b.ch"],
             "Date" => &["17.4.2023", "17.4.2023"],
@@ -91,12 +91,13 @@ mod tests {
             "Owner" => &["LoLa", "MiTi"],
             "Purpose" => &["Consumption", "Tip"],
             "Comment" => &[AnyValue::Null, AnyValue::Null],
-        )
-        .expect("valid dataframe");
+        )?;
 
         let (df1, df2) = crunch_data(raw_df).expect("should crunch");
 
         assert_ne!(df1.shape().0, 0, "df1 does not contain records");
         assert_ne!(df2.shape().0, 0, "df2 does not contain records");
+
+        Ok(())
     }
 }

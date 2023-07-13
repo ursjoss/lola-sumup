@@ -72,12 +72,13 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
 #[cfg(test)]
 mod tests {
     use chrono::NaiveDate;
-    use pretty_assertions::assert_eq;
+
+    use crate::test_utils::assert_dataframe;
 
     use super::*;
 
     #[test]
-    fn test_gather_df_miti() {
+    fn test_gather_df_miti() -> PolarsResult<()> {
         let date = NaiveDate::parse_from_str("24.3.2023", "%d.%m.%Y").expect("valid date");
         let df_summary = df!(
             "Date" => &[date],
@@ -138,14 +139,13 @@ mod tests {
             "Income LoLa MiTi" => &[42.49],
             "MealCount_Regular" => &[14],
             "MealCount_Children" => &[1],
-        )
-        .expect("valid data frame");
+        )?;
         let expected = df!(
             "Datum" => &[date],
             "Hauptgang" => &[14],
             "Kind" => &[1],
             "Küche" => &[Some(250.0)],
-            "Total Bar" => &[Some(53)],
+            "Total Bar" => &[Some(53.0)],
             "Anteil LoLa" => &[Some(42.4)],
             "Anteil MiTi" => &[Some(10.6)],
             "Einnahmen barz." => &[112.5],
@@ -161,11 +161,11 @@ mod tests {
             "Net Total Karte" => &[187.81],
             "Verkauf LoLa (80%)" => &[-42.05],
             "Überweisung" => &[145.76],
-        )
-        .expect("valid data frame")
-        .lazy()
-        .collect();
+        )?;
         let out = gather_df_miti(&df_summary).expect("should be able to collect miti_df");
-        assert_eq!(out, expected.expect("valid data frame"));
+
+        assert_dataframe(&out, &expected);
+
+        Ok(())
     }
 }

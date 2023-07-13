@@ -616,8 +616,9 @@ impl FilterExpressionProvider for MitiMealType {
 #[cfg(test)]
 mod tests {
     use chrono::NaiveDate;
-    use pretty_assertions::assert_eq;
     use rstest::rstest;
+
+    use crate::test_utils::assert_dataframe;
 
     use super::*;
 
@@ -675,27 +676,27 @@ mod tests {
         #[case] payment_method: PaymentMethod,
         #[case] purpose: Purpose,
         #[case] expected: PolarsResult<DataFrame>,
-    ) {
+    ) -> PolarsResult<()> {
         let df_in = df!(
             "Date" => &["16.03.2023", "14.03.2023", "15.03.2023", "28.03.2023", "20.03.2023", "14.03.2023", "20.03.2023", "22.03.2023", "23.03.2023", "24.03.2023"],
             "Price (Gross)" => &[None, Some(1.3), Some(5.2), Some(3.6), Some(4.7), Some(0.5), Some(100.0), Some(400.0), Some(500.0), Some(600.0)],
             "Topic" => &["Cafe", "Cafe", "MiTi", "Cafe", "Cafe", "Cafe", "Deposit", "Culture", "Rental", "PaidOut"],
             "Payment Method" => &["Card", "Card", "Card", "Card", "Cash", "Cash", "Card", "Card", "Card", "Card"],
             "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Tip", "Consumption", "Consumption", "Consumption", "Consumption"],
-        )
-            .expect("Misconfigured dataframe");
+        )?;
         let paa = match purpose {
             Purpose::Consumption => consumption_of(&topic, &payment_method),
             Purpose::Tip => tips_of_topic(&topic),
         };
-        let out = price_by_date_for(paa, df_in.lazy())
-            .collect()
-            .expect("Unable to collect result");
-        assert_eq!(out, expected.expect("Misconfigured expected df"));
+        let out = price_by_date_for(paa, df_in.lazy()).collect()?;
+
+        assert_dataframe(&out, &expected.expect("Misconfigured expected dataframe"));
+
+        Ok(())
     }
 
     #[test]
-    fn test_collect_data() {
+    fn test_collect_data() -> PolarsResult<()> {
         let df = df!(
             "Account" => &["a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@B.ch", "a@B.ch"],
             "Date" => &["17.04.2023", "17.04.2023", "17.04.2023", "17.04.2023", "17.04.2023", "17.04.2023", "17.04.2023"],
@@ -717,8 +718,7 @@ mod tests {
             "Owner" => &["MiTi", "LoLa", "LoLa", "", "", "", ""],
             "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption"],
             "Comment" => &[None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>],
-        )
-        .expect("Misconfigured test data frame");
+        )?;
         let out = collect_data(df).expect("should be able to collect the data");
         let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
         let expected = df!(
@@ -780,10 +780,9 @@ mod tests {
             "Income LoLa MiTi" => &[18.86],
             "MealCount_Regular" => &[1],
             "MealCount_Children" => &[None::<i32>],
-        )
-        .expect("valid data frame")
-        .lazy()
-        .collect();
-        assert_eq!(out, expected.expect("valid data frame"));
+        )?;
+        assert_dataframe(&out, &expected);
+
+        Ok(())
     }
 }
