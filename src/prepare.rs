@@ -359,6 +359,7 @@ mod tests {
     use chrono::{NaiveDate, NaiveTime};
     use polars::df;
     use polars::prelude::{AnyValue, NamedFrom};
+    use pretty_assertions::assert_eq;
     use rstest::rstest;
 
     use super::*;

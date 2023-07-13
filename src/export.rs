@@ -64,6 +64,7 @@ fn write_to_file(df: &mut DataFrame, path: &dyn AsRef<Path>) -> Result<(), Box<d
 mod tests {
     use polars::df;
     use polars::prelude::{AnyValue, NamedFrom};
+    use pretty_assertions::assert_ne;
     use rstest::rstest;
 
     use super::*;
