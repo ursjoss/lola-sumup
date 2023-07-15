@@ -62,9 +62,10 @@ fn write_to_file(df: &mut DataFrame, path: &dyn AsRef<Path>) -> Result<(), Box<d
 
 #[cfg(test)]
 mod tests {
-    use crate::test_fixtures::intermediate_df_02;
     use pretty_assertions::assert_ne;
     use rstest::rstest;
+
+    use crate::test_fixtures::intermediate_df_02;
 
     use super::*;
 

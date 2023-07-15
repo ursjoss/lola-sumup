@@ -22,8 +22,11 @@ pub fn prepare(
     transaction_report: &Path,
     output_path: &Path,
 ) -> Result<(), Box<dyn Error>> {
-    let mut df = process_input(sales_report, transaction_report)?
-        .sort(["Date", "Time", "Transaction ID", "Description"], false)?;
+    let mut df = process_input(sales_report, transaction_report)?.sort(
+        ["Date", "Time", "Transaction ID", "Description"],
+        false,
+        true,
+    )?;
     let iowtr: Box<dyn Write> = Box::new(File::create(output_path)?);
     CsvWriter::new(iowtr)
         .has_header(true)
@@ -104,7 +107,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
             add_tips_df,
             [col("Transaction ID")],
             [col("Transaktions-ID")],
-            JoinType::Inner,
+            JoinType::Inner.into(),
         )
         .filter(col("TG").gt(lit(0.0)))
         .select([
@@ -149,19 +152,19 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
             refunded_ids_1,
             [col("Transaction ID")],
             [col("TransactionId")],
-            JoinType::Left,
+            JoinType::Left.into(),
         )
         .join(
             refunded_ids_2,
             [col("Transaction refunded")],
             [col("TransactionId")],
-            JoinType::Left,
+            JoinType::Left.into(),
         )
         .join(
             commission_df,
             [col("Transaction ID")],
             [col("Transaktions-ID")],
-            JoinType::Left,
+            JoinType::Left.into(),
         )
         .with_column(
             (col("Price (Gross)") / col("Commissioned Total") * col("Commission"))
@@ -209,7 +212,7 @@ fn refunded_id_dfs(sr_df: &DataFrame) -> (LazyFrame, LazyFrame) {
             all_transaction_ids,
             [col("Transaction refunded")],
             [col("Transaction ID")],
-            JoinType::Inner,
+            JoinType::Inner.into(),
         )
         .select([col("Transaction refunded")])
         .unique(None, UniqueKeepStrategy::First);
