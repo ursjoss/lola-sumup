@@ -25,6 +25,7 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 descending: false,
                 nulls_last: false,
                 multithreaded: false,
+                maintain_order: true,
             },
         );
     let cafe_cash = price_by_date_for(
@@ -118,92 +119,209 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     let meal_count_regular = meal_count(for_meals_of_type(&Regular), ldf.clone());
     let meal_count_children = meal_count(for_meals_of_type(&Children), ldf);
 
-    let with_cafe_cash = all_dates.join(cafe_cash, [col("Date")], [col("Date")], JoinType::Left);
-    let with_cafe_card =
-        with_cafe_cash.join(cafe_card, [col("Date")], [col("Date")], JoinType::Left);
-    let with_miti_cash =
-        with_cafe_card.join(miti_cash, [col("Date")], [col("Date")], JoinType::Left);
-    let with_miti_card =
-        with_miti_cash.join(miti_card, [col("Date")], [col("Date")], JoinType::Left);
-    let with_verm_cash =
-        with_miti_card.join(verm_cash, [col("Date")], [col("Date")], JoinType::Left);
-    let with_verm_card =
-        with_verm_cash.join(verm_card, [col("Date")], [col("Date")], JoinType::Left);
-    let with_deposit_cash =
-        with_verm_card.join(deposit_cash, [col("Date")], [col("Date")], JoinType::Left);
-    let with_deposit_card =
-        with_deposit_cash.join(deposit_card, [col("Date")], [col("Date")], JoinType::Left);
-    let with_rental_cash =
-        with_deposit_card.join(rental_cash, [col("Date")], [col("Date")], JoinType::Left);
-    let with_rental_card =
-        with_rental_cash.join(rental_card, [col("Date")], [col("Date")], JoinType::Left);
-    let with_culture_cash =
-        with_rental_card.join(culture_cash, [col("Date")], [col("Date")], JoinType::Left);
-    let with_culture_card =
-        with_culture_cash.join(culture_card, [col("Date")], [col("Date")], JoinType::Left);
-    let with_paid_out_cash =
-        with_culture_card.join(paid_out_cash, [col("Date")], [col("Date")], JoinType::Left);
-    let with_paid_out_card =
-        with_paid_out_cash.join(paid_out_card, [col("Date")], [col("Date")], JoinType::Left);
-    let with_cafe_tips =
-        with_paid_out_card.join(cafe_tips, [col("Date")], [col("Date")], JoinType::Left);
-    let with_miti_tips_cash =
-        with_cafe_tips.join(miti_tips_cash, [col("Date")], [col("Date")], JoinType::Left);
-    let with_miti_tips_card =
-        with_miti_tips_cash.join(miti_tips_card, [col("Date")], [col("Date")], JoinType::Left);
-    let with_miti_tips =
-        with_miti_tips_card.join(miti_tips, [col("Date")], [col("Date")], JoinType::Left);
-    let with_verm_tips =
-        with_miti_tips.join(verm_tips, [col("Date")], [col("Date")], JoinType::Left);
-    let with_miti_miti =
-        with_verm_tips.join(miti_miti, [col("Date")], [col("Date")], JoinType::Left);
-    let with_miti_lola =
-        with_miti_miti.join(miti_lola, [col("Date")], [col("Date")], JoinType::Left);
-    let with_comm_miti =
-        with_miti_lola.join(miti_comm, [col("Date")], [col("Date")], JoinType::Left);
-    let with_comm_lola =
-        with_comm_miti.join(lola_comm, [col("Date")], [col("Date")], JoinType::Left);
-    let with_comm_deposit =
-        with_comm_lola.join(deposit_comm, [col("Date")], [col("Date")], JoinType::Left);
-    let with_comm_rental =
-        with_comm_deposit.join(rental_comm, [col("Date")], [col("Date")], JoinType::Left);
-    let with_comm_culture =
-        with_comm_rental.join(culture_comm, [col("Date")], [col("Date")], JoinType::Left);
-    let with_tips_cash =
-        with_comm_culture.join(tips_cash, [col("Date")], [col("Date")], JoinType::Left);
-    let with_tips_card =
-        with_tips_cash.join(tips_card, [col("Date")], [col("Date")], JoinType::Left);
-    let with_lola_comm_miti =
-        with_tips_card.join(lola_comm_miti, [col("Date")], [col("Date")], JoinType::Left);
+    let with_cafe_cash = all_dates.join(
+        cafe_cash,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_cafe_card = with_cafe_cash.join(
+        cafe_card,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_miti_cash = with_cafe_card.join(
+        miti_cash,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_miti_card = with_miti_cash.join(
+        miti_card,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_verm_cash = with_miti_card.join(
+        verm_cash,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_verm_card = with_verm_cash.join(
+        verm_card,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_deposit_cash = with_verm_card.join(
+        deposit_cash,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_deposit_card = with_deposit_cash.join(
+        deposit_card,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_rental_cash = with_deposit_card.join(
+        rental_cash,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_rental_card = with_rental_cash.join(
+        rental_card,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_culture_cash = with_rental_card.join(
+        culture_cash,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_culture_card = with_culture_cash.join(
+        culture_card,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_paid_out_cash = with_culture_card.join(
+        paid_out_cash,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_paid_out_card = with_paid_out_cash.join(
+        paid_out_card,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_cafe_tips = with_paid_out_card.join(
+        cafe_tips,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_miti_tips_cash = with_cafe_tips.join(
+        miti_tips_cash,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_miti_tips_card = with_miti_tips_cash.join(
+        miti_tips_card,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_miti_tips = with_miti_tips_card.join(
+        miti_tips,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_verm_tips = with_miti_tips.join(
+        verm_tips,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_miti_miti = with_verm_tips.join(
+        miti_miti,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_miti_lola = with_miti_miti.join(
+        miti_lola,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_comm_miti = with_miti_lola.join(
+        miti_comm,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_comm_lola = with_comm_miti.join(
+        lola_comm,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_comm_deposit = with_comm_lola.join(
+        deposit_comm,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_comm_rental = with_comm_deposit.join(
+        rental_comm,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_comm_culture = with_comm_rental.join(
+        culture_comm,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_tips_cash = with_comm_culture.join(
+        tips_cash,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_tips_card = with_tips_cash.join(
+        tips_card,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_lola_comm_miti = with_tips_card.join(
+        lola_comm_miti,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
     let with_miti_total_commission = with_lola_comm_miti.join(
         miti_total_comm,
         [col("Date")],
         [col("Date")],
-        JoinType::Left,
+        JoinType::Left.into(),
     );
     let with_gross_miti_miti_card = with_miti_total_commission.join(
         gross_miti_miti_card,
         [col("Date")],
         [col("Date")],
-        JoinType::Left,
+        JoinType::Left.into(),
     );
     let with_net_miti_lola_cash = with_gross_miti_miti_card.join(
         net_miti_lola_cash,
         [col("Date")],
         [col("Date")],
-        JoinType::Left,
+        JoinType::Left.into(),
     );
     let with_meal_count_regular = with_net_miti_lola_cash.join(
         meal_count_regular,
         [col("Date")],
         [col("Date")],
-        JoinType::Left,
+        JoinType::Left.into(),
     );
     let with_meal_count_children = with_meal_count_regular.join(
         meal_count_children,
         [col("Date")],
         [col("Date")],
-        JoinType::Left,
+        JoinType::Left.into(),
     );
 
     with_meal_count_children
@@ -452,6 +570,7 @@ fn key_figure_by_date_for(
                 descending: false,
                 nulls_last: false,
                 multithreaded: false,
+                maintain_order: true,
             },
         )
 }
@@ -567,6 +686,7 @@ fn count_by_date_for(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> Laz
                 descending: false,
                 nulls_last: false,
                 multithreaded: false,
+                maintain_order: true,
             },
         )
 }
