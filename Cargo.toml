@@ -16,7 +16,7 @@ polars = { version = "0.31.1", features = ["lazy", "dtype-date", "temporal", "st
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"
-rstest = "0.18.1"
+rstest = "0.18.2"
 
 [profile.dev]
 opt-level=1
