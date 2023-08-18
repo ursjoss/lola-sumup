@@ -72,7 +72,7 @@ The four columns that may be modified are:
 - `Topic`: The main topic of the transaction, one of
   - `MiTi`: Items sold by Mittagstisch. Automatically assigned if the transaction occurred before 14:15.
   - `Café`: Items sold by LoLa Café. Automatically assigned if the transaction occurred between 14:15 and 18:00.
-  - `Vermiet`: Items sold by Renters of the rooms. Automatically assigned if the transaction occurred after 18:00.
+  - `Verm`: Items sold by Renters of the rooms. Automatically assigned if the transaction occurred after 18:00.
   - `Deposit`: Key deposit.
   - `Rental`: Rental fee.
   - `Culture`: Items sold in context of cultural events.
