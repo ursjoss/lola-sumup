@@ -25,12 +25,9 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
 
     let (mut df, mut df_acc) = crunch_data(raw_df)?;
 
-    write_to_file(&mut df, &path_with_prefix("summary", month, ts))?;
-    write_to_file(
-        &mut gather_df_miti(&df)?,
-        &path_with_prefix("mittagstisch", month, ts),
-    )?;
-    write_to_file(&mut df_acc, &path_with_prefix("accounting", month, ts))
+    export_summary(&month, &ts, &mut df)?;
+    export_mittagstisch(&month, &ts, &mut df)?;
+    export_accounting(&month, &ts, &mut df_acc)
 }
 
 /// returns two dataframes, one for summary/miti, the other for the accounting export.
@@ -43,6 +40,27 @@ fn crunch_data(raw_df: DataFrame) -> Result<(DataFrame, DataFrame), Box<dyn Erro
     let df_acc = gather_df_accounting(&df)?;
     validate_acc_constraint(&df_acc)?;
     Ok((df, df_acc))
+}
+
+fn export_summary(month: &&str, ts: &&str, mut df: &mut DataFrame) -> Result<(), Box<dyn Error>> {
+    write_to_file(&mut df, &path_with_prefix("summary", month, ts))?;
+    Ok(())
+}
+
+fn export_mittagstisch(month: &&str, ts: &&str, df: &mut DataFrame) -> Result<(), Box<dyn Error>> {
+    write_to_file(
+        &mut gather_df_miti(&df)?,
+        &path_with_prefix("mittagstisch", month, ts),
+    )?;
+    Ok(())
+}
+
+fn export_accounting(
+    month: &&str,
+    ts: &&str,
+    mut df_acc: &mut DataFrame,
+) -> Result<(), Box<dyn Error>> {
+    write_to_file(&mut df_acc, &path_with_prefix("accounting", month, ts))
 }
 
 /// Constructs a path for a CSV file from `prefix`, `month` and `ts` (timestamp).
