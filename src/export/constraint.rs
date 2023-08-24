@@ -2,8 +2,100 @@ use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 
 use polars::prelude::*;
+use strum::IntoEnumIterator;
 
-use crate::prepare::Topic;
+use crate::prepare::{Owner, Purpose, Topic};
+
+/// check we only have valid topics
+pub fn validate_topics(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
+    let topics: Vec<String> = Topic::iter().map(|t| t.to_string()).collect();
+    validate_field(
+        "Topic",
+        topics,
+        FieldConstraintViolationError::Topic,
+        raw_df,
+    )?;
+    Ok(())
+}
+
+/// check we only have empty or valid owners
+pub fn validate_owners(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
+    let mut owners: Vec<String> = Owner::iter().map(|t| t.to_string()).collect();
+    owners.push(String::new());
+    validate_field(
+        "Owner",
+        owners,
+        FieldConstraintViolationError::Owner,
+        raw_df,
+    )?;
+    Ok(())
+}
+
+/// check we only have valid purposes
+pub fn validate_purposes(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
+    let purposes: Vec<String> = Purpose::iter().map(|t| t.to_string()).collect();
+    validate_field(
+        "Purpose",
+        purposes,
+        FieldConstraintViolationError::Purpose,
+        raw_df,
+    )?;
+    Ok(())
+}
+fn validate_field(
+    field: &str,
+    values: Vec<String>,
+    error: fn(DataFrame) -> FieldConstraintViolationError,
+    raw_df: &DataFrame,
+) -> Result<(), Box<dyn Error>> {
+    let df = raw_df
+        .clone()
+        .lazy()
+        .with_row_count("Row-No", Some(2))
+        .filter(
+            col(field)
+                .fill_null(lit(""))
+                .is_in(lit(Series::from_iter(values)))
+                .not(),
+        )
+        .select([col("Row-No"), col(field)])
+        .collect()?;
+    if df.shape().0 > 0 {
+        Err(Box::try_from(error(df)).unwrap())
+    } else {
+        Ok(())
+    }
+}
+
+enum FieldConstraintViolationError {
+    Topic(DataFrame),
+    Owner(DataFrame),
+    Purpose(DataFrame),
+}
+
+impl Display for FieldConstraintViolationError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FieldConstraintViolationError::Topic(df) => {
+                write!(f, "Row has an invalid Topic! {df}")
+            }
+            FieldConstraintViolationError::Owner(df) => {
+                write!(f, "Row has an invalid Owner! {df}")
+            }
+            FieldConstraintViolationError::Purpose(df) => {
+                write!(f, "Row has an invalid Purpose! {df}")
+            }
+        }
+    }
+}
+
+impl Debug for FieldConstraintViolationError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self}:?")
+    }
+}
+
+impl Error for FieldConstraintViolationError {}
 
 /// check constraints in `raw_df` read from intermediate file
 pub fn validation_topic_owner(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
@@ -128,6 +220,19 @@ mod tests {
         #[case] expected_valid: bool,
         #[case] error_msg: Option<&str>,
     ) -> PolarsResult<()> {
+        let df = new_df(&topic.to_string(), owner, "Consumption")?;
+        match validation_topic_owner(&df) {
+            Ok(()) => assert!(expected_valid),
+            Err(e) => {
+                assert!(!expected_valid);
+                let msg = error_msg.expect("should have an error message");
+                assert!(e.to_string().starts_with(msg));
+            }
+        }
+        Ok(())
+    }
+
+    fn new_df(topic: &str, owner: Option<&str>, purpose: &str) -> Result<DataFrame, PolarsError> {
         let df = df!(
             "Account" => &["a@b.ch"],
             "Date" => &["17.04.2023"],
@@ -145,17 +250,77 @@ mod tests {
             "Tax rate" => &[""],
             "Transaction refunded" => &[""],
             "Commission" => &[0.24],
-            "Topic" => &[topic.to_string()],
+            "Topic" => &[topic],
             "Owner" => &[owner],
-            "Purpose" => &["Consumption"],
+            "Purpose" => &[purpose],
             "Comment" => &[None::<String>],
         )?;
-        match validation_topic_owner(&df) {
+        Ok(df)
+    }
+
+    #[rstest]
+    #[case("MiTi", true)]
+    #[case("Cafe", true)]
+    #[case("Verm", true)]
+    #[case("Deposit", true)]
+    #[case("Rental", true)]
+    #[case("Culture", true)]
+    #[case("PaidOut", true)]
+    #[case("", false)]
+    #[case("Vermiet", false)]
+    #[case("xyz", false)]
+    fn validate_topic(
+        #[case] topic: &str,
+        #[case] expected_valid: bool,
+    ) -> Result<(), Box<dyn Error>> {
+        let df = new_df(topic, None, "")?;
+        match validate_topics(&df) {
             Ok(()) => assert!(expected_valid),
             Err(e) => {
                 assert!(!expected_valid);
-                let msg = error_msg.expect("should have an error message");
-                assert!(e.to_string().starts_with(msg));
+                assert!(e.to_string().starts_with("Row has an invalid Topic!"));
+            }
+        }
+        Ok(())
+    }
+
+    #[rstest]
+    #[case(Some("LoLa"), true)]
+    #[case(Some("MiTi"), true)]
+    #[case(Some(""), true)]
+    #[case(None, true)]
+    #[case(Some("miti"), false)]
+    #[case(Some("XX"), false)]
+    fn validate_owner(
+        #[case] owner: Option<&str>,
+        #[case] expected_valid: bool,
+    ) -> Result<(), Box<dyn Error>> {
+        let df = new_df("", owner, "")?;
+        match validate_owners(&df) {
+            Ok(()) => assert!(expected_valid),
+            Err(e) => {
+                assert!(!expected_valid);
+                assert!(e.to_string().starts_with("Row has an invalid Owner!"));
+            }
+        }
+        Ok(())
+    }
+
+    #[rstest]
+    #[case("Consumption", true)]
+    #[case("Tip", true)]
+    #[case("", false)]
+    #[case("XX", false)]
+    fn validate_purpose(
+        #[case] purpose: &str,
+        #[case] expected_valid: bool,
+    ) -> Result<(), Box<dyn Error>> {
+        let df = new_df("", None, purpose)?;
+        match validate_purposes(&df) {
+            Ok(()) => assert!(expected_valid),
+            Err(e) => {
+                assert!(!expected_valid);
+                assert!(e.to_string().starts_with("Row has an invalid Purpose!"));
             }
         }
         Ok(())

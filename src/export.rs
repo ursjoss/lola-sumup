@@ -5,7 +5,9 @@ use std::path::{Path, PathBuf};
 
 use polars::prelude::*;
 
-use crate::export::constraint::validation_topic_owner;
+use crate::export::constraint::{
+    validate_owners, validate_purposes, validate_topics, validation_topic_owner,
+};
 use crate::export::export_accounting::{gather_df_accounting, validate_acc_constraint};
 use crate::export::export_miti::gather_df_miti;
 use crate::export::export_summary::collect_data;
@@ -32,6 +34,9 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
 
 /// returns two dataframes, one for summary/miti, the other for the accounting export.
 fn crunch_data(raw_df: DataFrame) -> Result<(DataFrame, DataFrame), Box<dyn Error>> {
+    validate_topics(&raw_df)?;
+    validate_owners(&raw_df)?;
+    validate_purposes(&raw_df)?;
     validation_topic_owner(&raw_df)?;
 
     let mut df = collect_data(raw_df)?;
@@ -42,14 +47,14 @@ fn crunch_data(raw_df: DataFrame) -> Result<(DataFrame, DataFrame), Box<dyn Erro
     Ok((df, df_acc))
 }
 
-fn export_summary(month: &&str, ts: &&str, mut df: &mut DataFrame) -> Result<(), Box<dyn Error>> {
-    write_to_file(&mut df, &path_with_prefix("summary", month, ts))?;
+fn export_summary(month: &&str, ts: &&str, df: &mut DataFrame) -> Result<(), Box<dyn Error>> {
+    write_to_file(df, &path_with_prefix("summary", month, ts))?;
     Ok(())
 }
 
 fn export_mittagstisch(month: &&str, ts: &&str, df: &mut DataFrame) -> Result<(), Box<dyn Error>> {
     write_to_file(
-        &mut gather_df_miti(&df)?,
+        &mut gather_df_miti(df)?,
         &path_with_prefix("mittagstisch", month, ts),
     )?;
     Ok(())
@@ -58,9 +63,9 @@ fn export_mittagstisch(month: &&str, ts: &&str, df: &mut DataFrame) -> Result<()
 fn export_accounting(
     month: &&str,
     ts: &&str,
-    mut df_acc: &mut DataFrame,
+    df_acc: &mut DataFrame,
 ) -> Result<(), Box<dyn Error>> {
-    write_to_file(&mut df_acc, &path_with_prefix("accounting", month, ts))
+    write_to_file(df_acc, &path_with_prefix("accounting", month, ts))
 }
 
 /// Constructs a path for a CSV file from `prefix`, `month` and `ts` (timestamp).
