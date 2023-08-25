@@ -7,19 +7,22 @@ use strum::IntoEnumIterator;
 use crate::prepare::{Owner, Purpose, Topic};
 
 /// check we only have valid topics
-pub fn validate_topics(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
+/// expects the `raw_df` to validate and the `columns` to display in case of a validation error.
+pub fn validate_topics(raw_df: &DataFrame, columns: &[Expr]) -> Result<(), Box<dyn Error>> {
     let topics: Vec<String> = Topic::iter().map(|t| t.to_string()).collect();
     validate_field(
         "Topic",
         topics,
         FieldConstraintViolationError::Topic,
         raw_df,
+        columns,
     )?;
     Ok(())
 }
 
 /// check we only have empty or valid owners
-pub fn validate_owners(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
+/// expects the `raw_df` to validate and the `columns` to display in case of a validation error.
+pub fn validate_owners(raw_df: &DataFrame, columns: &[Expr]) -> Result<(), Box<dyn Error>> {
     let mut owners: Vec<String> = Owner::iter().map(|t| t.to_string()).collect();
     owners.push(String::new());
     validate_field(
@@ -27,18 +30,21 @@ pub fn validate_owners(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
         owners,
         FieldConstraintViolationError::Owner,
         raw_df,
+        columns,
     )?;
     Ok(())
 }
 
 /// check we only have valid purposes
-pub fn validate_purposes(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
+/// expects the `raw_df` to validate and the `columns` to display in case of a validation error.
+pub fn validate_purposes(raw_df: &DataFrame, columns: &[Expr]) -> Result<(), Box<dyn Error>> {
     let purposes: Vec<String> = Purpose::iter().map(|t| t.to_string()).collect();
     validate_field(
         "Purpose",
         purposes,
         FieldConstraintViolationError::Purpose,
         raw_df,
+        columns,
     )?;
     Ok(())
 }
@@ -47,6 +53,7 @@ fn validate_field(
     values: Vec<String>,
     error: fn(DataFrame) -> FieldConstraintViolationError,
     raw_df: &DataFrame,
+    columns: &[Expr],
 ) -> Result<(), Box<dyn Error>> {
     let df = raw_df
         .clone()
@@ -58,7 +65,7 @@ fn validate_field(
                 .is_in(lit(Series::from_iter(values)))
                 .not(),
         )
-        .select([col("Row-No"), col(field)])
+        .select(columns)
         .collect()?;
     if df.shape().0 > 0 {
         Err(Box::try_from(error(df)).unwrap())
@@ -98,13 +105,15 @@ impl Debug for FieldConstraintViolationError {
 impl Error for FieldConstraintViolationError {}
 
 /// check constraints in `raw_df` read from intermediate file
-pub fn validation_topic_owner(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
+/// expects the `raw_df` to validate and the `columns` to display in case of a validation error.
+pub fn validation_topic_owner(raw_df: &DataFrame, columns: &[Expr]) -> Result<(), Box<dyn Error>> {
     topic_owner_constraint(
         raw_df,
         TopicOwnerConstraintViolationError::MiTiWithoutOwner,
         col("Topic")
             .eq(lit(Topic::MiTi.to_string()))
             .and(col("Owner").fill_null(lit("")).eq(lit(""))),
+        columns,
     )?;
     topic_owner_constraint(
         raw_df,
@@ -112,6 +121,7 @@ pub fn validation_topic_owner(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> 
         col("Topic")
             .neq(lit(Topic::MiTi.to_string()))
             .and(col("Owner").fill_null(lit("")).neq(lit(""))),
+        columns,
     )?;
     Ok(())
 }
@@ -149,24 +159,14 @@ fn topic_owner_constraint(
     raw_df: &DataFrame,
     error: fn(DataFrame) -> TopicOwnerConstraintViolationError,
     predicate: Expr,
+    columns: &[Expr],
 ) -> Result<(), Box<dyn Error>> {
     let df = raw_df
         .clone()
         .lazy()
         .with_row_count("Row-No", Some(2))
         .filter(predicate)
-        .select([
-            col("Row-No"),
-            col("Date"),
-            col("Time"),
-            col("Transaction ID"),
-            col("Description"),
-            col("Price (Gross)"),
-            col("Topic"),
-            col("Owner"),
-            col("Purpose"),
-            col("Comment"),
-        ])
+        .select(columns)
         .collect()?;
     if df.shape().0 > 0 {
         Err(Box::try_from(error(df)).unwrap())
@@ -221,7 +221,8 @@ mod tests {
         #[case] error_msg: Option<&str>,
     ) -> PolarsResult<()> {
         let df = new_df(&topic.to_string(), owner, "Consumption")?;
-        match validation_topic_owner(&df) {
+        let columns = [col("Row-No")];
+        match validation_topic_owner(&df, &columns) {
             Ok(()) => assert!(expected_valid),
             Err(e) => {
                 assert!(!expected_valid);
@@ -274,7 +275,8 @@ mod tests {
         #[case] expected_valid: bool,
     ) -> Result<(), Box<dyn Error>> {
         let df = new_df(topic, None, "")?;
-        match validate_topics(&df) {
+        let columns = [col("Row-No")];
+        match validate_topics(&df, &columns) {
             Ok(()) => assert!(expected_valid),
             Err(e) => {
                 assert!(!expected_valid);
@@ -296,7 +298,8 @@ mod tests {
         #[case] expected_valid: bool,
     ) -> Result<(), Box<dyn Error>> {
         let df = new_df("", owner, "")?;
-        match validate_owners(&df) {
+        let columns = [col("Row-No")];
+        match validate_owners(&df, &columns) {
             Ok(()) => assert!(expected_valid),
             Err(e) => {
                 assert!(!expected_valid);
@@ -316,7 +319,8 @@ mod tests {
         #[case] expected_valid: bool,
     ) -> Result<(), Box<dyn Error>> {
         let df = new_df("", None, purpose)?;
-        match validate_purposes(&df) {
+        let columns = [col("Row-No")];
+        match validate_purposes(&df, &columns) {
             Ok(()) => assert!(expected_valid),
             Err(e) => {
                 assert!(!expected_valid);
