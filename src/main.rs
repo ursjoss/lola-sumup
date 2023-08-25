@@ -109,7 +109,7 @@ fn derive_month_from(file: Option<&str>) -> Result<String, String> {
     let underscore_index = min.find('_').unwrap();
     let static_part = &min[0..=underscore_index];
     let Some(filename) = file else {
-        return Err("Unable to derive filename for intermediate file.".into())
+        return Err("Unable to derive filename for intermediate file.".into());
     };
     if filename.len() < min.len() {
         Err(format!(
