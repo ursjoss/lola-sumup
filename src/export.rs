@@ -5,7 +5,9 @@ use std::path::{Path, PathBuf};
 
 use polars::prelude::*;
 
-use crate::export::constraint::validation_topic_owner;
+use crate::export::constraint::{
+    validate_owners, validate_purposes, validate_topics, validation_topic_owner,
+};
 use crate::export::export_accounting::{gather_df_accounting, validate_acc_constraint};
 use crate::export::export_miti::gather_df_miti;
 use crate::export::export_summary::collect_data;
@@ -25,17 +27,14 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
 
     let (mut df, mut df_acc) = crunch_data(raw_df)?;
 
-    write_to_file(&mut df, &path_with_prefix("summary", month, ts))?;
-    write_to_file(
-        &mut gather_df_miti(&df)?,
-        &path_with_prefix("mittagstisch", month, ts),
-    )?;
-    write_to_file(&mut df_acc, &path_with_prefix("accounting", month, ts))
+    export_summary(&month, &ts, &mut df)?;
+    export_mittagstisch(&month, &ts, &mut df)?;
+    export_accounting(&month, &ts, &mut df_acc)
 }
 
 /// returns two dataframes, one for summary/miti, the other for the accounting export.
 fn crunch_data(raw_df: DataFrame) -> Result<(DataFrame, DataFrame), Box<dyn Error>> {
-    validation_topic_owner(&raw_df)?;
+    validate(&raw_df)?;
 
     let mut df = collect_data(raw_df)?;
     df.extend(&df.sum())?;
@@ -43,6 +42,48 @@ fn crunch_data(raw_df: DataFrame) -> Result<(DataFrame, DataFrame), Box<dyn Erro
     let df_acc = gather_df_accounting(&df)?;
     validate_acc_constraint(&df_acc)?;
     Ok((df, df_acc))
+}
+
+fn validate(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
+    let validated_columns = [
+        col("Row-No"),
+        col("Date"),
+        col("Time"),
+        col("Transaction ID"),
+        col("Description"),
+        col("Price (Gross)"),
+        col("Topic"),
+        col("Owner"),
+        col("Purpose"),
+        col("Comment"),
+    ];
+
+    validate_topics(raw_df, &validated_columns)?;
+    validate_owners(raw_df, &validated_columns)?;
+    validate_purposes(raw_df, &validated_columns)?;
+    validation_topic_owner(raw_df, &validated_columns)?;
+    Ok(())
+}
+
+fn export_summary(month: &&str, ts: &&str, df: &mut DataFrame) -> Result<(), Box<dyn Error>> {
+    write_to_file(df, &path_with_prefix("summary", month, ts))?;
+    Ok(())
+}
+
+fn export_mittagstisch(month: &&str, ts: &&str, df: &mut DataFrame) -> Result<(), Box<dyn Error>> {
+    write_to_file(
+        &mut gather_df_miti(df)?,
+        &path_with_prefix("mittagstisch", month, ts),
+    )?;
+    Ok(())
+}
+
+fn export_accounting(
+    month: &&str,
+    ts: &&str,
+    df_acc: &mut DataFrame,
+) -> Result<(), Box<dyn Error>> {
+    write_to_file(df_acc, &path_with_prefix("accounting", month, ts))
 }
 
 /// Constructs a path for a CSV file from `prefix`, `month` and `ts` (timestamp).

@@ -112,6 +112,8 @@ If you do so, ensure some fields are filled correctly, and some fields are left 
 
 For all items (existing SumUp transactions and artificially added transactions), it must be true that:
 
+- `Topic` and `Purpose` contain valid values
+- `Owner` contains either valid values or is empty
 - for `Topic` `MiTi`: `Owner` must be either `MiTi` or `LoLa`
 - for `Topic` other than `MiTi`: `Owner` must be blank
 

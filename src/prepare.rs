@@ -1,8 +1,8 @@
-use std::fmt::{Debug, Formatter};
+use std::error::Error;
+use std::fmt::Debug;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use std::{error::Error, fmt};
 
 use polars::datatypes::DataType;
 use polars::frame::{DataFrame, UniqueKeepStrategy};
@@ -12,6 +12,7 @@ use polars::prelude::{
     StrptimeOptions,
 };
 use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumIter, EnumString};
 
 /// Processes the sumup input files (sales-report and transaction report) to produce an intermediate file.
 /// Some derived fields are prepared based on heuristics in a best-effort approach (Topic, Owner, Purpose).
@@ -274,20 +275,14 @@ fn infer_purpose() -> Expr {
 }
 
 /// Record Type as defined in the sumup sales report
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, EnumString, Display)]
 enum RecordType {
     Sales,
     Refund,
 }
 
-impl fmt::Display for RecordType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{self:?}")
-    }
-}
-
 /// Payment method as defined in the sumup sales report
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, EnumString, Display)]
 pub enum PaymentMethod {
     /// Sales paid with cash
     Cash,
@@ -295,14 +290,8 @@ pub enum PaymentMethod {
     Card,
 }
 
-impl fmt::Display for PaymentMethod {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{self:?}")
-    }
-}
-
 /// Derived Topics, based on time of day
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, EnumString, Display, EnumIter)]
 pub enum Topic {
     /// "Mittags-Tisch", managed by Verein Mittagstisch, includes the morning café
     MiTi,
@@ -320,14 +309,8 @@ pub enum Topic {
     PaidOut,
 }
 
-impl fmt::Display for Topic {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{self:?}")
-    }
-}
-
 /// Derived purpose
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, EnumString, Display, EnumIter)]
 pub enum Purpose {
     /// Sold products
     Consumption,
@@ -335,26 +318,14 @@ pub enum Purpose {
     Tip,
 }
 
-impl fmt::Display for Purpose {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{self:?}")
-    }
-}
-
 /// Derived main owner of the income of sales by Mittagstisch.
 /// Sales by `LoLa` directly does not have an owner.
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, EnumString, Display, EnumIter)]
 pub enum Owner {
     /// LoLa as main owner of sales by Mittags-Tisch
     LoLa,
     /// Mittags-Tisch as main owner of sales by Mittags-Tisch.
     MiTi,
-}
-
-impl fmt::Display for Owner {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{self:?}")
-    }
 }
 
 #[cfg(test)]
