@@ -17,9 +17,10 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
                 .alias("Net Card Total MiTi"),
         )
         .with_column(
-            (col("Tips_Card").fill_null(0.0) - col("MiTi_Tips_Card").fill_null(0.0))
-                .round(2)
-                .alias("Tips Card LoLa"),
+            (col("PaidOut_Card").fill_null(0.0) + col("Tips_Card").fill_null(0.0)
+                - col("MiTi_Tips_Card").fill_null(0.0))
+            .round(2)
+            .alias("PaidOut + Tips Card LoLa"),
         )
         .select([
             col("Date"),
@@ -28,9 +29,8 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Deposit_Card").alias("10920/23050"),
             col("Rental_Card").alias("10920/31X00"),
             col("Culture_Card").alias("10920/32000"),
-            col("PaidOut_Card").alias("10920/10000"),
             col("Net Card Total MiTi").alias("10920/20051"),
-            col("Tips Card LoLa").alias("10920/10910"),
+            col("PaidOut + Tips Card LoLa").alias("10920/10910"),
             col("Payment SumUp"),
             col("LoLa_Commission").alias("68450/10920"),
             col("Debt to MiTi").alias("20051/10900"),
@@ -51,7 +51,6 @@ fn validate_acc_constraint_10920(df_acc: &DataFrame) -> Result<(), Box<dyn Error
         + col("10920/23050")
         + col("10920/31X00")
         + col("10920/32000")
-        + col("10920/10000")
         + col("10920/20051")
         + col("10920/10910")
         - col("Payment SumUp")
@@ -342,9 +341,8 @@ mod tests {
             "10920/23050" => &[dc],
             "10920/31X00" => &[rc],
             "10920/32000" => &[cuc],
-            "10920/10000" => &[poc],
             "10920/20051" => &[nctm],
-            "10920/10910" => &[tcl],
+            "10920/10910" => &[poc + tcl],
             "Payment SumUp" => &[psu],
             "68450/10920" => &[Some(cl)],
             "20051/10900" => &[dtm],
