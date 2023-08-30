@@ -253,17 +253,22 @@ The purpose of the accounting export is to provide the relevant information on m
 The columns of the resulting accounting.csv file are defined as follows:
 
 - `Date`: [`Date`]
-- `10920/30200`:  Total Gross Payments Card Cafe [`Cafe_Card`]
-- `10920/30700`:  Total Gross Payments Card Rentals [`Verm_Card`]
-- `10920/23050`:  Total Gross Payments Card Key Deposit [`Deposit_Card`]
-- `10920/31X00`:  Total Gross Payments Card Rental Fee [`Rental_Card`]
-- `10920/32000`:  Total Gross Payments Card Cultural Payments [`Culture_Card`]
+- `10000/30200`: Total Cash Income Cafe [`Cafe_Cash`]
+- `10000/30700`: Total Cash Income Food Rentals [`Verm_Cash`] (LoLa Food sold by renters)
+- `10000/23050`: Total Cash Income Key Deposit [`Deposit_Cash`]
+- `10000/31X00`: Total Cash Income Rental Fee [`Rental_Cash`] (fees for renting the rooms)
+- `10000/32000`: Total Cash Income Cultural Payments [`Culture_Cash`]
+- `10920/30200`: Total Gross Payments Card Cafe [`Cafe_Card`]
+- `10920/30700`: Total Gross Payments Card Rentals [`Verm_Card`] (LoLa Food sold by renters)
+- `10920/23050`: Total Gross Payments Card Key Deposit [`Deposit_Card`]
+- `10920/31X00`: Total Gross Payments Card Rental Fee [`Rental_Card`] (fees for renting the rooms)
+- `10920/32000`: Total Gross Payments Card Cultural Payments [`Culture_Card`]
 - `10920/20051`: Net Card income + tips (card) Mittagstisch [`Net Card MiTi` + `MiTi_Tips_Card`]
 - `10920/10910`: Total Gross Payments Paid out to external parties [`PaidOut_Card`] + Tips LoLa paid via Card [`Tips_Card` - `MiTi_Tips_Card`]
 - `Payment SumUp`: Total Net Income plus tips paid via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]. Will be posted `10110/10920`, but based on Account Statement, not this report.
-- `68450/10920`:  Commission for Café, Vermietung, Deposit, Rental, Cultural Payments, and `PaidOut`, i.e. w/o Mittagstisch [`Commission LoLa`]
-- `20051/10900`:  Amount LoLa owes to Mittagstisch (`Debt to MiTi`)
-- `20051/30500`:  Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi` = `Income LoLa MiTi`]
+- `68450/10920`: Commission for Café, Vermietung, Deposit, Rental, Cultural Payments, and `PaidOut`, i.e. w/o Mittagstisch [`Commission LoLa`]
+- `20051/10900`: Amount LoLa owes to Mittagstisch (`Debt to MiTi`)
+- `20051/30500`: Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi` = `Income LoLa MiTi`]
 
 Where the absolute net sum for the transitory accounts must not be > 0.01, i.e.:
 - for `10920`: abs(`10920/30200` + `10920/30700` + `10920/23050` + `10920/31X00` + `10920/32000` +`10920/20051` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.02
