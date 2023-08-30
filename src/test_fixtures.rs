@@ -264,6 +264,11 @@ pub fn summary_df_03(sample_date: NaiveDate) -> DataFrame {
 pub fn accounting_df_03(sample_date: NaiveDate) -> DataFrame {
     df!(
         "Date" => &[sample_date],
+        "10000/30200" => &[29.5],
+        "10000/30700" => &[102.5],
+        "10000/23050" => &[None::<f64>],
+        "10000/31X00" => &[None::<f64>],
+        "10000/32000" => &[None::<f64>],
         "10920/30200" => &[20.0],
         "10920/30700" => &[12.0],
         "10920/23050" => &[100.0],
