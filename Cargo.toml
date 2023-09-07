@@ -11,7 +11,7 @@ license = "MIT"
 [dependencies]
 clap = { version = "4.4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
-chrono= { version = "0.4.29", features = ["serde"] }
+chrono= { version = "0.4.30", features = ["serde"] }
 polars = { version = "0.32.1", features = ["lazy", "dtype-date", "temporal", "strings", "concat_str"] }
 strum = { version = "0.25" }
 strum_macros = { version = "0.25" }
