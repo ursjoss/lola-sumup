@@ -71,8 +71,9 @@ The four columns that may be modified are:
 
 - `Topic`: The main topic of the transaction, one of
   - `MiTi`: Items sold by Mittagstisch. Automatically assigned if the transaction occurred before 14:15.
-  - `Café`: Items sold by LoLa Café. Automatically assigned if the transaction occurred between 14:15 and 18:00.
+  - `Cafe`: Items sold by LoLa Café. Automatically assigned if the transaction occurred between 14:15 and 18:00.
   - `Verm`: Items sold by Renters of the rooms. Automatically assigned if the transaction occurred after 18:00.
+  - `SoFe`: Items sold in context of the summer party ("Sommer-Fest").
   - `Deposit`: Key deposit.
   - `Rental`: Rental fee.
   - `Culture`: Items sold in context of cultural events.
@@ -159,6 +160,9 @@ The columns of the resulting summary file are defined as follows:
   - `Verm_Cash`: Gross Cash Income Rentals
   - `Verm_Card`: Gross Card Income Rentals
   - `Verm Total`: Total Gross Income Rentals [`Verm_Cash` + `Verm_Card`]
+  - `SoFe_Cash`: Gross Cash summer party
+  - `SoFe_Card`: Gross Card summer party
+  - `SoFe Total`: Total Gross summer party [`SoFe_Cash` + `SoFe_Card`]
   - `Deposit_Cash`: Gross Cash Key Deposit
   - `Deposit_Card`: Gross Card Key Deposit
   - `Deposit Total`: Total Gross Key Deposit [`Deposit_Cash` + `Deposit_Card`]
@@ -172,10 +176,10 @@ The columns of the resulting summary file are defined as follows:
   - `PaidOut_Card`: Gross Card PaidOut
   - `PaidOut Total`: Total Gross PaidOut [`PaidOut_Cash` + `PaidOut_Card`]
 - Gross values consumption, Tips and total reported values by payment method:
-  - `Gross Cash`: Total Gross Income Cash [`MiTi_Cash` + `Cafe_Cash` + `Verm_Cash` + `Deposit_Cash` + `Rental_Cash` + `Culture_Cash` + `PaidOut_Cash`]
+  - `Gross Cash`: Total Gross Income Cash [`MiTi_Cash` + `Cafe_Cash` + `Verm_Cash` + `SoFe_Cash` + `Deposit_Cash` + `Rental_Cash` + `Culture_Cash` + `PaidOut_Cash`]
   - `Tips_Cash`: Tips Cash
   - `SumUp Cash`: Total Income Cash [`Gross Cash` + `Tips_Cash`]
-  - `Gross Card`: Gross Gross Income Card [`MiTi_Card` + `Cafe_Card` + `Verm_Card` + `Deposit_Card` + `Rental_Card` + `Culture_Card` + `PaidOut_Card`]
+  - `Gross Card`: Gross Gross Income Card [`MiTi_Card` + `Cafe_Card` + `Verm_Card` + `SoFe_Card` + `Deposit_Card` + `Rental_Card` + `Culture_Card` + `PaidOut_Card`]
   - `Tips_Card`: Tips Card
   - `SumUp Card`: Total Gross Income Card [`Gross Card` + `Tips_Card`]
   - `Gross Total`: Gross Total Income [`Gross Cash` + `Gross Card`]
@@ -185,7 +189,7 @@ The columns of the resulting summary file are defined as follows:
   - `Gross Card MiTi`: Gross Card Income Mittagstisch [`MiTi_Card`] (including beverages LoLa)
   - `MiTi_Commission`: Card Commission for Mittagstisch (Menus and Tips, but not from LoLa beverages)
   - `Net Card MiTi`: Net Card Income Mittagstisch [`Gross Card MiTi` - `MiTi_Commission`] - commission on meals and tips are deducted, sales of beverages still included
-  - `Gross Card LoLa`: Gross Card Income LoLa (Café, Vermietungen, Deposit, Rental, Culture) [`Cafe_Card` + `Verm_Card` + `Deposit_Card` + `Rental_Card` + `Culture_Card` + `PaidOut_Card`]
+  - `Gross Card LoLa`: Gross Card Income LoLa (Café, Vermietungen, summer party, Deposit, Rental, Culture) [`Cafe_Card` + `Verm_Card` + `SoFe_Card` + `Deposit_Card` + `Rental_Card` + `Culture_Card` + `PaidOut_Card`]
   - `LoLa_Commission`: Card Commission for LoLa (non-Mittagstisch related, but including commission for items sold by MiTi)
   - `LoLa_Commission_MiTi`: Card Commission for LoLa items sold by MiTi only, so not from Café or Rentals
   - `Net Card LoLa`: Net Card Income LoLa (Café and Vermietungen) [`Gross Card LoLa` - `LoLa_Commission`]
@@ -255,21 +259,23 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `Date`: [`Date`]
 - `10000/30200`: Total Cash Income Cafe [`Cafe_Cash`]
 - `10000/30700`: Total Cash Income Food Rentals [`Verm_Cash`] (LoLa Food sold by renters)
+- `10000/30800`: Total Cash Income Food Rentals [`SoFe_Cash`] (LoLa Food sold during summer party)
 - `10000/23050`: Total Cash Income Key Deposit [`Deposit_Cash`]
 - `10000/31X00`: Total Cash Income Rental Fee [`Rental_Cash`] (fees for renting the rooms)
 - `10000/32000`: Total Cash Income Cultural Payments [`Culture_Cash`]
 - `10920/30200`: Total Gross Payments Card Cafe [`Cafe_Card`]
 - `10920/30700`: Total Gross Payments Card Rentals [`Verm_Card`] (LoLa Food sold by renters)
+- `10920/30800`: Total Gross Payments Card summer party [`SoFe_Card`] (LoLa Food sold during summer party)
 - `10920/23050`: Total Gross Payments Card Key Deposit [`Deposit_Card`]
 - `10920/31X00`: Total Gross Payments Card Rental Fee [`Rental_Card`] (fees for renting the rooms)
 - `10920/32000`: Total Gross Payments Card Cultural Payments [`Culture_Card`]
 - `10920/20051`: Net Card income + tips (card) Mittagstisch [`Net Card MiTi` + `MiTi_Tips_Card`]
 - `10920/10910`: Total Gross Payments Paid out to external parties [`PaidOut_Card`] + Tips LoLa paid via Card [`Tips_Card` - `MiTi_Tips_Card`]
 - `Payment SumUp`: Total Net Income plus tips paid via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]. Will be posted `10110/10920`, but based on Account Statement, not this report.
-- `68450/10920`: Commission for Café, Vermietung, Deposit, Rental, Cultural Payments, and `PaidOut`, i.e. w/o Mittagstisch [`Commission LoLa`]
+- `68450/10920`: Commission for Café, Vermietung, summer party, Deposit, Rental, Cultural Payments, and `PaidOut`, i.e. w/o Mittagstisch [`Commission LoLa`]
 - `20051/10900`: Amount LoLa owes to Mittagstisch (`Debt to MiTi`)
 - `20051/30500`: Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi` = `Income LoLa MiTi`]
 
 Where the absolute net sum for the transitory accounts must not be > 0.01, i.e.:
-- for `10920`: abs(`10920/30200` + `10920/30700` + `10920/23050` + `10920/31X00` + `10920/32000` +`10920/20051` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.02
+- for `10920`: abs(`10920/30200` + `10920/30700` + `10920/30800` + `10920/23050` + `10920/31X00` + `10920/32000` +`10920/20051` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.02
 - for `20051`: abs(`10920/20051` - `20051/10900` - `20051/30200`) < 0.02
