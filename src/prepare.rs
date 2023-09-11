@@ -299,6 +299,8 @@ pub enum Topic {
     Cafe,
     /// ("Vermietung") Room rentals by third parties, managed by LoLa
     Verm,
+    /// ("Sommerfest" or summer party) Items sold during summer party
+    SoFe,
     /// Key deposit
     Deposit,
     /// Rental fee
