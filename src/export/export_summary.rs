@@ -585,7 +585,7 @@ fn key_figure_by_date_for(
 ) -> LazyFrame {
     let (predicate, alias) = predicate_and_alias;
     ldf.filter(predicate)
-        .groupby(["Date"])
+        .group_by(["Date"])
         .agg([col(key_figure).sum()])
         .select([
             col("Date"),
@@ -704,7 +704,7 @@ fn meal_count(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> LazyFrame 
 fn count_by_date_for(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> LazyFrame {
     let (predicate, alias) = predicate_and_alias;
     ldf.filter(predicate)
-        .groupby(["Date"])
+        .group_by(["Date"])
         .agg([col("Quantity").sum()])
         .select([
             col("Date"),
