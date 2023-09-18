@@ -147,7 +147,12 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .to_time(time_format.clone())
                 .alias("Time"),
         )
-        .with_column(col("Description").str().strip(None).alias("Description"))
+        .with_column(
+            col("Description")
+                .str()
+                .strip_chars(None)
+                .alias("Description"),
+        )
         .with_column(infer_topic(time_format).alias("Topic"))
         .join(
             refunded_ids_1,
@@ -258,7 +263,7 @@ fn infer_owner() -> Expr {
                 .or(col("Description").str().contains(lit("Trinkgeld"), true))
                 .or(col("Description")
                     .str()
-                    .strip(None)
+                    .strip_chars(None)
                     .eq(lit(""))
                     .and(col("Price (Gross)").gt_eq(5.0))),
         )
