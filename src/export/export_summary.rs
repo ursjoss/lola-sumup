@@ -12,9 +12,11 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         exact: true,
         ..Default::default()
     };
-    let ldf = raw_df
-        .lazy()
-        .with_column(col("Date").str().strptime(DataType::Date, dt_options));
+    let ldf = raw_df.lazy().with_column(col("Date").str().strptime(
+        DataType::Date,
+        dt_options,
+        Expr::default(),
+    ));
     let all_dates = ldf
         .clone()
         .select([col("Date")])
@@ -585,7 +587,7 @@ fn key_figure_by_date_for(
 ) -> LazyFrame {
     let (predicate, alias) = predicate_and_alias;
     ldf.filter(predicate)
-        .groupby(["Date"])
+        .group_by(["Date"])
         .agg([col(key_figure).sum()])
         .select([
             col("Date"),
@@ -704,7 +706,7 @@ fn meal_count(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> LazyFrame 
 fn count_by_date_for(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> LazyFrame {
     let (predicate, alias) = predicate_and_alias;
     ldf.filter(predicate)
-        .groupby(["Date"])
+        .group_by(["Date"])
         .agg([col("Quantity").sum()])
         .select([
             col("Date"),

@@ -12,9 +12,22 @@ license = "MIT"
 clap = { version = "4.4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 chrono= { version = "0.4.31", features = ["serde"] }
-polars = { version = "0.32.1", features = ["lazy", "dtype-date", "temporal", "strings", "concat_str"] }
 strum = { version = "0.25" }
 strum_macros = { version = "0.25" }
+
+[dependencies.polars]
+version = "0.33.2"
+features = [
+    "lazy",
+    "dtype-date",
+    "temporal",
+    "strings",
+    "concat_str",
+    "lazy_regex",
+    "round_series",
+    "is_in",
+    "abs",
+]
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"
