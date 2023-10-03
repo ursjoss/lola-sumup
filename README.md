@@ -276,6 +276,6 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `20051/10900`: Amount LoLa owes to Mittagstisch (`Debt to MiTi`)
 - `20051/30500`: Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi` = `Income LoLa MiTi`]
 
-Where the absolute net sum for the transitory accounts must not be > 0.01, i.e.:
+Where the absolute net sum for the transitory accounts must not be > 0.02, i.e.:
 - for `10920`: abs(`10920/30200` + `10920/30700` + `10920/30800` + `10920/23050` + `10920/31X00` + `10920/32000` +`10920/20051` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.02
-- for `20051`: abs(`10920/20051` - `20051/10900` - `20051/30200`) < 0.02
+- for `20051`: abs(`10920/20051` - `20051/10900` - `20051/30200`) <= 0.02
