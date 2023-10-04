@@ -38,10 +38,10 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Culture_Card").alias("10920/32000"),
             col("Net Card Total MiTi").alias("10920/20051"),
             col("PaidOut + Tips Card LoLa").alias("10920/10910"),
-            col("Payment SumUp"),
             col("LoLa_Commission").alias("68450/10920"),
             col("Debt to MiTi").alias("20051/10900"),
             col("Income LoLa MiTi").alias("20051/30500"),
+            col("Payment SumUp"),
         ])
         .collect()
 }
@@ -459,10 +459,10 @@ mod tests {
             "10920/32000" => &[culture_card],
             "10920/20051" => &[net_card_income_plus_tips_miti_card],
             "10920/10910" => &[paid_out_card + tips_lola_paid_via_card],
-            "Payment SumUp" => &[payment_sumup],
             "68450/10920" => &[Some(commission_lola)],
             "20051/10900" => &[debt_to_miti],
             "20051/30500" => &[income_lola_miti],
+            "Payment SumUp" => &[payment_sumup],
         )?;
         match validate_acc_constraint(&df) {
             Ok(()) => assert!(delta.is_none(), "Would not have expected delta {} on {date}.", delta.unwrap()),
