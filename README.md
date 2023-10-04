@@ -283,7 +283,7 @@ They serve for consolidation purposes:
 - `Payment SumUp` has to match the bank statement showing the daily sumup payments
   (which are posted on our account with a delay of one or more days).
 - `Total Cash Debit` and `Total Card Debit` helps to reconcile the cash account ledger ("Kassendokument").
-  Please note that those two columns aggregates potentially multiple entries in the cash account ledger for each day.
+  Please note that those two columns potentially aggregate multiple entries in the cash account ledger for each day.
 
 Where the absolute net sum for the transitory accounts must not be > 0.02, i.e.:
 - for `10920`: abs(`10920/30200` + `10920/30700` + `10920/30800` + `10920/23050` + `10920/31X00` + `10920/32000` +`10920/20051` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.02
