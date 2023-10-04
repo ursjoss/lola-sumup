@@ -276,6 +276,14 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `20051/30500`: Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi` = `Income LoLa MiTi`]
 - `Payment SumUp`: Total Net Income plus tips paid via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]. Will be posted `10110/10920`, but based on Account Statement, not this report.
 - `Total Cash Debit`: Total daily cash debit [`Gross Cash` - `MiTi_Cash` - `Tips_Cash`]
+- `Total Card Debit`: Total daily card debit [`Gross_Card_LoLa` + `Tips_Card` - `MiTi_Tips_Card`]
+
+The last three columns don't require postings.
+They serve for consolidation purposes:
+- `Payment SumUp` has to match the bank statement showing the daily sumup payments
+  (which are posted on our account with a delay of one or more days).
+- `Total Cash Debit` and `Total Card Debit` helps to reconcile the cash account ledger ("Kassendokument").
+  Please note that those two columns aggregates potentially multiple entries in the cash account ledger for each day.
 
 Where the absolute net sum for the transitory accounts must not be > 0.02, i.e.:
 - for `10920`: abs(`10920/30200` + `10920/30700` + `10920/30800` + `10920/23050` + `10920/31X00` + `10920/32000` +`10920/20051` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.02
