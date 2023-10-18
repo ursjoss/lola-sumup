@@ -270,12 +270,16 @@ pub fn summary_df_03(sample_date: NaiveDate) -> DataFrame {
 pub fn accounting_df_03(sample_date: NaiveDate) -> DataFrame {
     df!(
         "Date" => &[sample_date],
+        "Payment SumUp" => &[1403.91],
+        "Total Cash Debit" => &[442.0],
+        "Total Card Debit" => &[1152.0],
         "10000/30200" => &[29.5],
         "10000/30700" => &[102.5],
         "10000/30800" => &[10.0],
         "10000/23050" => &[None::<f64>],
         "10000/31X00" => &[None::<f64>],
         "10000/32000" => &[None::<f64>],
+        "10920/10000" => &[100.0],
         "10920/30200" => &[20.0],
         "10920/30700" => &[12.0],
         "10920/30800" => &[20.0],
@@ -283,13 +287,10 @@ pub fn accounting_df_03(sample_date: NaiveDate) -> DataFrame {
         "10920/31X00" => &[500.0],
         "10920/32000" => &[400.0],
         "10920/20051" => &[189.25],
-        "10920/10910" => &[100.0],
+        "10920/10910" => &[0.0],
         "68450/10920" => &[Some(17.84)],
         "20051/10900" => &[145.76],
         "20051/30500" => &[42.49],
-        "Payment SumUp" => &[1403.91],
-        "Total Cash Debit" => &[542.0],
-        "Total Card Debit" => &[1152.0],
     )
     .expect("Valid accounting df")
 }
