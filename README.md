@@ -257,6 +257,9 @@ The purpose of the accounting export is to provide the relevant information on m
 The columns of the resulting accounting.csv file are defined as follows:
 
 - `Date`: [`Date`]
+- `Payment SumUp`: Total Net Income plus tips paid via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]. Will be posted `10110/10920`, but based on Account Statement, not this report.
+- `Total Cash Debit`: Total daily cash debit [`Gross Cash` - `MiTi_Cash`]
+- `Total Card Debit`: Total daily card debit [`Gross_Card_LoLa` + `Tips_Card` - `MiTi_Tips_Card`]
 - `10000/30200`: Total Cash Income Cafe [`Cafe_Cash`]
 - `10000/30700`: Total Cash Income Food Rentals [`Verm_Cash`] (LoLa Food sold by renters)
 - `10000/30800`: Total Cash Income Food Rentals [`SoFe_Cash`] (LoLa Food sold during summer party)
@@ -274,11 +277,9 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `68450/10920`: Commission for Café, Vermietung, summer party, Deposit, Rental, Cultural Payments, and `PaidOut`, i.e. w/o Mittagstisch [`Commission LoLa`]
 - `20051/10900`: Amount LoLa owes to Mittagstisch (`Debt to MiTi`)
 - `20051/30500`: Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi` = `Income LoLa MiTi`]
-- `Payment SumUp`: Total Net Income plus tips paid via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]. Will be posted `10110/10920`, but based on Account Statement, not this report.
-- `Total Cash Debit`: Total daily cash debit [`Gross Cash` - `MiTi_Cash`]
-- `Total Card Debit`: Total daily card debit [`Gross_Card_LoLa` + `Tips_Card` - `MiTi_Tips_Card`]
 
-The last three columns don't require postings.
+
+The first three columns after the date do not require postings.
 They serve for consolidation purposes:
 - `Payment SumUp` has to match the bank statement showing the daily sumup payments
   (which are posted on our account with a delay of one or more days).
