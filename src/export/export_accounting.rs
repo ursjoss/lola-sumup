@@ -23,9 +23,11 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
             .alias("PaidOut + Tips Card LoLa"),
         )
         .with_column(
-            (col("Gross Cash").fill_null(0.0) - col("MiTi_Cash").fill_null(0.0))
-                .round(2)
-                .alias("Total Cash Debit"),
+            (col("Gross Cash").fill_null(0.0)
+                - col("MiTi_Cash").fill_null(0.0)
+                - col("PaidOut Total").fill_null(0.0))
+            .round(2)
+            .alias("Total Cash Debit"),
         )
         .with_column(
             (col("Gross Card LoLa").fill_null(0.0) + col("Tips_Card").fill_null(0.0)

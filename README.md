@@ -258,7 +258,7 @@ The columns of the resulting accounting.csv file are defined as follows:
 
 - `Date`: [`Date`]
 - `Payment SumUp`: Total Net Income plus tips paid via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]. Will be posted `10110/10920`, but based on Account Statement, not this report.
-- `Total Cash Debit`: Total daily cash debit [`Gross Cash` - `MiTi_Cash`]
+- `Total Cash Debit`: Total daily cash debit [`Gross Cash` - `MiTi_Cash` - `PaidOut Total`]
 - `Total Card Debit`: Total daily card debit [`Gross_Card_LoLa` + `Tips_Card` - `MiTi_Tips_Card`]
 - `10000/30200`: Total Cash Income Cafe [`Cafe_Cash`]
 - `10000/30700`: Total Cash Income Food Rentals [`Verm_Cash`] (LoLa Food sold by renters)

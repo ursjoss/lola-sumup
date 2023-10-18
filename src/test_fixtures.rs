@@ -271,7 +271,7 @@ pub fn accounting_df_03(sample_date: NaiveDate) -> DataFrame {
     df!(
         "Date" => &[sample_date],
         "Payment SumUp" => &[1403.91],
-        "Total Cash Debit" => &[542.0],
+        "Total Cash Debit" => &[442.0],
         "Total Card Debit" => &[1152.0],
         "10000/30200" => &[29.5],
         "10000/30700" => &[102.5],
