@@ -17,10 +17,9 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
                 .alias("Net Card Total MiTi"),
         )
         .with_column(
-            (col("PaidOut_Card").fill_null(0.0) + col("Tips_Card").fill_null(0.0)
-                - col("MiTi_Tips_Card").fill_null(0.0))
-            .round(2)
-            .alias("PaidOut + Tips Card LoLa"),
+            (col("Tips_Card").fill_null(0.0) - col("MiTi_Tips_Card").fill_null(0.0))
+                .round(2)
+                .alias("Tips Card LoLa"),
         )
         .with_column(
             (col("Gross Cash").fill_null(0.0)
@@ -46,6 +45,7 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Deposit_Cash").alias("10000/23050"),
             col("Rental_Cash").alias("10000/31X00"),
             col("Culture_Cash").alias("10000/32000"),
+            col("PaidOut_Card").alias("10920/10000"),
             col("Cafe_Card").alias("10920/30200"),
             col("Verm_Card").alias("10920/30700"),
             col("SoFe_Card").alias("10920/30800"),
@@ -53,7 +53,7 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Rental_Card").alias("10920/31X00"),
             col("Culture_Card").alias("10920/32000"),
             col("Net Card Total MiTi").alias("10920/20051"),
-            col("PaidOut + Tips Card LoLa").alias("10920/10910"),
+            col("Tips Card LoLa").alias("10920/10910"),
             col("LoLa_Commission").alias("68450/10920"),
             col("Debt to MiTi").alias("20051/10900"),
             col("Income LoLa MiTi").alias("20051/30500"),
@@ -75,6 +75,7 @@ fn validate_acc_constraint_10920(df_acc: &DataFrame) -> Result<(), Box<dyn Error
         + col("10920/31X00")
         + col("10920/32000")
         + col("10920/20051")
+        + col("10920/10000")
         + col("10920/10910")
         - col("Payment SumUp")
         - col("68450/10920");
@@ -490,6 +491,7 @@ mod tests {
             "10000/23050" => &[deposit_cash],
             "10000/31X00" => &[rental_cash],
             "10000/32000" => &[culture_cash],
+            "10920/10000" => &[paid_out_card],
             "10920/30200" => &[cafe_card],
             "10920/30700" => &[verm_card],
             "10920/30800" => &[sofe_card],
@@ -497,7 +499,7 @@ mod tests {
             "10920/31X00" => &[rental_card],
             "10920/32000" => &[culture_card],
             "10920/20051" => &[net_card_income_plus_tips_miti_card],
-            "10920/10910" => &[paid_out_card + tips_lola_paid_via_card],
+            "10920/10910" => &[tips_lola_paid_via_card],
             "68450/10920" => &[Some(commission_lola)],
             "20051/10900" => &[debt_to_miti],
             "20051/30500" => &[income_lola_miti],
