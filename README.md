@@ -260,17 +260,17 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `Payment SumUp`: Total Net Income plus tips paid via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]. Will be posted `10110/10920`, but based on Account Statement, not this report.
 - `Total Cash Debit`: Total daily cash debit [`Gross Cash` - `MiTi_Cash` - `PaidOut Total`]
 - `Total Card Debit`: Total daily card debit [`Gross_Card_LoLa` + `Tips_Card` - `MiTi_Tips_Card`]
+- `10000/23050`: Total Cash Income Key Deposit [`Deposit_Cash`]
 - `10000/30200`: Total Cash Income Cafe [`Cafe_Cash`]
 - `10000/30700`: Total Cash Income Food Rentals [`Verm_Cash`] (LoLa Food sold by renters)
 - `10000/30800`: Total Cash Income Food Rentals [`SoFe_Cash`] (LoLa Food sold during summer party)
-- `10000/23050`: Total Cash Income Key Deposit [`Deposit_Cash`]
 - `10000/31000`: Total Cash Income Rental Fee [`Rental_Cash`] (fees for renting the rooms)
 - `10000/32000`: Total Cash Income Cultural Payments [`Culture_Cash`]
 - `10920/10000`: Total Gross Payments Card paid out in cash to external parties [`PaidOut_Card`]
+- `10920/23050`: Total Gross Payments Card Key Deposit [`Deposit_Card`]
 - `10920/30200`: Total Gross Payments Card Cafe [`Cafe_Card`]
 - `10920/30700`: Total Gross Payments Card Rentals [`Verm_Card`] (LoLa Food sold by renters)
 - `10920/30800`: Total Gross Payments Card summer party [`SoFe_Card`] (LoLa Food sold during summer party)
-- `10920/23050`: Total Gross Payments Card Key Deposit [`Deposit_Card`]
 - `10920/31000`: Total Gross Payments Card Rental Fee [`Rental_Card`] (fees for renting the rooms)
 - `10920/32000`: Total Gross Payments Card Cultural Payments [`Culture_Card`]
 - `10920/20051`: Net Card income + tips (card) Mittagstisch [`Net Card MiTi` + `MiTi_Tips_Card`]
