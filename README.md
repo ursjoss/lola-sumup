@@ -78,6 +78,7 @@ The four columns that may be modified are:
   - `Rental`: Rental fee.
   - `Culture`: Items sold in context of cultural events.
   - `PaidOut`: Income paid out in cash to external party.
+  - `Packaging`: Sold re-usable packaging for dishes
 - `Owner`: Only relevant for Topic `MiTi`: `MiTi` (for menus produced and sold by Mittagstisch) or `LoLa` (LoLa beverages and food from LoLa, sold by Mittagstisch)
 - `Purpose`: `Consumption` or `Tip` (the former is also used for Topics `Deposit`, `Rental`, `Culture`, or `PaidOut`)
 - `Comment`: Empty, can be manually filled to keep some context
@@ -166,6 +167,9 @@ The columns of the resulting summary file are defined as follows:
   - `Deposit_Cash`: Gross Cash Key Deposit
   - `Deposit_Card`: Gross Card Key Deposit
   - `Deposit Total`: Total Gross Key Deposit [`Deposit_Cash` + `Deposit_Card`]
+  - `Packaging_Cash`: Gross Cash Key Deposit
+  - `Packaging_Card`: Gross Card Key Deposit
+  - `Packaging Total`: Total Gross Key Deposit [`Packaging_Cash` + `Packaging_Card`]
   - `Rental_Cash`: Gross Cash Rental Payment
   - `Rental_Card`: Gross Card Rental Payment
   - `Rental Total`: Total Gross Rental Payment [`Rental_Cash` + `Rental_Card`]
@@ -176,10 +180,10 @@ The columns of the resulting summary file are defined as follows:
   - `PaidOut_Card`: Gross Card PaidOut
   - `PaidOut Total`: Total Gross PaidOut [`PaidOut_Cash` + `PaidOut_Card`]
 - Gross values consumption, Tips and total reported values by payment method:
-  - `Gross Cash`: Total Gross Income Cash [`MiTi_Cash` + `Cafe_Cash` + `Verm_Cash` + `SoFe_Cash` + `Deposit_Cash` + `Rental_Cash` + `Culture_Cash` + `PaidOut_Cash`]
+  - `Gross Cash`: Total Gross Income Cash [`MiTi_Cash` + `Cafe_Cash` + `Verm_Cash` + `SoFe_Cash` + `Deposit_Cash` + `Packaging_Cash` + `Rental_Cash` + `Culture_Cash` + `PaidOut_Cash`]
   - `Tips_Cash`: Tips Cash
   - `SumUp Cash`: Total Income Cash [`Gross Cash` + `Tips_Cash`]
-  - `Gross Card`: Gross Gross Income Card [`MiTi_Card` + `Cafe_Card` + `Verm_Card` + `SoFe_Card` + `Deposit_Card` + `Rental_Card` + `Culture_Card` + `PaidOut_Card`]
+  - `Gross Card`: Gross Gross Income Card [`MiTi_Card` + `Cafe_Card` + `Verm_Card` + `SoFe_Card` + `Deposit_Card` + `Packaging_Card` + `Rental_Card` + `Culture_Card` + `PaidOut_Card`]
   - `Tips_Card`: Tips Card
   - `SumUp Card`: Total Gross Income Card [`Gross Card` + `Tips_Card`]
   - `Gross Total`: Gross Total Income [`Gross Cash` + `Gross Card`]
@@ -266,6 +270,7 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `10000/30800`: Total Cash Income Food Rentals [`SoFe_Cash`] (LoLa Food sold during summer party)
 - `10000/31000`: Total Cash Income Rental Fee [`Rental_Cash`] (fees for renting the rooms)
 - `10000/32000`: Total Cash Income Cultural Payments [`Culture_Cash`]
+- `10000/46000`: Total Cash Cost Reduction on Material Cost [`Packaging_Cash`]
 - `10920/10000`: Total Gross Payments Card paid out in cash to external parties [`PaidOut_Card`]
 - `10920/23050`: Total Gross Payments Card Key Deposit [`Deposit_Card`]
 - `10920/30200`: Total Gross Payments Card Cafe [`Cafe_Card`]
@@ -273,6 +278,7 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `10920/30800`: Total Gross Payments Card summer party [`SoFe_Card`] (LoLa Food sold during summer party)
 - `10920/31000`: Total Gross Payments Card Rental Fee [`Rental_Card`] (fees for renting the rooms)
 - `10920/32000`: Total Gross Payments Card Cultural Payments [`Culture_Card`]
+- `10920/46000`: Total Gross Payments Card Reduction on Material Cost [`Packaging_Card`]
 - `10920/20051`: Net Card income + tips (card) Mittagstisch [`Net Card MiTi` + `MiTi_Tips_Card`]
 - `10920/10910`: Tips LoLa paid via Card [`Tips_Card` - `MiTi_Tips_Card`]
 - `68450/10920`: Commission for Café, Vermietung, summer party, Deposit, Rental, Cultural Payments, and `PaidOut`, i.e. w/o Mittagstisch [`Commission LoLa`]
@@ -288,5 +294,5 @@ They serve for consolidation purposes:
   Please note that those two columns potentially aggregate multiple entries in the cash account ledger for each day.
 
 Where the absolute net sum for the transitory accounts must not be > 0.02, i.e.:
-- for `10920`: abs(`10920/30200` + `10920/30700` + `10920/30800` + `10920/23050` + `10920/31000` + `10920/32000` +`10920/20051` + `10920/10000` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.02
+- for `10920`: abs(`10920/30200` + `10920/30700` + `10920/30800` + `10920/23050` + `10920/46000` + `10920/31000` + `10920/32000` +`10920/20051` + `10920/10000` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.02
 - for `20051`: abs(`10920/20051` - `20051/10900` - `20051/30200`) <= 0.02
