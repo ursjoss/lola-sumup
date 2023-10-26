@@ -70,6 +70,14 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         consumption_of(&Topic::Deposit, &PaymentMethod::Card),
         ldf.clone(),
     );
+    let packaging_cash = price_by_date_for(
+        consumption_of(&Topic::Packaging, &PaymentMethod::Cash),
+        ldf.clone(),
+    );
+    let packaging_card = price_by_date_for(
+        consumption_of(&Topic::Packaging, &PaymentMethod::Card),
+        ldf.clone(),
+    );
     let rental_cash = price_by_date_for(
         consumption_of(&Topic::Rental, &PaymentMethod::Cash),
         ldf.clone(),
@@ -113,6 +121,8 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     let lola_comm_miti =
         commission_by_date_for(commission_by(&Owner::LoLa, Some(true)), ldf.clone());
     let deposit_comm = commission_by_date_for(commission_by_topic(&Topic::Deposit), ldf.clone());
+    let packaging_comm =
+        commission_by_date_for(commission_by_topic(&Topic::Packaging), ldf.clone());
     let rental_comm = commission_by_date_for(commission_by_topic(&Topic::Rental), ldf.clone());
     let culture_comm = commission_by_date_for(commission_by_topic(&Topic::Culture), ldf.clone());
     let miti_miti = price_by_date_for(miti_by(&Owner::MiTi), ldf.clone());
@@ -189,7 +199,19 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         [col("Date")],
         JoinType::Left.into(),
     );
-    let with_rental_cash = with_deposit_card.join(
+    let with_packaging_cash = with_deposit_card.join(
+        packaging_cash,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_packaging_card = with_packaging_cash.join(
+        packaging_card,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_rental_cash = with_packaging_card.join(
         rental_cash,
         [col("Date")],
         [col("Date")],
@@ -285,7 +307,13 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         [col("Date")],
         JoinType::Left.into(),
     );
-    let with_comm_rental = with_comm_deposit.join(
+    let with_comm_packaging = with_comm_deposit.join(
+        packaging_comm,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_comm_rental = with_comm_packaging.join(
         rental_comm,
         [col("Date")],
         [col("Date")],
@@ -373,6 +401,11 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .alias("Deposit Total"),
         )
         .with_column(
+            (col("Packaging_Cash").fill_null(0.0) + col("Packaging_Card").fill_null(0.0))
+                .round(2)
+                .alias("Packaging Total"),
+        )
+        .with_column(
             (col("Rental_Cash").fill_null(0.0) + col("Rental_Card").fill_null(0.0))
                 .round(2)
                 .alias("Rental Total"),
@@ -393,6 +426,7 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 + col("Verm_Cash").fill_null(0.0)
                 + col("SoFe_Cash").fill_null(0.0)
                 + col("Deposit_Cash").fill_null(0.0)
+                + col("Packaging_Cash").fill_null(0.0)
                 + col("Rental_Cash").fill_null(0.0)
                 + col("Culture_Cash").fill_null(0.0)
                 + col("PaidOut_Cash").fill_null(0.0))
@@ -405,6 +439,7 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 + col("Verm_Card").fill_null(0.0)
                 + col("SoFe_Card").fill_null(0.0)
                 + col("Deposit_Card").fill_null(0.0)
+                + col("Packaging_Card").fill_null(0.0)
                 + col("Rental_Card").fill_null(0.0)
                 + col("Culture_Card").fill_null(0.0)
                 + col("PaidOut_Card").fill_null(0.0))
@@ -520,6 +555,9 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Deposit_Cash"),
             col("Deposit_Card"),
             col("Deposit Total"),
+            col("Packaging_Cash"),
+            col("Packaging_Card"),
+            col("Packaging Total"),
             col("Rental_Cash"),
             col("Rental_Card"),
             col("Rental Total"),
@@ -805,6 +843,18 @@ mod tests {
             "Deposit_Card" => &[100.0]),
         )
     ]
+    #[case(Topic::Packaging, PaymentMethod::Card, Purpose::Consumption,
+        df!(
+            "Date" => &["26.03.2023"],
+            "Packaging_Card" => &[700.0]),
+        )
+    ]
+    #[case(Topic::Packaging, PaymentMethod::Cash, Purpose::Consumption,
+        df!(
+            "Date" => &["27.03.2023"],
+            "Packaging_Cash" => &[70.0]),
+        )
+    ]
     #[case(Topic::Culture, PaymentMethod::Card, Purpose::Consumption,
         df!(
             "Date" => &["22.03.2023"],
@@ -842,11 +892,11 @@ mod tests {
         #[case] expected: PolarsResult<DataFrame>,
     ) -> PolarsResult<()> {
         let df_in = df!(
-            "Date" => &["16.03.2023", "14.03.2023", "15.03.2023", "28.03.2023", "20.03.2023", "14.03.2023", "20.03.2023", "22.03.2023", "23.03.2023", "24.03.2023", "25.03.2023", "25.03.2023"],
-            "Price (Gross)" => &[None, Some(1.3), Some(5.2), Some(3.6), Some(4.7), Some(0.5), Some(100.0), Some(400.0), Some(500.0), Some(600.0), Some(10.0), Some(20.0)],
-            "Topic" => &["Cafe", "Cafe", "MiTi", "Cafe", "Cafe", "Cafe", "Deposit", "Culture", "Rental", "PaidOut", "SoFe", "SoFe"],
-            "Payment Method" => &["Card", "Card", "Card", "Card", "Cash", "Cash", "Card", "Card", "Card", "Card", "Cash", "Card"],
-            "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Tip", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption"],
+            "Date" => &["16.03.2023", "14.03.2023", "15.03.2023", "28.03.2023", "20.03.2023", "14.03.2023", "20.03.2023", "22.03.2023", "23.03.2023", "24.03.2023", "25.03.2023", "25.03.2023", "26.03.2023", "27.03.2023"],
+            "Price (Gross)" => &[None, Some(1.3), Some(5.2), Some(3.6), Some(4.7), Some(0.5), Some(100.0), Some(400.0), Some(500.0), Some(600.0), Some(10.0), Some(20.0), Some(700.0), Some(70.0)],
+            "Topic" => &["Cafe", "Cafe", "MiTi", "Cafe", "Cafe", "Cafe", "Deposit", "Culture", "Rental", "PaidOut", "SoFe", "SoFe", "Packaging", "Packaging"],
+            "Payment Method" => &["Card", "Card", "Card", "Card", "Cash", "Cash", "Card", "Card", "Card", "Card", "Cash", "Card", "Card", "Cash"],
+            "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Tip", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption"],
         )?;
         let paa = match purpose {
             Purpose::Consumption => consumption_of(&topic, &payment_method),

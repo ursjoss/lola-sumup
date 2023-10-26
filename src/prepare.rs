@@ -236,12 +236,19 @@ fn refunded_id_dfs(sr_df: &DataFrame) -> (LazyFrame, LazyFrame) {
 /// before 14:15 -> `MiTi`
 /// between 14:15 and 18:00 -> `Cafe`
 /// after 18:00 -> `Vermiet`
+/// If the description starts with "Recircle Tupper Depot", the topic will be `Packaging` regardless of time od day.
 fn infer_topic(time_options: StrptimeOptions) -> Expr {
-    when(col("Time").lt(lit("14:15:00").str().to_time(time_options.clone())))
-        .then(lit(Topic::MiTi.to_string()))
-        .when(col("Time").gt(lit("18:00:00").str().to_time(time_options)))
-        .then(lit(Topic::Verm.to_string()))
-        .otherwise(lit(Topic::Cafe.to_string()))
+    when(
+        col("Description")
+            .str()
+            .starts_with(lit("Recircle Tupper Depot")),
+    )
+    .then(lit(Topic::Packaging.to_string()))
+    .when(col("Time").lt(lit("14:15:00").str().to_time(time_options.clone())))
+    .then(lit(Topic::MiTi.to_string()))
+    .when(col("Time").gt(lit("18:00:00").str().to_time(time_options)))
+    .then(lit(Topic::Verm.to_string()))
+    .otherwise(lit(Topic::Cafe.to_string()))
 }
 
 /// Infers the `Owner` from `Topic` and `Description`:
@@ -314,6 +321,8 @@ pub enum Topic {
     Culture,
     /// Paid out to external party in cash
     PaidOut,
+    /// Sold reusable packaging material - reduces the material costs.
+    Packaging,
 }
 
 /// Derived purpose
