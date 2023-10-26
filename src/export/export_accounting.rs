@@ -43,14 +43,14 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Verm_Cash").alias("10000/30700"),
             col("SoFe_Cash").alias("10000/30800"),
             col("Deposit_Cash").alias("10000/23050"),
-            col("Rental_Cash").alias("10000/31X00"),
+            col("Rental_Cash").alias("10000/31000"),
             col("Culture_Cash").alias("10000/32000"),
             col("PaidOut_Card").alias("10920/10000"),
             col("Cafe_Card").alias("10920/30200"),
             col("Verm_Card").alias("10920/30700"),
             col("SoFe_Card").alias("10920/30800"),
             col("Deposit_Card").alias("10920/23050"),
-            col("Rental_Card").alias("10920/31X00"),
+            col("Rental_Card").alias("10920/31000"),
             col("Culture_Card").alias("10920/32000"),
             col("Net Card Total MiTi").alias("10920/20051"),
             col("Tips Card LoLa").alias("10920/10910"),
@@ -72,7 +72,7 @@ fn validate_acc_constraint_10920(df_acc: &DataFrame) -> Result<(), Box<dyn Error
         + col("10920/30700")
         + col("10920/30800")
         + col("10920/23050")
-        + col("10920/31X00")
+        + col("10920/31000")
         + col("10920/32000")
         + col("10920/20051")
         + col("10920/10000")
@@ -489,14 +489,14 @@ mod tests {
             "10000/30700" => &[verm_cash],
             "10000/30800" => &[sofe_cash],
             "10000/23050" => &[deposit_cash],
-            "10000/31X00" => &[rental_cash],
+            "10000/31000" => &[rental_cash],
             "10000/32000" => &[culture_cash],
             "10920/10000" => &[paid_out_card],
             "10920/30200" => &[cafe_card],
             "10920/30700" => &[verm_card],
             "10920/30800" => &[sofe_card],
             "10920/23050" => &[deposit_card],
-            "10920/31X00" => &[rental_card],
+            "10920/31000" => &[rental_card],
             "10920/32000" => &[culture_card],
             "10920/20051" => &[net_card_income_plus_tips_miti_card],
             "10920/10910" => &[tips_lola_paid_via_card],
