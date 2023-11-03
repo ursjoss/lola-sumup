@@ -267,7 +267,7 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `10000/23050`: Total Cash Income Key Deposit [`Deposit_Cash`]
 - `10000/30200`: Total Cash Income Cafe [`Cafe_Cash`]
 - `10000/30700`: Total Cash Income Food Rentals [`Verm_Cash`] (LoLa Food sold by renters)
-- `10000/30800`: Total Cash Income Food Rentals [`SoFe_Cash`] (LoLa Food sold during summer party)
+- `10000/30800`: Total Cash Income summar party [`SoFe_Cash`] (LoLa Food sold during summer party)
 - `10000/31000`: Total Cash Income Rental Fee [`Rental_Cash`] (fees for renting the rooms)
 - `10000/32000`: Total Cash Income Cultural Payments [`Culture_Cash`]
 - `10000/46000`: Total Cash Cost Reduction on Material Cost [`Packaging_Cash`]
