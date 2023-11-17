@@ -21,7 +21,7 @@ mod export_summary;
 pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Error>> {
     let raw_df = CsvReader::from_path(input_path)?
         .has_header(true)
-        .with_delimiter(b';')
+        .with_separator(b';')
         .with_try_parse_dates(true)
         .finish()?;
 
@@ -95,8 +95,8 @@ fn path_with_prefix(prefix: &str, month: &str, ts: &str) -> PathBuf {
 fn write_to_file(df: &mut DataFrame, path: &dyn AsRef<Path>) -> Result<(), Box<dyn Error>> {
     let iowtr: Box<dyn Write> = Box::new(File::create(path)?);
     CsvWriter::new(iowtr)
-        .has_header(true)
-        .with_delimiter(b';')
+        .include_header(true)
+        .with_separator(b';')
         .finish(&mut df.clone())?;
     Ok(())
 }

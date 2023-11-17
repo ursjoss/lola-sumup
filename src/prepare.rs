@@ -7,6 +7,7 @@ use std::path::Path;
 use polars::datatypes::DataType;
 use polars::frame::{DataFrame, UniqueKeepStrategy};
 use polars::io::{SerReader, SerWriter};
+use polars::prelude::LiteralValue::Null;
 use polars::prelude::{
     col, lit, when, CsvReader, CsvWriter, Expr, IntoLazy, JoinType, LazyFrame, LiteralValue,
     StrptimeOptions,
@@ -30,8 +31,8 @@ pub fn prepare(
     )?;
     let iowtr: Box<dyn Write> = Box::new(File::create(output_path)?);
     CsvWriter::new(iowtr)
-        .has_header(true)
-        .with_delimiter(b';')
+        .with_separator(b';')
+        .include_header(true)
         .with_date_format(Some("%d.%m.%Y".into()))
         .with_time_format(Some("%H:%M:%S".into()))
         .finish(&mut df)?;
@@ -45,12 +46,12 @@ fn process_input(
 ) -> Result<DataFrame, Box<dyn Error>> {
     let sr_df = CsvReader::from_path(sales_report)?
         .has_header(true)
-        .with_delimiter(b',')
+        .with_separator(b',')
         .infer_schema(Some(1500))
         .finish()?;
     let txr_df = CsvReader::from_path(transaction_report)?
         .has_header(true)
-        .with_delimiter(b',')
+        .with_separator(b',')
         .finish()?;
     combine_input_dfs(&sr_df, &txr_df)
 }
@@ -150,7 +151,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .with_column(
             col("Description")
                 .str()
-                .strip_chars(None)
+                .strip_chars(lit(Null))
                 .alias("Description"),
         )
         .with_column(infer_topic(time_format).alias("Topic"))
@@ -270,7 +271,7 @@ fn infer_owner() -> Expr {
                 .or(col("Description").str().contains(lit("Trinkgeld"), true))
                 .or(col("Description")
                     .str()
-                    .strip_chars(None)
+                    .strip_chars(lit(Null))
                     .eq(lit(""))
                     .and(col("Price (Gross)").gt_eq(5.0))),
         )
