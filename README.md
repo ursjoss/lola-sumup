@@ -293,6 +293,6 @@ They serve for consolidation purposes:
 - `Total Cash Debit` and `Total Card Debit` helps to reconcile the cash account ledger ("Kassendokument").
   Please note that those two columns potentially aggregate multiple entries in the cash account ledger for each day.
 
-Where the absolute net sum for the transitory accounts must not be > 0.02, i.e.:
-- for `10920`: abs(`10920/30200` + `10920/30700` + `10920/30800` + `10920/23050` + `10920/46000` + `10920/31000` + `10920/32000` +`10920/20051` + `10920/10000` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.02
-- for `20051`: abs(`10920/20051` - `20051/10900` - `20051/30200`) <= 0.02
+Where the absolute net sum for the transitory accounts must not be > 0.05, i.e.:
+- for `10920`: abs(`10920/30200` + `10920/30700` + `10920/30800` + `10920/23050` + `10920/46000` + `10920/31000` + `10920/32000` +`10920/20051` + `10920/10000` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.05
+- for `20051`: abs(`10920/20051` - `20051/10900` - `20051/30200`) < 0.05
