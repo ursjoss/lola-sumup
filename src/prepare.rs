@@ -258,7 +258,7 @@ fn infer_topic(time_options: StrptimeOptions) -> Expr {
 ///   Otherwise the owner is `LoLa`.
 fn infer_owner() -> Expr {
     when(col("Topic").neq(lit(Topic::MiTi.to_string())))
-        .then(Expr::Literal(LiteralValue::Null))
+        .then(Expr::Literal(Null))
         .when(
             col("Description")
                 .str()
@@ -269,6 +269,9 @@ fn infer_owner() -> Expr {
                 .or(col("Description").str().contains(lit("Dessert"), true))
                 .or(col("Description").str().contains(lit("Praktik"), true))
                 .or(col("Description").str().contains(lit("Vorspeise"), true))
+                .or(col("Description")
+                    .str()
+                    .contains(lit("Vorsp\\. \\+ Hauptsp\\."), true))
                 .or(col("Description").str().contains(lit("Hauptspeise"), true))
                 .or(col("Description").str().contains(lit("Trinkgeld"), true))
                 .or(col("Description")

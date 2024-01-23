@@ -104,7 +104,7 @@ fn validate_constraint(
         .collect()?;
     Ok(if violations.shape().0 > 0 {
         let row_vec = violations.get_row(0).unwrap().0;
-        let date = row_vec.get(0).unwrap().clone();
+        let date = row_vec.first().unwrap().clone();
         let net = row_vec.last().unwrap().clone();
         Err(format!("Constraint violation for accounting export on {date}: net value of account {account} is {net} instead of 0.0").into())
     } else {

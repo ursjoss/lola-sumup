@@ -68,7 +68,7 @@ fn validate_field(
         .select(columns)
         .collect()?;
     if df.shape().0 > 0 {
-        Err(Box::try_from(error(df)).unwrap())
+        Err(Box::from(error(df)))
     } else {
         Ok(())
     }
@@ -169,7 +169,7 @@ fn topic_owner_constraint(
         .select(columns)
         .collect()?;
     if df.shape().0 > 0 {
-        Err(Box::try_from(error(df)).unwrap())
+        Err(Box::from(error(df)))
     } else {
         Ok(())
     }
