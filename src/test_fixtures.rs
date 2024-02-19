@@ -41,7 +41,7 @@ pub fn sales_report_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> Dat
         "Tax rate" => &[""],
         "Transaction refunded" => &[""],
     )
-    .expect("valid dataframe sales report data frame 01")
+        .expect("valid dataframe sales report data frame 01")
 }
 
 /// Sample record 01 matching the structure of the sumup transaction report csv file
@@ -55,7 +55,7 @@ pub fn transaction_report_df_01() -> DataFrame {
         "Trinkgeldbetrag" => &[1.0],
         "Gebühr" => &[0.24],
     )
-    .expect("valid dataframe transaction report data frame 01")
+        .expect("valid dataframe transaction report data frame 01")
 }
 
 /// Sample record 01 matching the structure of the intermediate csv file,
@@ -84,7 +84,7 @@ pub fn intermediate_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> Dat
         "Purpose" => &["Consumption", "Tip"],
         "Comment" => &[AnyValue::Null, AnyValue::Null],
     )
-    .expect("valid intermediate dataframe 01")
+        .expect("valid intermediate dataframe 01")
 }
 
 //endregion
@@ -190,7 +190,7 @@ pub fn summary_df_02(sample_date: NaiveDate) -> DataFrame {
         "MealCount_Regular" => &[1],
         "MealCount_Children" => &[0],
     )
-    .expect("valid summary dataframe 03")
+        .expect("valid summary dataframe 02")
 }
 
 //endregion
@@ -268,7 +268,7 @@ pub fn summary_df_03(sample_date: NaiveDate) -> DataFrame {
         "MealCount_Regular" => &[14],
         "MealCount_Children" => &[1],
     )
-    .expect("valid summary dataframe 01")
+        .expect("valid summary dataframe 02")
 }
 
 /// Sample record 03 matching the accounting dataframe created from summary_df_03
@@ -300,7 +300,7 @@ pub fn accounting_df_03(sample_date: NaiveDate) -> DataFrame {
         "20051/10900" => &[145.76],
         "20051/30500" => &[42.49],
     )
-    .expect("Valid accounting df")
+        .expect("Valid accounting df 03")
 }
 
 /// Sample record 03 matching the miti dataframe created from summary_df_03
@@ -328,7 +328,7 @@ pub fn miti_df_03(sample_date: NaiveDate) -> DataFrame {
         "Verkauf LoLa (80%)" => &[-42.05],
         "Überweisung" => &[145.76],
     )
-    .expect("Valid miti df")
+        .expect("Valid miti df 03")
 }
 
 //endregion
@@ -366,7 +366,7 @@ pub fn intermediate_df_04(sample_date: NaiveDate, sample_date2: NaiveDate) -> Da
         "Purpose" => &["Consumption", "Consumption"],
         "Comment" => &[AnyValue::Null, AnyValue::Null],
     )
-    .expect("valid intermediate dataframe 03")
+        .expect("valid intermediate dataframe 03")
 }
 
 #[fixture]
@@ -437,7 +437,7 @@ pub fn summary_df_04(sample_date: NaiveDate, sample_date2: NaiveDate) -> DataFra
         "MealCount_Regular" => &[0, 0, 0],
         "MealCount_Children" => &[0, 3, 3],
     )
-    .expect("valid summary dataframe 04")
+        .expect("valid summary dataframe 04")
 }
 
 //end region
