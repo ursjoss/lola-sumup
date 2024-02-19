@@ -1,7 +1,7 @@
 use polars::frame::DataFrame;
 
 /// Asserts two dataframes by first checking the shape, then by comparing row by row
-/// and last but not least applying a `frame_equal_missing`.
+/// and last but not least applying a `equals_missing`.
 pub fn assert_dataframe(actual: &DataFrame, expected: &DataFrame) {
     assert_eq!(
         actual.shape(),
@@ -15,5 +15,5 @@ pub fn assert_dataframe(actual: &DataFrame, expected: &DataFrame) {
             "row {n} is not matching the expectation!",
         );
     }
-    assert!(actual.frame_equal_missing(expected));
+    assert!(actual.equals_missing(expected));
 }
