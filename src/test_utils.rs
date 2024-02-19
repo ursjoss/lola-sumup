@@ -15,5 +15,5 @@ pub fn assert_dataframe(actual: &DataFrame, expected: &DataFrame) {
             "row {n} is not matching the expectation!",
         );
     }
-    assert!(actual.equals_missing(expected));
+    assert!(actual.frame_equal_missing(expected));
 }

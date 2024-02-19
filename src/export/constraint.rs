@@ -59,7 +59,7 @@ fn validate_field(
     let df = raw_df
         .clone()
         .lazy()
-        .with_row_index("Row-No", Some(2))
+        .with_row_count("Row-No", Some(2))
         .filter(
             col(field)
                 .fill_null(lit(""))
@@ -165,7 +165,7 @@ fn topic_owner_constraint(
     let df = raw_df
         .clone()
         .lazy()
-        .with_row_index("Row-No", Some(2))
+        .with_row_count("Row-No", Some(2))
         .filter(predicate)
         .select(columns)
         .collect()?;
