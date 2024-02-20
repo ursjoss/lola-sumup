@@ -48,6 +48,7 @@ pub fn validate_purposes(raw_df: &DataFrame, columns: &[Expr]) -> Result<(), Box
     )?;
     Ok(())
 }
+
 fn validate_field(
     field: &str,
     values: Vec<String>,
