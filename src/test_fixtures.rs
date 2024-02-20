@@ -117,7 +117,7 @@ pub fn intermediate_df_02(sample_date: NaiveDate) -> DataFrame {
         "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption"],
         "Comment" => &[None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>],
     )
-    .expect("valid intermediate dataframe 03")
+        .expect("valid intermediate dataframe 03")
 }
 
 /// Sample record 02 matching the summary df, created from `intermediate_df_02`
@@ -332,3 +332,112 @@ pub fn miti_df_03(sample_date: NaiveDate) -> DataFrame {
 }
 
 //endregion
+
+//region:04 - from intermediate to summary - validating total row
+
+#[fixture]
+pub fn sample_date2() -> NaiveDate {
+    NaiveDate::parse_from_str("25.3.2023", "%d.%m.%Y").expect("valid date")
+}
+
+#[fixture]
+pub fn intermediate_df_04(sample_date: NaiveDate, sample_date2: NaiveDate) -> DataFrame {
+    let date = sample_date.format("%d.%m.%Y").to_string();
+    let date2 = sample_date2.format("%d.%m.%Y").to_string();
+    df!(
+        "Account" => &["a@b.ch", "a@b.ch"],
+        "Date" => &[date, date2],
+        "Time" => &["21:00:00", "13:47:00"],
+        "Type" => &["Sales", "Sales"],
+        "Transaction ID" => &["TEGUCXAGDE", "TEGUCXAGDE"],
+        "Receipt Number" => &["S20230000303", "S20230000303"],
+        "Payment Method" => &["Cash", "Card"],
+        "Quantity" => &[1_i64, 3_i64],
+        "Description" => &["foo", "Kindermenü"],
+        "Currency" => &["CHF", "CHF"],
+        "Price (Gross)" => &[489.1, 20.0],
+        "Price (Net)" => &[489.1, 20.0],
+        "Tax" => &[0.0, 0.0],
+        "Tax rate" => &["", ""],
+        "Transaction refunded" => &["", ""],
+        "Commission" => &[0.0, 0.3],
+        "Topic" => &["Culture", "MiTi"],
+        "Owner" => &["", "MiTi"],
+        "Purpose" => &["Consumption", "Consumption"],
+        "Comment" => &[AnyValue::Null, AnyValue::Null],
+    )
+    .expect("valid intermediate dataframe 03")
+}
+
+#[fixture]
+pub fn summary_df_04(sample_date: NaiveDate, sample_date2: NaiveDate) -> DataFrame {
+    df!(
+        "Date" => &[Some(sample_date), Some(sample_date2), None],
+        "MiTi_Cash" => &[None, None, Some(0.0)],
+        "MiTi_Card" => &[None, Some(20.0), Some(20.0)],
+        "MiTi Total" =>&[0.0, 20.0, 20.0],
+        "Cafe_Cash" => &[None, None, Some(0.0)],
+        "Cafe_Card" => &[None, None, Some(0.0)],
+        "Cafe Total" => &[0.0, 0.0, 0.0],
+        "Verm_Cash" => &[None, None, Some(0.0)],
+        "Verm_Card" => &[None, None, Some(0.0)],
+        "Verm Total" => &[0.0, 0.0, 0.0],
+        "SoFe_Cash" => &[None, None, Some(0.0)],
+        "SoFe_Card" => &[None, None, Some(0.0)],
+        "SoFe Total" => &[0.0, 0.0, 0.0],
+        "Deposit_Cash" => &[None, None, Some(0.0)],
+        "Deposit_Card" => &[None, None, Some(0.0)],
+        "Deposit Total" => &[0.0, 0.0, 0.0],
+        "Packaging_Cash" => &[None, None, Some(0.0)],
+        "Packaging_Card" => &[None, None, Some(0.0)],
+        "Packaging Total" => &[0.0, 0.0, 0.0],
+        "Rental_Cash" => &[None, None, Some(0.0)],
+        "Rental_Card" => &[None, None, Some(0.0)],
+        "Rental Total" => &[0.0, 0.0, 0.0],
+        "Culture_Cash" => &[Some(489.1), None, Some(489.1)],
+        "Culture_Card" => &[None, None, Some(0.0)],
+        "Culture Total" => &[489.1, 0.0, 489.1],
+        "PaidOut_Cash" => &[None, None, Some(0.0)],
+        "PaidOut_Card" => &[None, None, Some(0.0)],
+        "PaidOut Total" => &[0.0, 0.0, 0.0],
+        "Gross Cash" => &[489.1, 0.0,489.1],
+        "Tips_Cash" => &[None, None, Some(0.0)],
+        "SumUp Cash" => &[489.1, 0.0,489.1],
+        "Gross Card" => &[0.0, 20.0, 20.0],
+        "Tips_Card" => &[None, None, Some(0.0)],
+        "SumUp Card" => &[0.0, 20.0, 20.0],
+        "Gross Total" => &[489.1, 20.0, 509.1],
+        "Tips Total" => &[0.0, 0.0, 0.0],
+        "SumUp Total" => &[489.1, 20.0, 509.1],
+        "Gross Card MiTi" => &[0.0, 20.0, 20.0],
+        "MiTi_Commission" => &[None, Some(0.3), Some(0.3)],
+        "Net Card MiTi" => &[0.0, 19.7, 19.7],
+        "Gross Card LoLa" => &[0.0, 0.0, 0.0],
+        "LoLa_Commission" => &[Some(0.0), None, Some(0.0)],
+        "LoLa_Commission_MiTi" => &[None, None, Some(0.0)],
+        "Net Card LoLa" => &[0.0, 0.0, 0.0],
+        "Gross Card Total" => &[0.0, 20.0, 20.0],
+        "Total Commission" => &[0.0, 0.3, 0.3],
+        "Net Card Total" => &[0.0, 19.7, 19.7],
+        "Net Payment SumUp MiTi" => &[0.0, 19.7, 19.7],
+        "MiTi_Tips_Cash" => &[None, None, Some(0.0)],
+        "MiTi_Tips_Card" => &[None, None, Some(0.0)],
+        "MiTi_Tips" => &[None, None, Some(0.0)],
+        "Cafe_Tips" => &[None, None, Some(0.0)],
+        "Verm_Tips" => &[None, None, Some(0.0)],
+        "Gross MiTi (MiTi)" => &[None, Some(20.0), Some(20.0)],
+        "Gross MiTi (LoLa)" => &[None, None, Some(0.0)],
+        "Gross MiTi (MiTi) Card" => &[None, Some(20.0), Some(20.0)],
+        "Net MiTi (MiTi) Card" => &[0.0, 19.7, 19.7],
+        "Net MiTi (LoLa)" => &[0.0, 0.0, 0.0],
+        "Contribution MiTi" => &[0.0, 0.0, 0.0],
+        "Net MiTi (LoLA) - Share LoLa" => &[0.0, 0.0, 0.0],
+        "Debt to MiTi" => &[0.0, 19.7, 19.7],
+        "Income LoLa MiTi" => &[0.0, 0.0, 0.0],
+        "MealCount_Regular" => &[None, None, Some(0)],
+        "MealCount_Children" => &[None, Some(3), Some(3)],
+    )
+    .expect("valid summary dataframe 04")
+}
+
+//end region
