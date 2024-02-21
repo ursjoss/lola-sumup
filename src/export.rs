@@ -64,11 +64,12 @@ fn crunch_data(raw_df: DataFrame) -> Result<(DataFrame, DataFrame), Box<dyn Erro
     print!("{df}");
     let summary = &df.clone().lazy().sum()?.collect()?;
     print!("{summary}");
+    // some summary fields result in `null` instead of the actual value. Hence the validation will fail.
     df.extend(summary)?;
     print!("{df}");
 
     let df_acc = gather_df_accounting(&df)?;
-    // validate_acc_constraint(&df_acc)?;
+    validate_acc_constraint(&df_acc)?;
     Ok((df, df_acc))
 }
 
