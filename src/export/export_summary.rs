@@ -540,69 +540,69 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         )
         .select([
             col("Date"),
-            col("MiTi_Cash"),
-            col("MiTi_Card"),
-            col("MiTi Total"),
-            col("Cafe_Cash"),
-            col("Cafe_Card"),
-            col("Cafe Total"),
-            col("Verm_Cash"),
-            col("Verm_Card"),
-            col("Verm Total"),
-            col("SoFe_Cash"),
-            col("SoFe_Card"),
-            col("SoFe Total"),
-            col("Deposit_Cash"),
-            col("Deposit_Card"),
-            col("Deposit Total"),
-            col("Packaging_Cash"),
-            col("Packaging_Card"),
-            col("Packaging Total"),
-            col("Rental_Cash"),
-            col("Rental_Card"),
-            col("Rental Total"),
-            col("Culture_Cash"),
-            col("Culture_Card"),
-            col("Culture Total"),
-            col("PaidOut_Cash"),
-            col("PaidOut_Card"),
-            col("PaidOut Total"),
-            col("Gross Cash"),
-            col("Tips_Cash"),
-            col("SumUp Cash"),
-            col("Gross Card"),
-            col("Tips_Card"),
-            col("SumUp Card"),
-            col("Gross Total"),
-            col("Tips Total"),
-            col("SumUp Total"),
-            col("Gross Card MiTi"),
-            col("MiTi_Commission"),
-            col("Net Card MiTi"),
-            col("Gross Card LoLa"),
-            col("LoLa_Commission"),
-            col("LoLa_Commission_MiTi"),
-            col("Net Card LoLa"),
-            col("Gross Card").alias("Gross Card Total"),
-            col("Total Commission"),
-            col("Net Card Total"),
-            col("Net Payment SumUp MiTi"),
-            col("MiTi_Tips_Cash"),
-            col("MiTi_Tips_Card"),
-            col("MiTi_Tips"),
-            col("Cafe_Tips"),
-            col("Verm_Tips"),
-            col("Gross MiTi (MiTi)"),
-            col("Gross MiTi (LoLa)"),
-            col("Gross MiTi (MiTi) Card"),
-            col("Net MiTi (MiTi) Card"),
-            col("Net MiTi (LoLa)"),
-            col("Contribution MiTi"),
-            col("Net MiTi (LoLA) - Share LoLa"),
-            col("Debt to MiTi"),
-            col("Income LoLa MiTi"),
-            col("MealCount_Regular"),
-            col("MealCount_Children"),
+            col("MiTi_Cash").fill_null(0.0),
+            col("MiTi_Card").fill_null(0.0),
+            col("MiTi Total").fill_null(0.0),
+            col("Cafe_Cash").fill_null(0.0),
+            col("Cafe_Card").fill_null(0.0),
+            col("Cafe Total").fill_null(0.0),
+            col("Verm_Cash").fill_null(0.0),
+            col("Verm_Card").fill_null(0.0),
+            col("Verm Total").fill_null(0.0),
+            col("SoFe_Cash").fill_null(0.0),
+            col("SoFe_Card").fill_null(0.0),
+            col("SoFe Total").fill_null(0.0),
+            col("Deposit_Cash").fill_null(0.0),
+            col("Deposit_Card").fill_null(0.0),
+            col("Deposit Total").fill_null(0.0),
+            col("Packaging_Cash").fill_null(0.0),
+            col("Packaging_Card").fill_null(0.0),
+            col("Packaging Total").fill_null(0.0),
+            col("Rental_Cash").fill_null(0.0),
+            col("Rental_Card").fill_null(0.0),
+            col("Rental Total").fill_null(0.0),
+            col("Culture_Cash").fill_null(0.0),
+            col("Culture_Card").fill_null(0.0),
+            col("Culture Total").fill_null(0.0),
+            col("PaidOut_Cash").fill_null(0.0),
+            col("PaidOut_Card").fill_null(0.0),
+            col("PaidOut Total").fill_null(0.0),
+            col("Gross Cash").fill_null(0.0),
+            col("Tips_Cash").fill_null(0.0),
+            col("SumUp Cash").fill_null(0.0),
+            col("Gross Card").fill_null(0.0),
+            col("Tips_Card").fill_null(0.0),
+            col("SumUp Card").fill_null(0.0),
+            col("Gross Total").fill_null(0.0),
+            col("Tips Total").fill_null(0.0),
+            col("SumUp Total").fill_null(0.0),
+            col("Gross Card MiTi").fill_null(0.0),
+            col("MiTi_Commission").fill_null(0.0),
+            col("Net Card MiTi").fill_null(0.0),
+            col("Gross Card LoLa").fill_null(0.0),
+            col("LoLa_Commission").fill_null(0.0),
+            col("LoLa_Commission_MiTi").fill_null(0.0),
+            col("Net Card LoLa").fill_null(0.0),
+            col("Gross Card").alias("Gross Card Total").fill_null(0.0),
+            col("Total Commission").fill_null(0.0),
+            col("Net Card Total").fill_null(0.0),
+            col("Net Payment SumUp MiTi").fill_null(0.0),
+            col("MiTi_Tips_Cash").fill_null(0.0),
+            col("MiTi_Tips_Card").fill_null(0.0),
+            col("MiTi_Tips").fill_null(0.0),
+            col("Cafe_Tips").fill_null(0.0),
+            col("Verm_Tips").fill_null(0.0),
+            col("Gross MiTi (MiTi)").fill_null(0.0),
+            col("Gross MiTi (LoLa)").fill_null(0.0),
+            col("Gross MiTi (MiTi) Card").fill_null(0.0),
+            col("Net MiTi (MiTi) Card").fill_null(0.0),
+            col("Net MiTi (LoLa)").fill_null(0.0),
+            col("Contribution MiTi").fill_null(0.0),
+            col("Net MiTi (LoLA) - Share LoLa").fill_null(0.0),
+            col("Debt to MiTi").fill_null(0.0),
+            col("Income LoLa MiTi").fill_null(0.0),
+            col("MealCount_Regular").fill_null(0),
+            col("MealCount_Children").fill_null(0),
         ])
         .collect()
 }
@@ -617,7 +617,7 @@ fn commission_by_date_for(predicate_and_alias: (Expr, String), ldf: LazyFrame) -
     key_figure_by_date_for("Commission", predicate_and_alias, ldf)
 }
 
-/// Aggregates daily values for a particular key figure, rounded to a two decimals
+/// Aggregates daily values for a particular key figure, rounded to two decimals
 fn key_figure_by_date_for(
     key_figure: &str,
     predicate_and_alias: (Expr, String),
@@ -626,14 +626,11 @@ fn key_figure_by_date_for(
     let (predicate, alias) = predicate_and_alias;
     ldf.filter(predicate)
         .group_by(["Date"])
-        .agg([col(key_figure).sum()])
-        .select([
-            col("Date"),
-            col(key_figure)
-                .round(2)
-                .fill_null(0.0)
-                .alias(alias.as_str()),
-        ])
+        .agg([col(key_figure)
+            .sum()
+            .fill_null(0.0)
+            .round(2)
+            .alias(alias.as_str())])
         .sort(
             "Date",
             SortOptions {
@@ -814,76 +811,76 @@ mod tests {
 
     #[rstest]
     #[case(Topic::Cafe, PaymentMethod::Card, Purpose::Consumption,
-        df!(
-            "Date" => &["14.03.2023", "16.03.2023", "28.03.2023"],
-            "Cafe_Card" => &[1.3, 0.0, 3.6]),
-        )
+    df ! (
+    "Date" => & ["14.03.2023", "16.03.2023", "28.03.2023"],
+    "Cafe_Card" => & [1.3, 0.0, 3.6]),
+    )
     ]
     #[case(Topic::Cafe, PaymentMethod::Cash, Purpose::Consumption,
-        df!(
-            "Date" => &["20.03.2023"],
-            "Cafe_Cash" => &[4.7]),
-        )
+    df ! (
+    "Date" => & ["20.03.2023"],
+    "Cafe_Cash" => & [4.7]),
+    )
     ]
     #[case(Topic::MiTi, PaymentMethod::Card, Purpose::Consumption,
-        df!(
-            "Date" => &["15.03.2023"],
-            "MiTi_Card" => &[5.2]),
-        )
+    df ! (
+    "Date" => & ["15.03.2023"],
+    "MiTi_Card" => & [5.2]),
+    )
     ]
     #[case(Topic::Cafe, PaymentMethod::Cash, Purpose::Tip,
-        df!(
-            "Date" => &["14.03.2023"],
-            "Cafe_Tips" => &[0.5]),
-        )
+    df ! (
+    "Date" => & ["14.03.2023"],
+    "Cafe_Tips" => & [0.5]),
+    )
     ]
     #[case(Topic::Deposit, PaymentMethod::Card, Purpose::Consumption,
-        df!(
-            "Date" => &["20.03.2023"],
-            "Deposit_Card" => &[100.0]),
-        )
+    df ! (
+    "Date" => & ["20.03.2023"],
+    "Deposit_Card" => & [100.0]),
+    )
     ]
     #[case(Topic::Packaging, PaymentMethod::Card, Purpose::Consumption,
-        df!(
-            "Date" => &["26.03.2023"],
-            "Packaging_Card" => &[700.0]),
-        )
+    df ! (
+    "Date" => & ["26.03.2023"],
+    "Packaging_Card" => & [700.0]),
+    )
     ]
     #[case(Topic::Packaging, PaymentMethod::Cash, Purpose::Consumption,
-        df!(
-            "Date" => &["27.03.2023"],
-            "Packaging_Cash" => &[70.0]),
-        )
+    df ! (
+    "Date" => & ["27.03.2023"],
+    "Packaging_Cash" => & [70.0]),
+    )
     ]
     #[case(Topic::Culture, PaymentMethod::Card, Purpose::Consumption,
-        df!(
-            "Date" => &["22.03.2023"],
-            "Culture_Card" => &[400.0]),
-        )
+    df ! (
+    "Date" => & ["22.03.2023"],
+    "Culture_Card" => & [400.0]),
+    )
     ]
     #[case(Topic::Rental, PaymentMethod::Card, Purpose::Consumption,
-        df!(
-            "Date" => &["23.03.2023"],
-            "Rental_Card" => &[500.0]),
-        )
+    df ! (
+    "Date" => & ["23.03.2023"],
+    "Rental_Card" => & [500.0]),
+    )
     ]
     #[case(Topic::PaidOut, PaymentMethod::Card, Purpose::Consumption,
-        df!(
-            "Date" => &["24.03.2023"],
-            "PaidOut_Card" => &[600.0]),
-        )
+    df ! (
+    "Date" => & ["24.03.2023"],
+    "PaidOut_Card" => & [600.0]),
+    )
     ]
     #[case(Topic::SoFe, PaymentMethod::Cash, Purpose::Consumption,
-        df!(
-            "Date" => &["25.03.2023"],
-            "SoFe_Cash" => &[10.0]),
-        )
+    df ! (
+    "Date" => & ["25.03.2023"],
+    "SoFe_Cash" => & [10.0]),
+    )
     ]
     #[case(Topic::SoFe, PaymentMethod::Card, Purpose::Consumption,
-        df!(
-            "Date" => &["25.03.2023"],
-            "SoFe_Card" => &[20.0]),
-        )
+    df ! (
+    "Date" => & ["25.03.2023"],
+    "SoFe_Card" => & [20.0]),
+    )
     ]
     fn test_collect_by(
         #[case] topic: Topic,

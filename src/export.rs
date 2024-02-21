@@ -106,7 +106,7 @@ mod tests {
     use pretty_assertions::assert_ne;
     use rstest::rstest;
 
-    use crate::test_fixtures::intermediate_df_02;
+    use crate::test_fixtures::{intermediate_df_02, intermediate_df_04, summary_df_04};
 
     use super::*;
 
@@ -116,5 +116,19 @@ mod tests {
 
         assert_ne!(df1.shape().0, 0, "df1 does not contain records");
         assert_ne!(df2.shape().0, 0, "df2 does not contain records");
+    }
+
+    #[rstest]
+    fn can_calculate_summary_row(intermediate_df_04: DataFrame, summary_df_04: DataFrame) {
+        let (df1, _) = crunch_data(intermediate_df_04).expect("should crunch");
+        assert_eq!(
+            df1.shape().0,
+            3,
+            "df1 does not contain 2 records and 1 summary line"
+        );
+        assert_eq!(
+            df1, summary_df_04,
+            "unexpected summary for intermediate_df_04"
+        );
     }
 }
