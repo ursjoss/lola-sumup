@@ -73,7 +73,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 pub fn configure_the_environment() {
     env::set_var("POLARS_FMT_TABLE_ROUNDED_CORNERS", "1");
-    env::set_var("POLARS_FMT_MAX_COLS", "20");
+    env::set_var("POLARS_FMT_MAX_COLS", "70");
     env::set_var("POLARS_FMT_MAX_ROWS", "100");
     env::set_var("POLARS_FMT_STR_LEN", "50");
 }

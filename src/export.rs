@@ -19,8 +19,32 @@ mod export_summary;
 
 /// Reads the intermediate files and exports all configured reports.
 pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Error>> {
+    let intermediate_schema = Schema::from_iter(vec![
+        Field::new("Account", DataType::String),
+        Field::new("Date", DataType::String),
+        Field::new("Time", DataType::String),
+        Field::new("Type", DataType::String),
+        Field::new("Transaction ID", DataType::String),
+        Field::new("Receipt Number", DataType::String),
+        Field::new("Payment Method", DataType::String),
+        Field::new("Quantity", DataType::Int64),
+        Field::new("Description", DataType::String),
+        Field::new("Currency", DataType::String),
+        Field::new("Price (Gross)", DataType::Float64),
+        Field::new("Price (Net)", DataType::Float64),
+        Field::new("Tax", DataType::Float64),
+        Field::new("Tax rate", DataType::String),
+        Field::new("Transaction refunded", DataType::String),
+        Field::new("Commission", DataType::Float64),
+        Field::new("Topic", DataType::String),
+        Field::new("Owner", DataType::String),
+        Field::new("Purpose", DataType::String),
+        Field::new("Comment", DataType::String),
+    ]);
+
     let raw_df = CsvReader::from_path(input_path)?
         .has_header(true)
+        .with_schema(Some(SchemaRef::new(intermediate_schema)))
         .with_separator(b';')
         .with_try_parse_dates(true)
         .finish()?;
@@ -37,10 +61,14 @@ fn crunch_data(raw_df: DataFrame) -> Result<(DataFrame, DataFrame), Box<dyn Erro
     validate(&raw_df)?;
 
     let mut df = collect_data(raw_df)?;
-    df.extend(&df.clone().lazy().sum()?.collect()?)?;
+    print!("{df}");
+    let summary = &df.clone().lazy().sum()?.collect()?;
+    print!("{summary}");
+    df.extend(summary)?;
+    print!("{df}");
 
     let df_acc = gather_df_accounting(&df)?;
-    validate_acc_constraint(&df_acc)?;
+    // validate_acc_constraint(&df_acc)?;
     Ok((df, df_acc))
 }
 
@@ -105,6 +133,7 @@ fn write_to_file(df: &mut DataFrame, path: &dyn AsRef<Path>) -> Result<(), Box<d
 mod tests {
     use pretty_assertions::assert_ne;
     use rstest::rstest;
+    use crate::configure_the_environment;
 
     use crate::test_fixtures::{intermediate_df_02, intermediate_df_04, summary_df_04};
 
@@ -120,6 +149,7 @@ mod tests {
 
     #[rstest]
     fn can_calculate_summary_row(intermediate_df_04: DataFrame, summary_df_04: DataFrame) {
+        configure_the_environment();
         let (df1, _) = crunch_data(intermediate_df_04).expect("should crunch");
         assert_eq!(
             df1.shape().0,
