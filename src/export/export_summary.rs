@@ -376,106 +376,127 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
 
     with_meal_count_children
         .with_column(
-            (col("MiTi_Cash").fill_null(0.0) + col("MiTi_Card").fill_null(0.0))
-                .round(2)
-                .alias("MiTi Total"),
+            (col("MiTi_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("MiTi_Card").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("MiTi Total"),
         )
         .with_column(
-            (col("Cafe_Cash").fill_null(0.0) + col("Cafe_Card").fill_null(0.0))
-                .round(2)
-                .alias("Cafe Total"),
+            (col("Cafe_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("Cafe_Card").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Cafe Total"),
         )
         .with_column(
-            (col("Verm_Cash").fill_null(0.0) + col("Verm_Card").fill_null(0.0))
-                .round(2)
-                .alias("Verm Total"),
+            (col("Verm_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("Verm_Card").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Verm Total"),
         )
         .with_column(
-            (col("SoFe_Cash").fill_null(0.0) + col("SoFe_Card").fill_null(0.0))
-                .round(2)
-                .alias("SoFe Total"),
+            (col("SoFe_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("SoFe_Card").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("SoFe Total"),
         )
         .with_column(
-            (col("Deposit_Cash").fill_null(0.0) + col("Deposit_Card").fill_null(0.0))
-                .round(2)
-                .alias("Deposit Total"),
+            (col("Deposit_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("Deposit_Card").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Deposit Total"),
         )
         .with_column(
-            (col("Packaging_Cash").fill_null(0.0) + col("Packaging_Card").fill_null(0.0))
-                .round(2)
-                .alias("Packaging Total"),
+            (col("Packaging_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("Packaging_Card").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Packaging Total"),
         )
         .with_column(
-            (col("Rental_Cash").fill_null(0.0) + col("Rental_Card").fill_null(0.0))
-                .round(2)
-                .alias("Rental Total"),
+            (col("Rental_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("Rental_Card").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Rental Total"),
         )
         .with_column(
-            (col("Culture_Cash").fill_null(0.0) + col("Culture_Card").fill_null(0.0))
-                .round(2)
-                .alias("Culture Total"),
+            (col("Culture_Cash")
+                .fill_null(0.0)
+                .fill_nan(0.0)
+                .fill_nan(0.0)
+                + col("Culture_Card")
+                    .fill_null(0.0)
+                    .fill_nan(0.0)
+                    .fill_nan(0.0))
+            .round(2)
+            .alias("Culture Total"),
         )
         .with_column(
-            (col("PaidOut_Cash").fill_null(0.0) + col("PaidOut_Card").fill_null(0.0))
-                .round(2)
-                .alias("PaidOut Total"),
+            (col("PaidOut_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("PaidOut_Card").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("PaidOut Total"),
         )
         .with_column(
-            (col("MiTi_Cash").fill_null(0.0)
-                + col("Cafe_Cash").fill_null(0.0)
-                + col("Verm_Cash").fill_null(0.0)
-                + col("SoFe_Cash").fill_null(0.0)
-                + col("Deposit_Cash").fill_null(0.0)
-                + col("Packaging_Cash").fill_null(0.0)
-                + col("Rental_Cash").fill_null(0.0)
-                + col("Culture_Cash").fill_null(0.0)
-                + col("PaidOut_Cash").fill_null(0.0))
-                .round(2)
-                .alias("Gross Cash"),
+            (col("MiTi_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("Cafe_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("Verm_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("SoFe_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("Deposit_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("Packaging_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("Rental_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("Culture_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("PaidOut_Cash").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Gross Cash"),
         )
         .with_column(
-            (col("MiTi_Card").fill_null(0.0)
-                + col("Cafe_Card").fill_null(0.0)
-                + col("Verm_Card").fill_null(0.0)
-                + col("SoFe_Card").fill_null(0.0)
-                + col("Deposit_Card").fill_null(0.0)
-                + col("Packaging_Card").fill_null(0.0)
-                + col("Rental_Card").fill_null(0.0)
-                + col("Culture_Card").fill_null(0.0)
-                + col("PaidOut_Card").fill_null(0.0))
-                .round(2)
-                .alias("Gross Card"),
+            (col("MiTi_Card").fill_null(0.0).fill_nan(0.0)
+                + col("Cafe_Card").fill_null(0.0).fill_nan(0.0)
+                + col("Verm_Card").fill_null(0.0).fill_nan(0.0)
+                + col("SoFe_Card").fill_null(0.0).fill_nan(0.0)
+                + col("Deposit_Card").fill_null(0.0).fill_nan(0.0)
+                + col("Packaging_Card").fill_null(0.0).fill_nan(0.0)
+                + col("Rental_Card").fill_null(0.0).fill_nan(0.0)
+                + col("Culture_Card").fill_null(0.0).fill_nan(0.0)
+                + col("PaidOut_Card").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Gross Card"),
         )
         .with_column(
             col("MiTi_Card")
                 .fill_null(0.0)
+                .fill_nan(0.0)
                 .round(2)
                 .alias("Gross Card MiTi"),
         )
         .with_column(
-            (col("Gross Card").fill_null(0.0) - col("MiTi_Card").fill_null(0.0))
-                .round(2)
-                .alias("Gross Card LoLa"),
+            (col("Gross Card").fill_null(0.0).fill_nan(0.0)
+                - col("MiTi_Card").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Gross Card LoLa"),
         )
         .with_column(
-            (col("Gross Cash").fill_null(0.0) + col("Gross Card").fill_null(0.0))
-                .round(2)
-                .alias("Gross Total"),
+            (col("Gross Cash").fill_null(0.0).fill_nan(0.0)
+                + col("Gross Card").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Gross Total"),
         )
         .with_column(
-            (col("Tips_Cash").fill_null(0.0) + col("Tips_Card").fill_null(0.0))
-                .round(2)
-                .alias("Tips Total"),
+            (col("Tips_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("Tips_Card").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Tips Total"),
         )
         .with_column(
-            (col("Gross Cash").fill_null(0.0) + col("Tips_Cash").fill_null(0.0))
-                .round(2)
-                .alias("SumUp Cash"),
+            (col("Gross Cash").fill_null(0.0).fill_nan(0.0)
+                + col("Tips_Cash").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("SumUp Cash"),
         )
         .with_column(
-            (col("Gross Card").fill_null(0.0) + col("Tips_Card").fill_null(0.0))
-                .round(2)
-                .alias("SumUp Card"),
+            (col("Gross Card").fill_null(0.0).fill_nan(0.0)
+                + col("Tips_Card").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("SumUp Card"),
         )
         .with_column(
             (col("SumUp Cash") + col("SumUp Card"))
@@ -483,50 +504,58 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .alias("SumUp Total"),
         )
         .with_column(
-            (col("MiTi_Commission").fill_null(0.0) + col("LoLa_Commission").fill_null(0.0))
-                .round(2)
-                .alias("Total Commission"),
+            (col("MiTi_Commission").fill_null(0.0).fill_nan(0.0)
+                + col("LoLa_Commission").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Total Commission"),
         )
         .with_column(
-            (col("Gross Card MiTi").fill_null(0.0) - col("MiTi_Commission").fill_null(0.0))
-                .round(2)
-                .alias("Net Card MiTi"),
+            (col("Gross Card MiTi").fill_null(0.0).fill_nan(0.0)
+                - col("MiTi_Commission").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Net Card MiTi"),
         )
         .with_column(
-            (col("Gross Card LoLa").fill_null(0.0) - col("LoLa_Commission").fill_null(0.0))
-                .round(2)
-                .alias("Net Card LoLa"),
+            (col("Gross Card LoLa").fill_null(0.0).fill_nan(0.0)
+                - col("LoLa_Commission").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Net Card LoLa"),
         )
         .with_column(
-            (col("Gross Card").fill_null(0.0) - col("Total Commission").fill_null(0.0))
-                .round(2)
-                .alias("Net Card Total"),
+            (col("Gross Card").fill_null(0.0).fill_nan(0.0)
+                - col("Total Commission").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Net Card Total"),
         )
         .with_column(
-            (col("MiTi_Card").fill_null(0.0) + col("MiTi_Tips_Card").fill_null(0.0)
-                - col("MiTi_Total_Commission").fill_null(0.0))
-                .round(2)
-                .alias("Net Payment SumUp MiTi"),
+            (col("MiTi_Card").fill_null(0.0).fill_nan(0.0)
+                + col("MiTi_Tips_Card").fill_null(0.0).fill_nan(0.0)
+                - col("MiTi_Total_Commission").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Net Payment SumUp MiTi"),
         )
         .with_column(
-            (col("Gross MiTi (MiTi) Card").fill_null(0.0) - col("MiTi_Commission").fill_null(0.0))
-                .round(2)
-                .alias("Net MiTi (MiTi) Card"),
+            (col("Gross MiTi (MiTi) Card").fill_null(0.0).fill_nan(0.0)
+                - col("MiTi_Commission").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Net MiTi (MiTi) Card"),
         )
         .with_column(
-            (col("Gross MiTi (LoLa)").fill_null(0.0) - col("LoLa_Commission_MiTi").fill_null(0.0))
-                .round(2)
-                .alias("Net MiTi (LoLa)"),
+            (col("Gross MiTi (LoLa)").fill_null(0.0).fill_nan(0.0)
+                - col("LoLa_Commission_MiTi").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Net MiTi (LoLa)"),
         )
         .with_column(
-            (lit(0.2) * col("Net MiTi (LoLa)").fill_null(0.0))
+            (lit(0.2) * col("Net MiTi (LoLa)").fill_null(0.0).fill_nan(0.0))
                 .round(2)
                 .alias("Contribution MiTi"),
         )
         .with_column(
-            (col("Gross MiTi (LoLa)").fill_null(0.0) - col("Contribution MiTi").fill_null(0.0))
-                .round(2)
-                .alias("Income LoLa MiTi"),
+            (col("Gross MiTi (LoLa)").fill_null(0.0).fill_nan(0.0)
+                - col("Contribution MiTi").fill_null(0.0).fill_nan(0.0))
+            .round(2)
+            .alias("Income LoLa MiTi"),
         )
         .with_column(
             (col("Net MiTi (LoLa)") * lit(0.8))
@@ -540,69 +569,69 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         )
         .select([
             col("Date"),
-            col("MiTi_Cash").fill_null(0.0).cast(DataType::Float64),
-            col("MiTi_Card").fill_null(0.0).cast(DataType::Float64),
-            col("MiTi Total").fill_null(0.0).cast(DataType::Float64),
-            col("Cafe_Cash").fill_null(0.0).cast(DataType::Float64),
-            col("Cafe_Card").fill_null(0.0).cast(DataType::Float64),
-            col("Cafe Total").fill_null(0.0).cast(DataType::Float64),
-            col("Verm_Cash").fill_null(0.0).cast(DataType::Float64),
-            col("Verm_Card").fill_null(0.0).cast(DataType::Float64),
-            col("Verm Total").fill_null(0.0).cast(DataType::Float64),
-            col("SoFe_Cash").fill_null(0.0).cast(DataType::Float64),
-            col("SoFe_Card").fill_null(0.0).cast(DataType::Float64),
-            col("SoFe Total").fill_null(0.0).cast(DataType::Float64),
-            col("Deposit_Cash").fill_null(0.0).cast(DataType::Float64),
-            col("Deposit_Card").fill_null(0.0).cast(DataType::Float64),
-            col("Deposit Total").fill_null(0.0).cast(DataType::Float64),
-            col("Packaging_Cash").fill_null(0.0).cast(DataType::Float64),
-            col("Packaging_Card").fill_null(0.0).cast(DataType::Float64),
-            col("Packaging Total").fill_null(0.0).cast(DataType::Float64),
-            col("Rental_Cash").fill_null(0.0).cast(DataType::Float64),
-            col("Rental_Card").fill_null(0.0).cast(DataType::Float64),
-            col("Rental Total").fill_null(0.0).cast(DataType::Float64),
-            col("Culture_Cash").fill_null(0.0).cast(DataType::Float64),
-            col("Culture_Card").fill_null(0.0).cast(DataType::Float64),
-            col("Culture Total").fill_null(0.0).cast(DataType::Float64),
-            col("PaidOut_Cash").fill_null(0.0).cast(DataType::Float64),
-            col("PaidOut_Card").fill_null(0.0).cast(DataType::Float64),
-            col("PaidOut Total").fill_null(0.0).cast(DataType::Float64),
-            col("Gross Cash").fill_null(0.0).cast(DataType::Float64),
-            col("Tips_Cash").fill_null(0.0).cast(DataType::Float64),
-            col("SumUp Cash").fill_null(0.0).cast(DataType::Float64),
-            col("Gross Card").fill_null(0.0).cast(DataType::Float64),
-            col("Tips_Card").fill_null(0.0).cast(DataType::Float64),
-            col("SumUp Card").fill_null(0.0).cast(DataType::Float64),
-            col("Gross Total").fill_null(0.0).cast(DataType::Float64),
-            col("Tips Total").fill_null(0.0).cast(DataType::Float64),
-            col("SumUp Total").fill_null(0.0).cast(DataType::Float64),
-            col("Gross Card MiTi").fill_null(0.0).cast(DataType::Float64),
-            col("MiTi_Commission").fill_null(0.0).cast(DataType::Float64),
-            col("Net Card MiTi").fill_null(0.0).cast(DataType::Float64),
-            col("Gross Card LoLa").fill_null(0.0).cast(DataType::Float64),
-            col("LoLa_Commission").fill_null(0.0).cast(DataType::Float64),
-            col("LoLa_Commission_MiTi").fill_null(0.0).cast(DataType::Float64),
-            col("Net Card LoLa").fill_null(0.0).cast(DataType::Float64),
-            col("Gross Card").alias("Gross Card Total").fill_null(0.0).cast(DataType::Float64),
-            col("Total Commission").fill_null(0.0).cast(DataType::Float64),
-            col("Net Card Total").fill_null(0.0).cast(DataType::Float64),
-            col("Net Payment SumUp MiTi").fill_null(0.0).cast(DataType::Float64),
-            col("MiTi_Tips_Cash").fill_null(0.0).cast(DataType::Float64),
-            col("MiTi_Tips_Card").fill_null(0.0).cast(DataType::Float64),
-            col("MiTi_Tips").fill_null(0.0).cast(DataType::Float64),
-            col("Cafe_Tips").fill_null(0.0).cast(DataType::Float64),
-            col("Verm_Tips").fill_null(0.0).cast(DataType::Float64),
-            col("Gross MiTi (MiTi)").fill_null(0.0).cast(DataType::Float64),
-            col("Gross MiTi (LoLa)").fill_null(0.0).cast(DataType::Float64),
-            col("Gross MiTi (MiTi) Card").fill_null(0.0).cast(DataType::Float64),
-            col("Net MiTi (MiTi) Card").fill_null(0.0).cast(DataType::Float64),
-            col("Net MiTi (LoLa)").fill_null(0.0).cast(DataType::Float64),
-            col("Contribution MiTi").fill_null(0.0).cast(DataType::Float64),
-            col("Net MiTi (LoLA) - Share LoLa").fill_null(0.0).cast(DataType::Float64),
-            col("Debt to MiTi").fill_null(0.0).cast(DataType::Float64),
-            col("Income LoLa MiTi").fill_null(0.0).cast(DataType::Float64),
-            col("MealCount_Regular").fill_null(0).cast(DataType::Int32),
-            col("MealCount_Children").fill_null(0).cast(DataType::Int32),
+            col("MiTi_Cash"),
+            col("MiTi_Card"),
+            col("MiTi Total"),
+            col("Cafe_Cash"),
+            col("Cafe_Card"),
+            col("Cafe Total"),
+            col("Verm_Cash"),
+            col("Verm_Card"),
+            col("Verm Total"),
+            col("SoFe_Cash"),
+            col("SoFe_Card"),
+            col("SoFe Total"),
+            col("Deposit_Cash"),
+            col("Deposit_Card"),
+            col("Deposit Total"),
+            col("Packaging_Cash"),
+            col("Packaging_Card"),
+            col("Packaging Total"),
+            col("Rental_Cash"),
+            col("Rental_Card"),
+            col("Rental Total"),
+            col("Culture_Cash"),
+            col("Culture_Card"),
+            col("Culture Total"),
+            col("PaidOut_Cash"),
+            col("PaidOut_Card"),
+            col("PaidOut Total"),
+            col("Gross Cash"),
+            col("Tips_Cash"),
+            col("SumUp Cash"),
+            col("Gross Card"),
+            col("Tips_Card"),
+            col("SumUp Card"),
+            col("Gross Total"),
+            col("Tips Total"),
+            col("SumUp Total"),
+            col("Gross Card MiTi"),
+            col("MiTi_Commission"),
+            col("Net Card MiTi"),
+            col("Gross Card LoLa"),
+            col("LoLa_Commission"),
+            col("LoLa_Commission_MiTi"),
+            col("Net Card LoLa"),
+            col("Gross Card").alias("Gross Card Total"),
+            col("Total Commission"),
+            col("Net Card Total"),
+            col("Net Payment SumUp MiTi"),
+            col("MiTi_Tips_Cash"),
+            col("MiTi_Tips_Card"),
+            col("MiTi_Tips"),
+            col("Cafe_Tips"),
+            col("Verm_Tips"),
+            col("Gross MiTi (MiTi)"),
+            col("Gross MiTi (LoLa)"),
+            col("Gross MiTi (MiTi) Card"),
+            col("Net MiTi (MiTi) Card"),
+            col("Net MiTi (LoLa)"),
+            col("Contribution MiTi"),
+            col("Net MiTi (LoLA) - Share LoLa"),
+            col("Debt to MiTi"),
+            col("Income LoLa MiTi"),
+            col("MealCount_Regular"),
+            col("MealCount_Children"),
         ])
         .collect()
 }
@@ -629,8 +658,10 @@ fn key_figure_by_date_for(
         .agg([col(key_figure)
             .sum()
             .fill_null(0.0)
+            .fill_nan(0.0)
             .round(2)
-            .alias(alias.as_str()).cast(DataType::Float64)])
+            .alias(alias.as_str())
+            .cast(DataType::Float64)])
         .sort(
             "Date",
             SortOptions {
@@ -742,7 +773,11 @@ fn count_by_date_for(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> Laz
     let (predicate, alias) = predicate_and_alias;
     ldf.filter(predicate)
         .group_by(["Date"])
-        .agg([col("Quantity").fill_null(0).sum().alias(alias.as_str()).cast(DataType::Int64)])
+        .agg([col("Quantity")
+            .fill_null(0)
+            .sum()
+            .alias(alias.as_str())
+            .cast(DataType::Int64)])
         .sort(
             "Date",
             SortOptions {

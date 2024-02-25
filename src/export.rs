@@ -61,12 +61,9 @@ fn crunch_data(raw_df: DataFrame) -> Result<(DataFrame, DataFrame), Box<dyn Erro
     validate(&raw_df)?;
 
     let mut df = collect_data(raw_df)?;
-    print!("{df}");
     let summary = &df.clone().lazy().sum()?.collect()?;
-    print!("{summary}");
     // some summary fields result in `null` instead of the actual value. Hence the validation will fail.
     df.extend(summary)?;
-    print!("{df}");
 
     let df_acc = gather_df_accounting(&df)?;
     validate_acc_constraint(&df_acc)?;
@@ -132,9 +129,9 @@ fn write_to_file(df: &mut DataFrame, path: &dyn AsRef<Path>) -> Result<(), Box<d
 
 #[cfg(test)]
 mod tests {
+    use crate::configure_the_environment;
     use pretty_assertions::assert_ne;
     use rstest::rstest;
-    use crate::configure_the_environment;
 
     use crate::test_fixtures::{intermediate_df_02, intermediate_df_04, summary_df_04};
 
