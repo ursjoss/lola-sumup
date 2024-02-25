@@ -19,32 +19,8 @@ mod export_summary;
 
 /// Reads the intermediate files and exports all configured reports.
 pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Error>> {
-    let intermediate_schema = Schema::from_iter(vec![
-        Field::new("Account", DataType::String),
-        Field::new("Date", DataType::String),
-        Field::new("Time", DataType::String),
-        Field::new("Type", DataType::String),
-        Field::new("Transaction ID", DataType::String),
-        Field::new("Receipt Number", DataType::String),
-        Field::new("Payment Method", DataType::String),
-        Field::new("Quantity", DataType::Int64),
-        Field::new("Description", DataType::String),
-        Field::new("Currency", DataType::String),
-        Field::new("Price (Gross)", DataType::Float64),
-        Field::new("Price (Net)", DataType::Float64),
-        Field::new("Tax", DataType::Float64),
-        Field::new("Tax rate", DataType::String),
-        Field::new("Transaction refunded", DataType::String),
-        Field::new("Commission", DataType::Float64),
-        Field::new("Topic", DataType::String),
-        Field::new("Owner", DataType::String),
-        Field::new("Purpose", DataType::String),
-        Field::new("Comment", DataType::String),
-    ]);
-
     let raw_df = CsvReader::from_path(input_path)?
         .has_header(true)
-        .with_schema(Some(SchemaRef::new(intermediate_schema)))
         .with_separator(b';')
         .with_try_parse_dates(true)
         .finish()?;
@@ -61,9 +37,7 @@ fn crunch_data(raw_df: DataFrame) -> Result<(DataFrame, DataFrame), Box<dyn Erro
     validate(&raw_df)?;
 
     let mut df = collect_data(raw_df)?;
-    let summary = &df.clone().lazy().sum()?.collect()?;
-    // some summary fields result in `null` instead of the actual value. Hence the validation will fail.
-    df.extend(summary)?;
+    df.extend(&df.clone().lazy().sum()?.collect()?)?;
 
     let df_acc = gather_df_accounting(&df)?;
     validate_acc_constraint(&df_acc)?;
