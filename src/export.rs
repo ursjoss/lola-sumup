@@ -37,7 +37,7 @@ fn crunch_data(raw_df: DataFrame) -> Result<(DataFrame, DataFrame), Box<dyn Erro
     validate(&raw_df)?;
 
     let mut df = collect_data(raw_df)?;
-    df.extend(&df.sum())?;
+    df.extend(&df.clone().lazy().sum()?.collect()?)?;
 
     let df_acc = gather_df_accounting(&df)?;
     validate_acc_constraint(&df_acc)?;
@@ -103,6 +103,7 @@ fn write_to_file(df: &mut DataFrame, path: &dyn AsRef<Path>) -> Result<(), Box<d
 
 #[cfg(test)]
 mod tests {
+    use crate::configure_the_environment;
     use pretty_assertions::assert_ne;
     use rstest::rstest;
 
@@ -120,6 +121,7 @@ mod tests {
 
     #[rstest]
     fn can_calculate_summary_row(intermediate_df_04: DataFrame, summary_df_04: DataFrame) {
+        configure_the_environment();
         let (df1, _) = crunch_data(intermediate_df_04).expect("should crunch");
         assert_eq!(
             df1.shape().0,

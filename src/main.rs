@@ -1,5 +1,6 @@
 #![warn(clippy::pedantic)]
 
+use std::env;
 use std::error::Error;
 use std::path::PathBuf;
 
@@ -49,6 +50,7 @@ enum Commands {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    configure_the_environment();
     let cli = Cli::parse();
     let ts = &ts_now();
     match &cli.command {
@@ -67,6 +69,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             export(intermediate_file, &month, ts)
         }
     }
+}
+
+pub fn configure_the_environment() {
+    env::set_var("POLARS_FMT_TABLE_ROUNDED_CORNERS", "1");
+    env::set_var("POLARS_FMT_MAX_COLS", "70");
+    env::set_var("POLARS_FMT_MAX_ROWS", "100");
+    env::set_var("POLARS_FMT_STR_LEN", "50");
 }
 
 /// Returns the current timestamp in format `<yyyymmddHHMMSS>`.

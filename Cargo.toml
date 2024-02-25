@@ -16,14 +16,14 @@ strum = { version = "0.26" }
 strum_macros = { version = "0.26" }
 
 [dependencies.polars]
-version = "0.35.4"
+version = "0.37.0"
 features = [
     "lazy",
     "dtype-date",
     "temporal",
     "strings",
     "concat_str",
-    "lazy_regex",
+    "regex",
     "round_series",
     "is_in",
     "abs",
