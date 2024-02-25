@@ -418,14 +418,8 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             .alias("Rental Total"),
         )
         .with_column(
-            (col("Culture_Cash")
-                .fill_null(0.0)
-                .fill_nan(0.0)
-                .fill_nan(0.0)
-                + col("Culture_Card")
-                    .fill_null(0.0)
-                    .fill_nan(0.0)
-                    .fill_nan(0.0))
+            (col("Culture_Cash").fill_null(0.0).fill_nan(0.0)
+                + col("Culture_Card").fill_null(0.0).fill_nan(0.0))
             .round(2)
             .alias("Culture Total"),
         )
