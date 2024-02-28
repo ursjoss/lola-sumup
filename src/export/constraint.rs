@@ -4,7 +4,24 @@ use std::fmt::{Debug, Display, Formatter};
 use polars::prelude::*;
 use strum::IntoEnumIterator;
 
-use crate::prepare::{Owner, Purpose, Topic};
+use crate::prepare::{Owner, PaymentMethod, Purpose, Topic};
+
+/// check we only have valid payment methods
+/// expects the `raw_df` to validate and the `columns` to display in case of a validation error.
+pub fn validate_payment_methods(
+    raw_df: &DataFrame,
+    columns: &[Expr],
+) -> Result<(), Box<dyn Error>> {
+    let payment_methods: Vec<String> = PaymentMethod::iter().map(|t| t.to_string()).collect();
+    validate_field(
+        "Payment Method",
+        payment_methods,
+        FieldConstraintViolationError::PaymentMethod,
+        raw_df,
+        columns,
+    )?;
+    Ok(())
+}
 
 /// check we only have valid topics
 /// expects the `raw_df` to validate and the `columns` to display in case of a validation error.
@@ -76,6 +93,7 @@ fn validate_field(
 }
 
 enum FieldConstraintViolationError {
+    PaymentMethod(DataFrame),
     Topic(DataFrame),
     Owner(DataFrame),
     Purpose(DataFrame),
@@ -84,6 +102,9 @@ enum FieldConstraintViolationError {
 impl Display for FieldConstraintViolationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            FieldConstraintViolationError::PaymentMethod(df) => {
+                write!(f, "Row has an invalid Payment Method! {df}")
+            }
             FieldConstraintViolationError::Topic(df) => {
                 write!(f, "Row has an invalid Topic! {df}")
             }
@@ -221,7 +242,7 @@ mod tests {
         #[case] expected_valid: bool,
         #[case] error_msg: Option<&str>,
     ) -> PolarsResult<()> {
-        let df = new_df(&topic.to_string(), owner, "Consumption")?;
+        let df = new_df(&topic.to_string(), owner, "Consumption", "Cash")?;
         let columns = [col("Row-No")];
         match validation_topic_owner(&df, &columns) {
             Ok(()) => assert!(expected_valid),
@@ -234,7 +255,12 @@ mod tests {
         Ok(())
     }
 
-    fn new_df(topic: &str, owner: Option<&str>, purpose: &str) -> Result<DataFrame, PolarsError> {
+    fn new_df(
+        topic: &str,
+        owner: Option<&str>,
+        purpose: &str,
+        payment_method: &str,
+    ) -> Result<DataFrame, PolarsError> {
         let df = df!(
             "Account" => &["a@b.ch"],
             "Date" => &["17.04.2023"],
@@ -242,7 +268,7 @@ mod tests {
             "Type" => &["Sales"],
             "Transaction ID" => &["TEGUCXAGDE"],
             "Receipt Number" => &["S20230000303"],
-            "Payment Method" => &["Cash"],
+            "Payment Method" => &[payment_method],
             "Quantity" => &[1],
             "Description" => &["foo"],
             "Currency" => &["CHF"],
@@ -261,6 +287,31 @@ mod tests {
     }
 
     #[rstest]
+    #[case("Cash", true)]
+    #[case("Card", true)]
+    #[case("", false)]
+    #[case("Cash ", false)]
+    #[case(" Card", false)]
+    #[case("xyz", false)]
+    fn validate_payment_method(
+        #[case] payment_method: &str,
+        #[case] expected_valid: bool,
+    ) -> Result<(), Box<dyn Error>> {
+        let df = new_df("cafe", None, "", payment_method)?;
+        let columns = [col("Row-No")];
+        match validate_payment_methods(&df, &columns) {
+            Ok(()) => assert!(expected_valid),
+            Err(e) => {
+                assert!(!expected_valid);
+                assert!(e
+                    .to_string()
+                    .starts_with("Row has an invalid Payment Method!"));
+            }
+        }
+        Ok(())
+    }
+
+    #[rstest]
     #[case("MiTi", true)]
     #[case("Cafe", true)]
     #[case("Verm", true)]
@@ -275,7 +326,7 @@ mod tests {
         #[case] topic: &str,
         #[case] expected_valid: bool,
     ) -> Result<(), Box<dyn Error>> {
-        let df = new_df(topic, None, "")?;
+        let df = new_df(topic, None, "", "Cash")?;
         let columns = [col("Row-No")];
         match validate_topics(&df, &columns) {
             Ok(()) => assert!(expected_valid),
@@ -298,7 +349,7 @@ mod tests {
         #[case] owner: Option<&str>,
         #[case] expected_valid: bool,
     ) -> Result<(), Box<dyn Error>> {
-        let df = new_df("", owner, "")?;
+        let df = new_df("", owner, "", "Card")?;
         let columns = [col("Row-No")];
         match validate_owners(&df, &columns) {
             Ok(()) => assert!(expected_valid),
@@ -319,7 +370,7 @@ mod tests {
         #[case] purpose: &str,
         #[case] expected_valid: bool,
     ) -> Result<(), Box<dyn Error>> {
-        let df = new_df("", None, purpose)?;
+        let df = new_df("", None, purpose, "Cash")?;
         let columns = [col("Row-No")];
         match validate_purposes(&df, &columns) {
             Ok(()) => assert!(expected_valid),
