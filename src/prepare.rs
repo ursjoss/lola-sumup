@@ -300,7 +300,7 @@ enum RecordType {
 }
 
 /// Payment method as defined in the sumup sales report
-#[derive(Debug, Deserialize, Serialize, PartialEq, EnumString, Display)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, EnumString, Display, EnumIter)]
 pub enum PaymentMethod {
     /// Sales paid with cash
     Cash,

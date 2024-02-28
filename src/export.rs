@@ -6,7 +6,8 @@ use std::path::{Path, PathBuf};
 use polars::prelude::*;
 
 use crate::export::constraint::{
-    validate_owners, validate_purposes, validate_topics, validation_topic_owner,
+    validate_owners, validate_payment_methods, validate_purposes, validate_topics,
+    validation_topic_owner,
 };
 use crate::export::export_accounting::{gather_df_accounting, validate_acc_constraint};
 use crate::export::export_miti::gather_df_miti;
@@ -50,6 +51,7 @@ fn validate(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
         col("Date"),
         col("Time"),
         col("Transaction ID"),
+        col("Payment Method"),
         col("Description"),
         col("Price (Gross)"),
         col("Topic"),
@@ -58,6 +60,7 @@ fn validate(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
         col("Comment"),
     ];
 
+    validate_payment_methods(raw_df, &validated_columns)?;
     validate_topics(raw_df, &validated_columns)?;
     validate_owners(raw_df, &validated_columns)?;
     validate_purposes(raw_df, &validated_columns)?;
