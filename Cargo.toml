@@ -16,7 +16,7 @@ strum = { version = "0.26" }
 strum_macros = { version = "0.26" }
 
 [dependencies.polars]
-version = "0.37.0"
+version = "0.38.0"
 features = [
     "lazy",
     "dtype-date",
