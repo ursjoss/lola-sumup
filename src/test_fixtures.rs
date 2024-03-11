@@ -1,7 +1,7 @@
 use chrono::{NaiveDate, NaiveTime};
 use polars::df;
 use polars::frame::DataFrame;
-use polars::prelude::{AnyValue, NamedFrom};
+use polars::prelude::AnyValue;
 use rstest::fixture;
 
 #[fixture]
