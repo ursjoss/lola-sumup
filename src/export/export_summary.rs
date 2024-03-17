@@ -787,7 +787,7 @@ impl FilterExpressionProvider for MitiMealType {
         match self {
             Regular => col("Description")
                 .str()
-                .starts_with(lit("Hauptgang"))
+                .contains(lit("Hauptgang"), true)
                 .or(col("Description").str().contains(lit("Hauptsp"), true))
                 .or(col("Description").str().starts_with(lit("Menü")))
                 .or(col("Description").str().starts_with(lit("Praktika"))),
@@ -923,7 +923,7 @@ mod tests {
     #[case("Vorsp. + Hauptsp. red.", Some(Regular))]
     #[case("Hauptspeise spezial", Some(Regular))]
     #[case("Hauptsp. + Dessert", Some(Regular))]
-    #[case("Nur Hauptgang", None)]
+    #[case("Nur Hauptgang", Some(Regular))]
     #[case("Kindermenü", Some(Children))]
     fn test_meal_count(
         #[case] description: &str,
