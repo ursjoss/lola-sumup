@@ -912,4 +912,48 @@ mod tests {
         let out = collect_data(intermediate_df_02).expect("should be able to collect the data");
         assert_dataframe(&out, &summary_df_02);
     }
+
+    #[rstest]
+    #[case("Menü", Some(Regular))]
+    #[case("Menü ganz", Some(Regular))]
+    #[case("Hauptgang", Some(Regular))]
+    #[case("Praktika", Some(Regular))]
+    #[case("Vorsp.+Hauptspeise", None)]
+    #[case("Vorsp. + Hauptsp. red.", None)]
+    #[case("Hauptspeise spezial", None)]
+    #[case("Hauptsp. + Dessert", None)]
+    #[case("Nur Hauptgang", None)]
+    #[case("Kindermenü", Some(Children))]
+    fn test_meal_count(
+        #[case] description: &str,
+        #[case] meal_type: Option<MitiMealType>,
+    ) -> PolarsResult<()> {
+        let df_in = df!(
+          "Date" => &["16.03.2023"],
+            "Topic" => &["MiTi"],
+            "Owner" => &["MiTi"],
+            "Description" => &[description],
+            "Quantity" => &[1],
+        )?;
+        match meal_type {
+            Some(Regular) => {
+                let exp = df!(
+                    "Date" => & ["16.03.2023"],
+                    "MealCount_Regular" => & [1_i64],
+                )?;
+                let out = meal_count(for_meals_of_type(&Regular), df_in.lazy()).collect()?;
+                assert_dataframe(&out, &exp);
+            }
+            Some(Children) => {
+                let exp = df!(
+                    "Date" => & ["16.03.2023"],
+                    "MealCount_Children" => & [1_i64],
+                )?;
+                let out = meal_count(for_meals_of_type(&Children), df_in.lazy()).collect()?;
+                assert_dataframe(&out, &exp);
+            }
+            None => {}
+        }
+        Ok(())
+    }
 }
