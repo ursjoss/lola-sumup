@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter};
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
@@ -12,6 +12,7 @@ use polars::prelude::{
     col, lit, when, CsvReader, CsvWriter, Expr, IntoLazy, JoinType, LazyFrame, LiteralValue,
     StrptimeOptions,
 };
+use polars::series::Series;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
 
@@ -53,7 +54,83 @@ fn process_input(
         .has_header(true)
         .with_separator(b',')
         .finish()?;
+    fail_on_missing_trx(&txr_df, &sr_df)?;
     combine_input_dfs(&sr_df, &txr_df)
+}
+
+enum MissingTrxViolationError {
+    MissingInSalesReport(DataFrame),
+    MissingInTrxReport(DataFrame),
+}
+
+impl Display for MissingTrxViolationError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MissingTrxViolationError::MissingInSalesReport(df) => {
+                write!(f, "Transaction IDs missing in sales report! {df}")
+            }
+            MissingTrxViolationError::MissingInTrxReport(df) => {
+                write!(f, "Transaction IDs missing in transaction report! {df}")
+            }
+        }
+    }
+}
+
+impl Debug for MissingTrxViolationError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self}")
+    }
+}
+
+impl Error for MissingTrxViolationError {}
+
+/// Abort if valid transactions are found in transaction report but not in sales report - or vice versa
+fn fail_on_missing_trx(txr_df: &DataFrame, sr_df: &DataFrame) -> Result<(), Box<dyn Error>> {
+    let valid_stati = vec!["Erfolgreich", "Geplant"];
+    let txr = txr_df
+        .clone()
+        .lazy()
+        .filter(
+            col("Status")
+                .is_in(lit(Series::from_iter(valid_stati.clone())))
+                .and(col("Transaktions-ID").is_not_null()),
+        )
+        .select([col("Transaktions-ID")]);
+    let sr = sr_df
+        .clone()
+        .lazy()
+        .filter(col("Transaction ID").is_not_null())
+        .select([col("Transaction ID")]);
+    let missing_in_sr = txr
+        .clone()
+        .join(
+            sr.clone(),
+            [col("Transaktions-ID")],
+            [col("Transaction ID")],
+            JoinType::Anti.into(),
+        )
+        .collect()?;
+    if missing_in_sr.shape().0 > 0 {
+        Err(Box::from(MissingTrxViolationError::MissingInSalesReport(
+            missing_in_sr,
+        )))
+    } else {
+        let missing_in_txr = sr
+            .join(
+                txr,
+                [col("Transaction ID")],
+                [col("Transaktions-ID")],
+                JoinType::Anti.into(),
+            )
+            .collect()?;
+        if missing_in_txr.shape().0 > 0 {
+            Err(Box::from(MissingTrxViolationError::MissingInTrxReport(
+                missing_in_txr,
+            )))
+        } else {
+            Ok(())
+        }
+    }
 }
 
 /// Combines the sales report and transaction report dataframes into the summary dataframe.
@@ -354,10 +431,40 @@ pub enum Owner {
 mod tests {
     use rstest::rstest;
 
-    use crate::test_fixtures::{intermediate_df_01, sales_report_df_01, transaction_report_df_01};
+    use crate::test_fixtures::{
+        intermediate_df_01, sales_report_df_01, sales_report_df_02, transaction_report_df_01,
+        transaction_report_df_02,
+    };
     use crate::test_utils::assert_dataframe;
 
     use super::*;
+
+    #[rstest]
+    fn given_trx_in_both_frames_when_asserting_we_should_not_fail(
+        transaction_report_df_01: DataFrame,
+        sales_report_df_01: DataFrame,
+    ) {
+        let result = fail_on_missing_trx(&transaction_report_df_01, &sales_report_df_01);
+        assert!(result.is_ok(), "trx should be present in both data frames");
+    }
+
+    #[rstest]
+    fn given_trx_not_in_sales_report_when_asserting_we_should_fail(
+        transaction_report_df_01: DataFrame,
+        sales_report_df_02: DataFrame,
+    ) {
+        let result = fail_on_missing_trx(&transaction_report_df_01, &sales_report_df_02);
+        assert!(result.is_err(), "trx should not be found in sales report");
+    }
+
+    #[rstest]
+    fn given_trx_not_in_trx_report_when_asserting_we_should_fail(
+        transaction_report_df_02: DataFrame,
+        sales_report_df_01: DataFrame,
+    ) {
+        let result = fail_on_missing_trx(&transaction_report_df_02, &sales_report_df_01);
+        assert!(result.is_err(), "trx should not be found in sales report");
+    }
 
     #[rstest]
     fn test_combine_input_dfs(
