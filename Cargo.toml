@@ -26,6 +26,7 @@ features = [
     "regex",
     "round_series",
     "is_in",
+    "semi_anti_join",
     "abs",
 ]
 
