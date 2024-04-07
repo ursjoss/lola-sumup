@@ -19,17 +19,22 @@ pub fn sample_time() -> NaiveTime {
 /// Sample record 01 matching the structure of the sumup sales report csv file
 #[fixture]
 pub fn sales_report_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> DataFrame {
+    sales_report_with_trx_id("TEGUCXAGDE", sample_date, sample_time)
+}
+
+fn sales_report_with_trx_id(
+    trx_id: &str,
+    sample_date: NaiveDate,
+    sample_time: NaiveTime,
+) -> DataFrame {
     let date = sample_date.format("%d.%m.%y").to_string();
     let time = sample_time.format("%H:%M").to_string();
-
-    println!("date: ${date}");
-    println!("time: ${time}");
     df!(
         "Account" => &["a@b.ch"],
         "Date" => &[date],
         "Time" => &[time],
         "Type" => &["Sales"],
-        "Transaction ID" => &["TEGUCXAGDE"],
+        "Transaction ID" => &[trx_id],
         "Receipt Number" => &["S20230000303"],
         "Payment Method" => &["Card"],
         "Quantity" => &[1_i64],
@@ -41,14 +46,18 @@ pub fn sales_report_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> Dat
         "Tax rate" => &[""],
         "Transaction refunded" => &[""],
     )
-    .expect("valid dataframe sales report data frame 01")
+    .expect("valid dataframe sales report data frame")
 }
 
 /// Sample record 01 matching the structure of the sumup transaction report csv file
 #[fixture]
 pub fn transaction_report_df_01() -> DataFrame {
+    transaction_report_with_trx_id("TEGUCXAGDE")
+}
+
+fn transaction_report_with_trx_id(trx_id: &str) -> DataFrame {
     df!(
-        "Transaktions-ID" => &["TEGUCXAGDE"],
+        "Transaktions-ID" => &[trx_id],
         "Zahlungsart" => &["Umsatz"],
         "Status" => &["Erfolgreich"],
         "Betrag inkl. MwSt." => &[17.0],
