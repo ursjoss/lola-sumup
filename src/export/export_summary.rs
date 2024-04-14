@@ -22,13 +22,10 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         .select([col("Date")])
         .unique(None, UniqueKeepStrategy::First)
         .sort(
-            "Date",
-            SortOptions {
-                descending: false,
-                nulls_last: false,
-                multithreaded: false,
-                maintain_order: true,
-            },
+            ["Date"],
+            SortMultipleOptions::new()
+                .with_multithreaded(false)
+                .with_maintain_order(true),
         );
     let cafe_cash = price_by_date_for(
         consumption_of(&Topic::Cafe, &PaymentMethod::Cash),
@@ -633,13 +630,10 @@ fn key_figure_by_date_for(
             .alias(alias.as_str())
             .cast(DataType::Float64)])
         .sort(
-            "Date",
-            SortOptions {
-                descending: false,
-                nulls_last: false,
-                multithreaded: false,
-                maintain_order: true,
-            },
+            ["Date"],
+            SortMultipleOptions::new()
+                .with_multithreaded(false)
+                .with_maintain_order(true),
         )
 }
 
@@ -749,13 +743,10 @@ fn count_by_date_for(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> Laz
             .alias(alias.as_str())
             .cast(DataType::Int64)])
         .sort(
-            "Date",
-            SortOptions {
-                descending: false,
-                nulls_last: false,
-                multithreaded: false,
-                maintain_order: true,
-            },
+            ["Date"],
+            SortMultipleOptions::new()
+                .with_multithreaded(false)
+                .with_maintain_order(true),
         )
 }
 
