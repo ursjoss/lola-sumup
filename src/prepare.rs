@@ -10,7 +10,7 @@ use polars::io::{SerReader, SerWriter};
 use polars::prelude::LiteralValue::Null;
 use polars::prelude::{
     col, lit, when, CsvReader, CsvWriter, Expr, IntoLazy, JoinType, LazyFrame, LiteralValue,
-    StrptimeOptions,
+    SortMultipleOptions, StrptimeOptions,
 };
 use polars::series::Series;
 use serde::{Deserialize, Serialize};
@@ -27,8 +27,9 @@ pub fn prepare(
 ) -> Result<(), Box<dyn Error>> {
     let mut df = process_input(sales_report, transaction_report)?.sort(
         ["Date", "Time", "Transaction ID", "Description"],
-        false,
-        true,
+        SortMultipleOptions::new()
+            .with_multithreaded(false)
+            .with_maintain_order(true),
     )?;
     let iowtr: Box<dyn Write> = Box::new(File::create(output_path)?);
     CsvWriter::new(iowtr)
