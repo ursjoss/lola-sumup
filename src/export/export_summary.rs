@@ -782,6 +782,9 @@ impl FilterExpressionProvider for MitiMealType {
                 .or(col("Description")
                     .str()
                     .contains(lit("Seniorenmittagstisch"), true))
+                .or(col("Description")
+                    .str()
+                    .contains(lit("Senioren-Mittagstisch"), true))
                 .or(col("Description").str().contains(lit("Gang-Menu"), true))
                 .or(col("Description").str().contains(lit("Hauptsp"), true))
                 .or(col("Description").str().starts_with(lit("Menü")))
@@ -923,7 +926,9 @@ mod tests {
     #[case("2-Gang-Menu (mit Vorspeise oder Dessert)", Some(Regular))]
     #[case("3 Gang-Menu (mit Vorspeise + Dessert)", Some(Regular))]
     #[case("Seniorenmittagstisch", Some(Regular))]
+    #[case("Senioren-Mittagstisch", Some(Regular))]
     #[case("Kindermenü", Some(Children))]
+    #[case("Kinderpasta", Some(Children))]
     #[case("Kinder-Teigwaren", Some(Children))]
     #[case("Kindermenu (kleiner Hauptgang, bis 12 Jahre)", Some(Children))]
     fn test_meal_count(
