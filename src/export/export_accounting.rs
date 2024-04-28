@@ -57,7 +57,7 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Net Card Total MiTi").alias("10920/20051"),
             col("Tips Card LoLa").alias("10920/10910"),
             col("LoLa_Commission").alias("68450/10920"),
-            col("Debt to MiTi").alias("20051/10900"),
+            col("Debt to MiTi").alias("20051/10930"),
             col("Income LoLa MiTi").alias("20051/30500"),
         ])
         .collect()
@@ -87,7 +87,7 @@ fn validate_acc_constraint_10920(df_acc: &DataFrame) -> Result<(), Box<dyn Error
 
 /// validates the transitory account 10920 nets to 0
 fn validate_acc_constraint_20051(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
-    let net_expr = col("10920/20051") - col("20051/10900") - col("20051/30500");
+    let net_expr = col("10920/20051") - col("20051/10930") - col("20051/30500");
     validate_constraint(df_acc, net_expr, "20051")?
 }
 
@@ -563,7 +563,7 @@ mod tests {
             "10920/20051" => &[net_card_income_plus_tips_miti_card],
             "10920/10910" => &[tips_lola_paid_via_card],
             "68450/10920" => &[Some(commission_lola)],
-            "20051/10900" => &[debt_to_miti],
+            "20051/10930" => &[debt_to_miti],
             "20051/30500" => &[income_lola_miti],
         )?;
         match validate_acc_constraint(&df) {
