@@ -282,7 +282,7 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `10920/20051`: Net Card income + tips (card) Mittagstisch [`Net Card MiTi` + `MiTi_Tips_Card`]
 - `10920/10910`: Tips LoLa paid via Card [`Tips_Card` - `MiTi_Tips_Card`]
 - `68450/10920`: Commission for Café, Vermietung, summer party, Deposit, Rental, Cultural Payments, and `PaidOut`, i.e. w/o Mittagstisch [`Commission LoLa`]
-- `20051/10900`: Amount LoLa owes to Mittagstisch (`Debt to MiTi`)
+- `20051/10930`: Amount LoLa owes to Mittagstisch (`Debt to MiTi`)
 - `20051/30500`: Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi` = `Income LoLa MiTi`]
 
 
@@ -295,4 +295,4 @@ They serve for consolidation purposes:
 
 Where the absolute net sum for the transitory accounts must not be > 0.05, i.e.:
 - for `10920`: abs(`10920/30200` + `10920/30700` + `10920/30800` + `10920/23050` + `10920/46000` + `10920/31000` + `10920/32000` +`10920/20051` + `10920/10000` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.05
-- for `20051`: abs(`10920/20051` - `20051/10900` - `20051/30200`) < 0.05
+- for `20051`: abs(`10920/20051` - `20051/10930` - `20051/30200`) < 0.05
