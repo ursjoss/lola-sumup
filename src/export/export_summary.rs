@@ -545,9 +545,17 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .alias("Net MiTi (LoLA) - Share LoLa"),
         )
         .with_column(
-            (col("Net Payment SumUp MiTi") - col("Net MiTi (LoLA) - Share LoLa"))
-                .round(2)
-                .alias("Debt to MiTi"),
+            (lit(2.0)
+                * (col("MealCount_Reduced").fill_null(0)
+                    + col("MealCount_Praktikum").fill_null(0)))
+            .round(2)
+            .alias("Sponsored Reductions"),
+        )
+        .with_column(
+            (col("Net Payment SumUp MiTi") - col("Net MiTi (LoLA) - Share LoLa")
+                + col("Sponsored Reductions"))
+            .round(2)
+            .alias("Debt to MiTi"),
         )
         .select([
             col("Date"),
@@ -610,7 +618,7 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Net MiTi (LoLa)"),
             col("Contribution MiTi"),
             col("Net MiTi (LoLA) - Share LoLa"),
-            // col("Reductions"),
+            col("Sponsored Reductions"),
             col("Debt to MiTi"),
             col("Income LoLa MiTi"),
             col("MealCount_Regular"),
