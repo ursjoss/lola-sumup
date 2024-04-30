@@ -5,6 +5,10 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
     df.clone()
         .lazy()
         .with_column(
+            (col("MealCount_Reduced").fill_null(0) + col("MealCount_Praktikum").fill_null(0))
+                .alias("MealCount_ReducedPraktikum"),
+        )
+        .with_column(
             (col("MiTi_Cash").fill_null(0.0) + col("MiTi_Tips_Cash").fill_null(0.0))
                 .round(2)
                 .alias("Total Cash"),
@@ -47,6 +51,7 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
         .select([
             col("Date").alias("Datum"),
             col("MealCount_Regular").alias("Hauptgang"),
+            col("MealCount_ReducedPraktikum").alias("Reduziert"),
             col("MealCount_Children").alias("Kind"),
             col("Gross MiTi (MiTi)").alias("Küche"),
             col("Gross MiTi (LoLa)").alias("Total Bar"),
@@ -64,6 +69,7 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Net MiTi (MiTi) Card").alias("Netto Karte MiTi"),
             col("Net Payment SumUp MiTi").alias("Net Total Karte"),
             col("Verkauf LoLa (80%)"),
+            col("Sponsored Reductions").alias("Gesponsort"),
             col("Debt to MiTi").alias("Überweisung"),
         ])
         .collect()

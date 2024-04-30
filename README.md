@@ -234,6 +234,7 @@ The columns of the resulting file are defined as follows:
   - `Datum`: [`Date`]
 - Count of Menus
   - `Hauptgang`: Number of regular meals per day [`MealCount_Regular`]
+  - `Reduziert`: Number of regular meals per day [`MealCount_Reduced` + `MealCount_Praktikum`]
   - `Kind`: Number of children meals per day [`MealCount_Children`]
 - Income by ownership (MiTi or LoLa):
   - `Küche`: Gross income from menus [`Gross MiTi (MiTi)`]
@@ -255,6 +256,7 @@ The columns of the resulting file are defined as follows:
 - Netting with LoLa
   - `Net Total Karte`: Net card payments concerning Mittagstisch (Sales from meals, tips, sales of LoLa goods paid via card) [`Net Paymnet SumUp MiTi`]
   - `Verkauf LoLa (80%)` 80% of net sales lola goods [-`Net MiTi (LoLA) - Share LoLa`]
+  - `Gesponsort` LoLa sponsored reductions (2.00 per Meal) [`Sponsored Reductions`]
   - `Überweisung`: Net Payment LoLa to Mittagstisch [`Debt to MiTi`]
 
 ### Accounting Report

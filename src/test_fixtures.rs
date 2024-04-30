@@ -335,6 +335,7 @@ pub fn miti_df_03(sample_date: NaiveDate) -> DataFrame {
     df!(
         "Datum" => &[sample_date],
         "Hauptgang" => &[14],
+        "Reduziert" => &[0],
         "Kind" => &[1],
         "Küche" => &[Some(250.0)],
         "Total Bar" => &[Some(53.0)],
@@ -352,6 +353,7 @@ pub fn miti_df_03(sample_date: NaiveDate) -> DataFrame {
         "Netto Karte MiTi" => &[164.25],
         "Net Total Karte" => &[187.81],
         "Verkauf LoLa (80%)" => &[-42.05],
+        "Gesponsort" => &[0.0],
         "Überweisung" => &[145.76],
     )
     .expect("Valid miti df 03")
