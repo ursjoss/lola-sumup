@@ -779,6 +779,7 @@ impl FilterExpressionProvider for MitiMealType {
             Regular => col("Description")
                 .str()
                 .contains(lit("Hauptgang"), true)
+                .and(col("Description").str().contains(lit("Kinder"), true).not())
                 .or(col("Description")
                     .str()
                     .contains(lit("Seniorenmittagstisch"), true))
@@ -789,7 +790,7 @@ impl FilterExpressionProvider for MitiMealType {
                 .or(col("Description").str().contains(lit("Hauptsp"), true))
                 .or(col("Description").str().starts_with(lit("Menü")))
                 .or(col("Description").str().starts_with(lit("Praktika"))),
-            Children => col("Description").str().starts_with(lit("Kinder")),
+            Children => col("Description").str().contains(lit("Kinder"), true),
         }
     }
     fn label(&self) -> &str {
@@ -931,6 +932,14 @@ mod tests {
     #[case("Kinderpasta", Some(Children))]
     #[case("Kinder-Teigwaren", Some(Children))]
     #[case("Kindermenu (kleiner Hauptgang, bis 12 Jahre)", Some(Children))]
+    #[case("Hauptgang Vegi Standard", Some(Regular))]
+    #[case("Hauptgang Vegi Reduziert", Some(Regular))]
+    #[case("Hauptgang Vegi Praktikum", Some(Regular))]
+    #[case("Hauptgang Fleisch  Standard", Some(Regular))]
+    #[case("Hauptgang Fleisch  Reduziert", Some(Regular))]
+    #[case("Hauptgang Fleisch  Praktikum", Some(Regular))]
+    #[case("Hauptgang Vegi Kindermenu (bis 12 Jahre)", Some(Children))]
+    #[case("Kinderpasta  Standard", Some(Children))]
     fn test_meal_count(
         #[case] description: &str,
         #[case] meal_type: Option<MitiMealType>,
