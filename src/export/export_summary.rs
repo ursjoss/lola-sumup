@@ -771,7 +771,11 @@ fn count_by_date_for(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> Laz
 fn for_meals_of_type(meal_type: &MitiMealType) -> (Expr, String) {
     let expr = (col("Topic").eq(lit(Topic::MiTi.to_string())))
         .and(col("Owner").eq(lit(Owner::MiTi.to_string())))
-        .and(meal_type.expr());
+        .and(
+            col("Purpose")
+                .neq(lit(Purpose::Tip.to_string()))
+                .and(meal_type.expr()),
+        );
     let alias = format!("MealCount_{}", meal_type.label());
     (expr, alias)
 }
@@ -949,40 +953,55 @@ mod tests {
     }
 
     #[rstest]
-    #[case("Menü", Some(Regular))]
-    #[case("Menü ganz", Some(Regular))]
-    #[case("Hauptgang", Some(Regular))]
-    #[case("Praktika", Some(Regular))]
-    #[case("Vorsp.+Hauptspeise", Some(Regular))]
-    #[case("Vorsp. + Hauptsp. red.", Some(Regular))]
-    #[case("Hauptspeise spezial", Some(Regular))]
-    #[case("Hauptsp. + Dessert", Some(Regular))]
-    #[case("Nur Hauptgang", Some(Regular))]
-    #[case("Menu (nur Hauptgang)", Some(Regular))]
-    #[case("2-Gang-Menu (mit Vorspeise oder Dessert)", Some(Regular))]
-    #[case("3 Gang-Menu (mit Vorspeise + Dessert)", Some(Regular))]
-    #[case("Seniorenmittagstisch", Some(Regular))]
-    #[case("Senioren-Mittagstisch", Some(Regular))]
-    #[case("Kindermenü", Some(Children))]
-    #[case("Kinderpasta", Some(Children))]
-    #[case("Kinder-Teigwaren", Some(Children))]
-    #[case("Kindermenu (kleiner Hauptgang, bis 12 Jahre)", Some(Children))]
-    #[case("Hauptgang Vegi Standard", Some(Regular))]
-    #[case("Hauptgang Vegi Reduziert", Some(Reduced))]
-    #[case("Hauptgang Vegi Praktikum", Some(Praktikum))]
-    #[case("Hauptgang Fleisch  Standard", Some(Regular))]
-    #[case("Hauptgang Fleisch  Reduziert", Some(Reduced))]
-    #[case("Hauptgang Fleisch  Praktikum", Some(Praktikum))]
-    #[case("Hauptgang Vegi Kindermenu (bis 12 Jahre)", Some(Children))]
-    #[case("Kinderpasta  Standard", Some(Children))]
+    #[case("Menü", "Consumption", Some(Regular))]
+    #[case("Menü", "Tip", None)]
+    #[case("Menü ganz", "Consumption", Some(Regular))]
+    #[case("Hauptgang", "Consumption", Some(Regular))]
+    #[case("Praktika", "Consumption", Some(Regular))]
+    #[case("Vorsp.+Hauptspeise", "Consumption", Some(Regular))]
+    #[case("Vorsp. + Hauptsp. red.", "Consumption", Some(Regular))]
+    #[case("Hauptspeise spezial", "Consumption", Some(Regular))]
+    #[case("Hauptsp. + Dessert", "Consumption", Some(Regular))]
+    #[case("Nur Hauptgang", "Consumption", Some(Regular))]
+    #[case("Menu (nur Hauptgang)", "Consumption", Some(Regular))]
+    #[case(
+        "2-Gang-Menu (mit Vorspeise oder Dessert)",
+        "Consumption",
+        Some(Regular)
+    )]
+    #[case("3 Gang-Menu (mit Vorspeise + Dessert)", "Consumption", Some(Regular))]
+    #[case("Seniorenmittagstisch", "Consumption", Some(Regular))]
+    #[case("Senioren-Mittagstisch", "Consumption", Some(Regular))]
+    #[case("Kindermenü", "Consumption", Some(Children))]
+    #[case("Kinderpasta", "Consumption", Some(Children))]
+    #[case("Kinder-Teigwaren", "Consumption", Some(Children))]
+    #[case(
+        "Kindermenu (kleiner Hauptgang, bis 12 Jahre)",
+        "Consumption",
+        Some(Children)
+    )]
+    #[case("Hauptgang Vegi Standard", "Consumption", Some(Regular))]
+    #[case("Hauptgang Vegi Reduziert", "Consumption", Some(Reduced))]
+    #[case("Hauptgang Vegi Praktikum", "Consumption", Some(Praktikum))]
+    #[case("Hauptgang Fleisch  Standard", "Consumption", Some(Regular))]
+    #[case("Hauptgang Fleisch  Reduziert", "Consumption", Some(Reduced))]
+    #[case("Hauptgang Fleisch  Praktikum", "Consumption", Some(Praktikum))]
+    #[case(
+        "Hauptgang Vegi Kindermenu (bis 12 Jahre)",
+        "Consumption",
+        Some(Children)
+    )]
+    #[case("Kinderpasta  Standard", "Consumption", Some(Children))]
     fn test_meal_count(
         #[case] description: &str,
+        #[case] purpose: &str,
         #[case] meal_type: Option<MitiMealType>,
     ) -> PolarsResult<()> {
         let df_in = df!(
           "Date" => &["16.03.2023"],
             "Topic" => &["MiTi"],
             "Owner" => &["MiTi"],
+            "Purpose" => &[purpose],
             "Description" => &[description],
             "Quantity" => &[1],
         )?;
