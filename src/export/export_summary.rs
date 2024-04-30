@@ -614,8 +614,8 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Debt to MiTi"),
             col("Income LoLa MiTi"),
             col("MealCount_Regular"),
-            // col("MealCount_Reduced"),
-            // col("MealCount_Praktikum"),
+            col("MealCount_Reduced"),
+            col("MealCount_Praktikum"),
             col("MealCount_Children"),
         ])
         .collect()

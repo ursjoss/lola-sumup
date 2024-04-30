@@ -207,6 +207,8 @@ pub fn summary_df_02(sample_date: NaiveDate) -> DataFrame {
         "Debt to MiTi" => &[16.9],
         "Income LoLa MiTi" => &[18.86],
         "MealCount_Regular" => &[1_i64],
+        "MealCount_Reduced" => &[None::<i64>],
+        "MealCount_Praktikum" => &[None::<i64>],
         "MealCount_Children" => &[None::<i64>],
     )
     .expect("valid summary dataframe 02")
@@ -285,6 +287,8 @@ pub fn summary_df_03(sample_date: NaiveDate) -> DataFrame {
         "Debt to MiTi" => &[145.76],
         "Income LoLa MiTi" => &[42.49],
         "MealCount_Regular" => &[14],
+        "MealCount_Reduced" => &[0],
+        "MealCount_Praktikum" => &[0],
         "MealCount_Children" => &[1],
     )
     .expect("valid summary dataframe 02")
@@ -454,6 +458,8 @@ pub fn summary_df_04(sample_date: NaiveDate, sample_date2: NaiveDate) -> DataFra
         "Debt to MiTi" => &[Some(0.0), Some(19.7), Some(19.7)],
         "Income LoLa MiTi" => &[Some(0.0), Some(0.0), Some(0.0)],
         "MealCount_Regular" => &[None::<i64>, None::<i64>, Some(0)],
+        "MealCount_Reduced" => &[None::<i64>, None::<i64>, Some(0)],
+        "MealCount_Praktikum" => &[None::<i64>, None::<i64>, Some(0)],
         "MealCount_Children" => &[None::<i64>, Some(3), Some(3)],
     )
     .expect("valid summary dataframe 04")
