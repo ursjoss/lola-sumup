@@ -215,10 +215,13 @@ The columns of the resulting summary file are defined as follows:
   - `Net MiTi (LoLa)`: Net total income Mittagstisch with LoLa items w/o commission [`Gross MiTi (LoLa)` - `LoLa_Commission_MiTi`]
   - `Contribution MiTi`: Share MiTi from selling LoLa items [20% * `Net MiTi (LoLa)`]
   - `Net MiTi (LoLA) - Share LoLa`: 80% of Net total income Mittagstisch with LoLa items w/o commission [`Net MiTi (LoLa)` * 0.8]
-  - `Debt to MiTi`: Net amount LoLa needs to pay out to Mittagstisch [`Net Payment SumUp MiTi` - `Net MiTi (LoLA) - Share LoLa`]
+  - `Sponsored Reductions`: Reductions sponsored by LoLa [2 * (`MealCount_Reduced` + `MealCount_Regular`)]
+  - `Debt to MiTi`: Net amount LoLa needs to pay out to Mittagstisch [`Net Payment SumUp MiTi` - `Net MiTi (LoLA) - Share LoLa` + `Sponsored Reductions`]
   - `Income LoLa MiTi`: Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi`]
 - Statistics relevant for Mittagstisch:
   - `MealCount_Regular`: Number of regular meals per day
+  - `MealCount_Reduced`: Number of meals with reductions sponsored by LoLa per day
+  - `MealCount_Regular`: Number of meals for stagaire sponsored by LoLA per day
   - `MealCount_Children`: Number of children meals per day
 
 ### Mittagstisch Report
@@ -231,6 +234,7 @@ The columns of the resulting file are defined as follows:
   - `Datum`: [`Date`]
 - Count of Menus
   - `Hauptgang`: Number of regular meals per day [`MealCount_Regular`]
+  - `Reduziert`: Number of regular meals per day [`MealCount_Reduced` + `MealCount_Praktikum`]
   - `Kind`: Number of children meals per day [`MealCount_Children`]
 - Income by ownership (MiTi or LoLa):
   - `Küche`: Gross income from menus [`Gross MiTi (MiTi)`]
@@ -252,6 +256,7 @@ The columns of the resulting file are defined as follows:
 - Netting with LoLa
   - `Net Total Karte`: Net card payments concerning Mittagstisch (Sales from meals, tips, sales of LoLa goods paid via card) [`Net Paymnet SumUp MiTi`]
   - `Verkauf LoLa (80%)` 80% of net sales lola goods [-`Net MiTi (LoLA) - Share LoLa`]
+  - `Gesponsort` LoLa sponsored reductions (2.00 per Meal) [`Sponsored Reductions`]
   - `Überweisung`: Net Payment LoLa to Mittagstisch [`Debt to MiTi`]
 
 ### Accounting Report
@@ -282,6 +287,7 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `10920/20051`: Net Card income + tips (card) Mittagstisch [`Net Card MiTi` + `MiTi_Tips_Card`]
 - `10920/10910`: Tips LoLa paid via Card [`Tips_Card` - `MiTi_Tips_Card`]
 - `68450/10920`: Commission for Café, Vermietung, summer party, Deposit, Rental, Cultural Payments, and `PaidOut`, i.e. w/o Mittagstisch [`Commission LoLa`]
+- `59991/20051`: LoLa sponsored reductions (`Sponsored Reductions`)
 - `20051/10930`: Amount LoLa owes to Mittagstisch (`Debt to MiTi`)
 - `20051/30500`: Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi` = `Income LoLa MiTi`]
 
@@ -295,4 +301,4 @@ They serve for consolidation purposes:
 
 Where the absolute net sum for the transitory accounts must not be > 0.05, i.e.:
 - for `10920`: abs(`10920/30200` + `10920/30700` + `10920/30800` + `10920/23050` + `10920/46000` + `10920/31000` + `10920/32000` +`10920/20051` + `10920/10000` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.05
-- for `20051`: abs(`10920/20051` - `20051/10930` - `20051/30200`) < 0.05
+- for `20051`: abs(`10920/20051` - `20051/10930` - `20051/30200` + `59991/20051`) < 0.05

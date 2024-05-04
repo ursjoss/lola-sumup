@@ -1,6 +1,6 @@
 use polars::prelude::*;
 
-use crate::export::export_summary::MitiMealType::{Children, Regular};
+use crate::export::export_summary::MitiMealType::{Children, Praktikum, Reduced, Regular};
 use crate::prepare::{Owner, PaymentMethod, Purpose, Topic};
 
 /// Produces the Summary dataframe from the `raw_df` read from the file
@@ -134,6 +134,8 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     );
 
     let meal_count_regular = meal_count(for_meals_of_type(&Regular), ldf.clone());
+    let meal_count_reduced = meal_count(for_meals_of_type(&Reduced), ldf.clone());
+    let meal_count_praktikum = meal_count(for_meals_of_type(&Praktikum), ldf.clone());
     let meal_count_children = meal_count(for_meals_of_type(&Children), ldf);
 
     let with_cafe_cash = all_dates.join(
@@ -364,7 +366,19 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         [col("Date")],
         JoinType::Left.into(),
     );
-    let with_meal_count_children = with_meal_count_regular.join(
+    let with_meal_count_reduced = with_meal_count_regular.join(
+        meal_count_reduced,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_meal_count_praktikum = with_meal_count_reduced.join(
+        meal_count_praktikum,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_meal_count_children = with_meal_count_praktikum.join(
         meal_count_children,
         [col("Date")],
         [col("Date")],
@@ -531,9 +545,17 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .alias("Net MiTi (LoLA) - Share LoLa"),
         )
         .with_column(
-            (col("Net Payment SumUp MiTi") - col("Net MiTi (LoLA) - Share LoLa"))
-                .round(2)
-                .alias("Debt to MiTi"),
+            (lit(2.0)
+                * (col("MealCount_Reduced").fill_null(0)
+                    + col("MealCount_Praktikum").fill_null(0)))
+            .round(2)
+            .alias("Sponsored Reductions"),
+        )
+        .with_column(
+            (col("Net Payment SumUp MiTi") - col("Net MiTi (LoLA) - Share LoLa")
+                + col("Sponsored Reductions"))
+            .round(2)
+            .alias("Debt to MiTi"),
         )
         .select([
             col("Date"),
@@ -596,9 +618,12 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Net MiTi (LoLa)"),
             col("Contribution MiTi"),
             col("Net MiTi (LoLA) - Share LoLa"),
+            col("Sponsored Reductions"),
             col("Debt to MiTi"),
             col("Income LoLa MiTi"),
             col("MealCount_Regular"),
+            col("MealCount_Reduced"),
+            col("MealCount_Praktikum"),
             col("MealCount_Children"),
         ])
         .collect()
@@ -754,7 +779,11 @@ fn count_by_date_for(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> Laz
 fn for_meals_of_type(meal_type: &MitiMealType) -> (Expr, String) {
     let expr = (col("Topic").eq(lit(Topic::MiTi.to_string())))
         .and(col("Owner").eq(lit(Owner::MiTi.to_string())))
-        .and(meal_type.expr());
+        .and(
+            col("Purpose")
+                .neq(lit(Purpose::Tip.to_string()))
+                .and(meal_type.expr()),
+        );
     let alias = format!("MealCount_{}", meal_type.label());
     (expr, alias)
 }
@@ -769,6 +798,8 @@ trait FilterExpressionProvider {
 enum MitiMealType {
     /// Regular Menus (Adults)
     Regular,
+    Reduced,
+    Praktikum,
     /// Kids menus
     Children,
 }
@@ -776,9 +807,25 @@ enum MitiMealType {
 impl FilterExpressionProvider for MitiMealType {
     fn expr(&self) -> Expr {
         match self {
+            Children => col("Description").str().contains(lit("Kinder"), true),
+            Reduced => col("Description").str().ends_with(lit("Reduziert")),
+            Praktikum => col("Description").str().ends_with(lit("Praktikum")),
             Regular => col("Description")
                 .str()
                 .contains(lit("Hauptgang"), true)
+                .and(col("Description").str().contains(lit("Kinder"), true).not())
+                .and(
+                    col("Description")
+                        .str()
+                        .contains(lit("Reduziert"), true)
+                        .not(),
+                )
+                .and(
+                    col("Description")
+                        .str()
+                        .contains(lit("Praktikum"), true)
+                        .not(),
+                )
                 .or(col("Description")
                     .str()
                     .contains(lit("Seniorenmittagstisch"), true))
@@ -789,12 +836,13 @@ impl FilterExpressionProvider for MitiMealType {
                 .or(col("Description").str().contains(lit("Hauptsp"), true))
                 .or(col("Description").str().starts_with(lit("Menü")))
                 .or(col("Description").str().starts_with(lit("Praktika"))),
-            Children => col("Description").str().starts_with(lit("Kinder")),
         }
     }
     fn label(&self) -> &str {
         match self {
             Regular => "Regular",
+            Reduced => "Reduced",
+            Praktikum => "Praktikum",
             Children => "Children",
         }
     }
@@ -913,32 +961,55 @@ mod tests {
     }
 
     #[rstest]
-    #[case("Menü", Some(Regular))]
-    #[case("Menü ganz", Some(Regular))]
-    #[case("Hauptgang", Some(Regular))]
-    #[case("Praktika", Some(Regular))]
-    #[case("Vorsp.+Hauptspeise", Some(Regular))]
-    #[case("Vorsp. + Hauptsp. red.", Some(Regular))]
-    #[case("Hauptspeise spezial", Some(Regular))]
-    #[case("Hauptsp. + Dessert", Some(Regular))]
-    #[case("Nur Hauptgang", Some(Regular))]
-    #[case("Menu (nur Hauptgang)", Some(Regular))]
-    #[case("2-Gang-Menu (mit Vorspeise oder Dessert)", Some(Regular))]
-    #[case("3 Gang-Menu (mit Vorspeise + Dessert)", Some(Regular))]
-    #[case("Seniorenmittagstisch", Some(Regular))]
-    #[case("Senioren-Mittagstisch", Some(Regular))]
-    #[case("Kindermenü", Some(Children))]
-    #[case("Kinderpasta", Some(Children))]
-    #[case("Kinder-Teigwaren", Some(Children))]
-    #[case("Kindermenu (kleiner Hauptgang, bis 12 Jahre)", Some(Children))]
+    #[case("Menü", "Consumption", Some(Regular))]
+    #[case("Menü", "Tip", None)]
+    #[case("Menü ganz", "Consumption", Some(Regular))]
+    #[case("Hauptgang", "Consumption", Some(Regular))]
+    #[case("Praktika", "Consumption", Some(Regular))]
+    #[case("Vorsp.+Hauptspeise", "Consumption", Some(Regular))]
+    #[case("Vorsp. + Hauptsp. red.", "Consumption", Some(Regular))]
+    #[case("Hauptspeise spezial", "Consumption", Some(Regular))]
+    #[case("Hauptsp. + Dessert", "Consumption", Some(Regular))]
+    #[case("Nur Hauptgang", "Consumption", Some(Regular))]
+    #[case("Menu (nur Hauptgang)", "Consumption", Some(Regular))]
+    #[case(
+        "2-Gang-Menu (mit Vorspeise oder Dessert)",
+        "Consumption",
+        Some(Regular)
+    )]
+    #[case("3 Gang-Menu (mit Vorspeise + Dessert)", "Consumption", Some(Regular))]
+    #[case("Seniorenmittagstisch", "Consumption", Some(Regular))]
+    #[case("Senioren-Mittagstisch", "Consumption", Some(Regular))]
+    #[case("Kindermenü", "Consumption", Some(Children))]
+    #[case("Kinderpasta", "Consumption", Some(Children))]
+    #[case("Kinder-Teigwaren", "Consumption", Some(Children))]
+    #[case(
+        "Kindermenu (kleiner Hauptgang, bis 12 Jahre)",
+        "Consumption",
+        Some(Children)
+    )]
+    #[case("Hauptgang Vegi Standard", "Consumption", Some(Regular))]
+    #[case("Hauptgang Vegi Reduziert", "Consumption", Some(Reduced))]
+    #[case("Hauptgang Vegi Praktikum", "Consumption", Some(Praktikum))]
+    #[case("Hauptgang Fleisch  Standard", "Consumption", Some(Regular))]
+    #[case("Hauptgang Fleisch  Reduziert", "Consumption", Some(Reduced))]
+    #[case("Hauptgang Fleisch  Praktikum", "Consumption", Some(Praktikum))]
+    #[case(
+        "Hauptgang Vegi Kindermenu (bis 12 Jahre)",
+        "Consumption",
+        Some(Children)
+    )]
+    #[case("Kinderpasta  Standard", "Consumption", Some(Children))]
     fn test_meal_count(
         #[case] description: &str,
+        #[case] purpose: &str,
         #[case] meal_type: Option<MitiMealType>,
     ) -> PolarsResult<()> {
         let df_in = df!(
           "Date" => &["16.03.2023"],
             "Topic" => &["MiTi"],
             "Owner" => &["MiTi"],
+            "Purpose" => &[purpose],
             "Description" => &[description],
             "Quantity" => &[1],
         )?;
@@ -948,19 +1019,67 @@ mod tests {
                     "Date" => & ["16.03.2023"],
                     "MealCount_Regular" => & [1_i64],
                 )?;
-                let out = meal_count(for_meals_of_type(&Regular), df_in.lazy()).collect()?;
+                let out =
+                    meal_count(for_meals_of_type(&Regular), df_in.clone().lazy()).collect()?;
                 assert_dataframe(&out, &exp);
+                assert_dataframe_not(&Reduced, df_in.clone().lazy());
+                assert_dataframe_not(&Praktikum, df_in.clone().lazy());
+                assert_dataframe_not(&Children, df_in.lazy());
+            }
+            Some(Reduced) => {
+                let exp = df!(
+                    "Date" => & ["16.03.2023"],
+                    "MealCount_Reduced" => & [1_i64],
+                )?;
+                let out =
+                    meal_count(for_meals_of_type(&Reduced), df_in.clone().lazy()).collect()?;
+                assert_dataframe(&out, &exp);
+                assert_dataframe_not(&Regular, df_in.clone().lazy());
+                assert_dataframe_not(&Praktikum, df_in.clone().lazy());
+                assert_dataframe_not(&Children, df_in.lazy());
+            }
+            Some(Praktikum) => {
+                let exp = df!(
+                    "Date" => & ["16.03.2023"],
+                    "MealCount_Praktikum" => & [1_i64],
+                )?;
+                let out =
+                    meal_count(for_meals_of_type(&Praktikum), df_in.clone().lazy()).collect()?;
+                assert_dataframe(&out, &exp);
+                assert_dataframe_not(&Regular, df_in.clone().lazy());
+                assert_dataframe_not(&Reduced, df_in.clone().lazy());
+                assert_dataframe_not(&Children, df_in.lazy());
             }
             Some(Children) => {
                 let exp = df!(
                     "Date" => & ["16.03.2023"],
                     "MealCount_Children" => & [1_i64],
                 )?;
-                let out = meal_count(for_meals_of_type(&Children), df_in.lazy()).collect()?;
+                let out =
+                    meal_count(for_meals_of_type(&Children), df_in.clone().lazy()).collect()?;
                 assert_dataframe(&out, &exp);
+                assert_dataframe_not(&Regular, df_in.clone().lazy());
+                assert_dataframe_not(&Reduced, df_in.clone().lazy());
+                assert_dataframe_not(&Praktikum, df_in.lazy());
             }
-            None => {}
+            None => {
+                assert_dataframe_not(&Regular, df_in.clone().lazy());
+                assert_dataframe_not(&Reduced, df_in.clone().lazy());
+                assert_dataframe_not(&Praktikum, df_in.clone().lazy());
+                assert_dataframe_not(&Children, df_in.lazy());
+            }
         }
         Ok(())
+    }
+
+    fn assert_dataframe_not(meal_type: &MitiMealType, ldf: LazyFrame) {
+        let actual = meal_count(for_meals_of_type(meal_type), ldf)
+            .collect()
+            .unwrap();
+        assert_eq!(
+            actual.shape(),
+            (0, 2),
+            "shape of the dataframes is not matching!"
+        );
     }
 }
