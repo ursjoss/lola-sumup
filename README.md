@@ -272,7 +272,7 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `10000/23050`: Total Cash Income Key Deposit [`Deposit_Cash`]
 - `10000/30200`: Total Cash Income Cafe [`Cafe_Cash`]
 - `10000/30700`: Total Cash Income Food Rentals [`Verm_Cash`] (LoLa Food sold by renters)
-- `10000/30800`: Total Cash Income summar party [`SoFe_Cash`] (LoLa Food sold during summer party)
+- `10000/30800`: Total Cash Income summer party [`SoFe_Cash`] (LoLa Food sold during summer party)
 - `10000/31000`: Total Cash Income Rental Fee [`Rental_Cash`] (fees for renting the rooms)
 - `10000/32000`: Total Cash Income Cultural Payments [`Culture_Cash`]
 - `10000/46000`: Total Cash Cost Reduction on Material Cost [`Packaging_Cash`]
@@ -290,6 +290,7 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `59991/20051`: LoLa sponsored reductions (`Sponsored Reductions`)
 - `20051/10930`: Amount LoLa owes to Mittagstisch (`Debt to MiTi`)
 - `20051/30500`: Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi` = `Income LoLa MiTi`]
+- `10930/10100`: Payment to Mittagstisch (`Debt to MiTi` or `20051/10930`) - posting date according to the actual payment
 
 
 The first three columns after the date do not require postings.

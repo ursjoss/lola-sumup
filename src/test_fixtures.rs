@@ -325,6 +325,7 @@ pub fn accounting_df_03(sample_date: NaiveDate) -> DataFrame {
         "59991/20051" => &[0.0],
         "20051/10930" => &[145.76],
         "20051/30500" => &[42.49],
+        "10930/10100" => &[145.76],
     )
     .expect("Valid accounting df 03")
 }
