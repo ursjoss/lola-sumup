@@ -32,7 +32,7 @@ features = [
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"
-rstest = "0.19.0"
+rstest = "0.20.0"
 
 [profile.dev]
 opt-level=1
