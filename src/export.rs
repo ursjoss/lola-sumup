@@ -20,10 +20,13 @@ mod export_summary;
 
 /// Reads the intermediate files and exports all configured reports.
 pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Error>> {
-    let raw_df = CsvReader::from_path(input_path)?
-        .has_header(true)
+    let parse_option = CsvParseOptions::default()
         .with_separator(b';')
-        .with_try_parse_dates(true)
+        .with_try_parse_dates(true);
+    let raw_df = CsvReadOptions::default()
+        .with_has_header(true)
+        .with_parse_options(parse_option)
+        .try_into_reader_with_file_path(Some(input_path.into()))?
         .finish()?;
 
     let (mut df, mut df_acc) = crunch_data(raw_df)?;
@@ -38,7 +41,7 @@ fn crunch_data(raw_df: DataFrame) -> Result<(DataFrame, DataFrame), Box<dyn Erro
     validate(&raw_df)?;
 
     let mut df = collect_data(raw_df)?;
-    df.extend(&df.clone().lazy().sum()?.collect()?)?;
+    df.extend(&df.clone().lazy().sum().collect()?)?;
 
     let df_acc = gather_df_accounting(&df)?;
     validate_acc_constraint(&df_acc)?;

@@ -6,17 +6,7 @@ use crate::prepare::{Owner, PaymentMethod, Purpose, Topic};
 /// Produces the Summary dataframe from the `raw_df` read from the file
 #[allow(clippy::too_many_lines)]
 pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
-    let dt_options = StrptimeOptions {
-        format: Some("%d.%m.%Y".into()),
-        strict: true,
-        exact: true,
-        ..Default::default()
-    };
-    let ldf = raw_df.lazy().with_column(col("Date").str().strptime(
-        DataType::Date,
-        dt_options,
-        Expr::default(),
-    ));
+    let ldf = raw_df.lazy();
     let all_dates = ldf
         .clone()
         .select([col("Date")])

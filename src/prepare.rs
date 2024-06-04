@@ -9,8 +9,8 @@ use polars::frame::{DataFrame, UniqueKeepStrategy};
 use polars::io::{SerReader, SerWriter};
 use polars::prelude::LiteralValue::Null;
 use polars::prelude::{
-    col, lit, when, CsvReader, CsvWriter, Expr, IntoLazy, JoinType, LazyFrame, LiteralValue,
-    SortMultipleOptions, StrptimeOptions,
+    col, lit, when, CsvParseOptions, CsvReadOptions, CsvWriter, Expr, IntoLazy, JoinType,
+    LazyFrame, SortMultipleOptions, StrptimeOptions,
 };
 use polars::series::Series;
 use serde::{Deserialize, Serialize};
@@ -46,14 +46,18 @@ fn process_input(
     sales_report: &Path,
     transaction_report: &Path,
 ) -> Result<DataFrame, Box<dyn Error>> {
-    let sr_df = CsvReader::from_path(sales_report)?
-        .has_header(true)
-        .with_separator(b',')
-        .infer_schema(Some(1500))
+    let parse_options = CsvParseOptions::default().with_separator(b',');
+    let sr_df = CsvReadOptions::default()
+        .with_has_header(true)
+        .with_infer_schema_length(Some(1500))
+        .with_parse_options(parse_options.clone())
+        .try_into_reader_with_file_path(Some(sales_report.into()))?
         .finish()?;
-    let txr_df = CsvReader::from_path(transaction_report)?
-        .has_header(true)
-        .with_separator(b',')
+    let txr_df = CsvReadOptions::default()
+        .with_has_header(true)
+        .with_infer_schema_length(Some(1500))
+        .with_parse_options(parse_options)
+        .try_into_reader_with_file_path(Some(transaction_report.into()))?
         .finish()?;
     fail_on_missing_trx(&txr_df, &sr_df)?;
     combine_input_dfs(&sr_df, &txr_df)
@@ -198,7 +202,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
             col("Transaction ID"),
             col("Receipt Number"),
             col("Payment Method"),
-            lit(1_i64).alias("Quantity"),
+            lit(1).alias("Quantity").cast(DataType::Int64),
             lit("Trinkgeld").alias("Description"),
             col("Currency"),
             col("TG").alias("Price (Gross)"),
@@ -277,7 +281,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
             col("Topic"),
             infer_owner().alias("Owner"),
             infer_purpose().alias("Purpose"),
-            Expr::Literal(LiteralValue::Null).alias("Comment"),
+            Expr::Literal(Null).alias("Comment"),
         ])
         .collect()?;
     Ok(df)
