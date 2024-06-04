@@ -143,8 +143,9 @@ pub fn intermediate_df_02(sample_date: NaiveDate) -> DataFrame {
 /// summary
 #[fixture]
 pub fn summary_df_02(sample_date: NaiveDate) -> DataFrame {
+    let date = sample_date.format("%d.%m.%Y").to_string();
     df!(
-        "Date" => &[sample_date],
+        "Date" => &[date],
         "MiTi_Cash" => &[Some(16.5)],
         "MiTi_Card" => &[Some(36.0)],
         "MiTi Total" => &[52.5],
@@ -224,8 +225,9 @@ pub fn summary_df_02(sample_date: NaiveDate) -> DataFrame {
 /// miti
 #[fixture]
 pub fn summary_df_03(sample_date: NaiveDate) -> DataFrame {
+    let date = sample_date.format("%d.%m.%Y").to_string();
     df!(
-        "Date" => &[sample_date],
+        "Date" => &[date],
         "MiTi_Cash" => &[112.0],
         "MiTi_Card" => &[191.0],
         "MiTi Total" => &[303.0],
@@ -299,8 +301,9 @@ pub fn summary_df_03(sample_date: NaiveDate) -> DataFrame {
 /// Sample record 03 matching the accounting dataframe created from summary_df_03
 #[fixture]
 pub fn accounting_df_03(sample_date: NaiveDate) -> DataFrame {
+    let date = sample_date.format("%d.%m.%Y").to_string();
     df!(
-        "Date" => &[sample_date],
+        "Date" => &[date],
         "Payment SumUp" => &[1413.76],
         "Total Cash Debit" => &[462.0],
         "Total Card Debit" => &[1162.0],
@@ -333,8 +336,9 @@ pub fn accounting_df_03(sample_date: NaiveDate) -> DataFrame {
 /// Sample record 03 matching the miti dataframe created from summary_df_03
 #[fixture]
 pub fn miti_df_03(sample_date: NaiveDate) -> DataFrame {
+    let date = sample_date.format("%d.%m.%Y").to_string();
     df!(
-        "Datum" => &[sample_date],
+        "Datum" => &[date],
         "Hauptgang" => &[14],
         "Reduziert" => &[0],
         "Kind" => &[1],
@@ -400,8 +404,10 @@ pub fn intermediate_df_04(sample_date: NaiveDate, sample_date2: NaiveDate) -> Da
 
 #[fixture]
 pub fn summary_df_04(sample_date: NaiveDate, sample_date2: NaiveDate) -> DataFrame {
+    let date = sample_date.format("%d.%m.%Y").to_string();
+    let date2 = sample_date2.format("%d.%m.%Y").to_string();
     df!(
-        "Date" => &[Some(sample_date), Some(sample_date2), None],
+        "Date" => &[Some(date), Some(date2), None],
         "MiTi_Cash" => &[None::<f64>, None::<f64>, Some(0.0)],
         "MiTi_Card" => &[None::<f64>, Some(20.0), Some(20.0)],
         "MiTi Total" =>&[Some(0.0), Some(20.0), Some(20.0)],
