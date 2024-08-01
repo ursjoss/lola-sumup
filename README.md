@@ -18,6 +18,15 @@ The (potentially redacted) intermediate file is consumed by the second `export` 
 It generates three different exports from it, dedicated to different purposes in the context of LoLa's
 monthly closing process.
 
+## Versions
+
+The format of the sumup sales reports has changed.
+lola-sumup has been adapted in a non-backwards-compatible way.
+
+| Version | Sumup-exports    |
+|---------|------------------|
+| 0.1.0   | Up to April 2024 |
+| 0.2.0   | As of May 2024   |
 
 ## CLI
 
