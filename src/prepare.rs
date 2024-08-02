@@ -270,16 +270,12 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
             col("Time"),
             col("Type"),
             col("Transaktionsnummer").alias("Transaction ID"),
-            Expr::Literal(Null).alias("Receipt Number"),
             col("Payment Method"),
             col("Menge").alias("Quantity"),
             col("Beschreibung").alias("Description"),
             col("Währung").alias("Currency"),
             col("Preis (brutto)").alias("Price (Gross)"),
             col("Preis (netto)").alias("Price (Net)"),
-            col("Tax"),
-            col("Tax rate"),
-            Expr::Literal(Null).alias("Transaction refunded"),
             col("Commission"),
             col("Topic"),
             infer_owner().alias("Owner"),
@@ -371,6 +367,7 @@ fn infer_purpose() -> Expr {
         .otherwise(lit(Purpose::Consumption.to_string()))
 }
 
+//Different types of transactions, in data currently only Verkauf (`Sales`)
 #[derive(Debug, Deserialize, Serialize, PartialEq, EnumString, Display, EnumIter)]
 pub enum RecordType {
     Sales,
