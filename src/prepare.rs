@@ -10,7 +10,7 @@ use polars::io::{SerReader, SerWriter};
 use polars::prelude::LiteralValue::Null;
 use polars::prelude::{
     col, lit, when, CsvParseOptions, CsvReadOptions, CsvWriter, Expr, IntoLazy, JoinType,
-    LazyFrame, SortMultipleOptions, StrptimeOptions,
+    SortMultipleOptions, StrptimeOptions,
 };
 use polars::series::Series;
 use serde::{Deserialize, Serialize};
@@ -72,10 +72,13 @@ impl Display for MissingTrxViolationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             MissingTrxViolationError::MissingInSalesReport(df) => {
-                write!(f, "Transaction IDs missing in sales report! {df}")
+                write!(f, "Some Transaktionsnummer missing in sales report! {df}")
             }
             MissingTrxViolationError::MissingInTrxReport(df) => {
-                write!(f, "Transaction IDs missing in transaction report! {df}")
+                write!(
+                    f,
+                    "Some Transaktionsnummer missing in transaction report! {df}"
+                )
             }
         }
     }
@@ -104,14 +107,14 @@ fn fail_on_missing_trx(txr_df: &DataFrame, sr_df: &DataFrame) -> Result<(), Box<
     let sr = sr_df
         .clone()
         .lazy()
-        .filter(col("Transaction ID").is_not_null())
-        .select([col("Transaction ID")]);
+        .filter(col("Transaktionsnummer").is_not_null())
+        .select([col("Transaktionsnummer")]);
     let missing_in_sr = txr
         .clone()
         .join(
             sr.clone(),
             [col("Transaktions-ID")],
-            [col("Transaction ID")],
+            [col("Transaktionsnummer")],
             JoinType::Anti.into(),
         )
         .collect()?;
@@ -123,7 +126,7 @@ fn fail_on_missing_trx(txr_df: &DataFrame, sr_df: &DataFrame) -> Result<(), Box<
         let missing_in_txr = sr
             .join(
                 txr,
-                [col("Transaction ID")],
+                [col("Transaktionsnummer")],
                 [col("Transaktions-ID")],
                 JoinType::Anti.into(),
             )
@@ -142,7 +145,7 @@ fn fail_on_missing_trx(txr_df: &DataFrame, sr_df: &DataFrame) -> Result<(), Box<
 #[allow(clippy::too_many_lines)]
 fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame, Box<dyn Error>> {
     let raw_date_format = StrptimeOptions {
-        format: Some("%d.%m.%y".into()),
+        format: Some("%d.%m.%Y".into()),
         strict: true,
         exact: true,
         ..Default::default()
@@ -168,8 +171,6 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
             col("Gebühr").alias("Commission"),
         ]);
 
-    let (refunded_ids_1, refunded_ids_2) = refunded_id_dfs(sr_df);
-
     let add_tips_df = txr_df
         .clone()
         .lazy()
@@ -189,27 +190,24 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .lazy()
         .join(
             add_tips_df,
-            [col("Transaction ID")],
+            [col("Transaktionsnummer")],
             [col("Transaktions-ID")],
             JoinType::Inner.into(),
         )
         .filter(col("TG").gt(lit(0.0)))
         .select([
-            col("Account"),
-            col("Date"),
-            col("Time"),
-            col("Type"),
-            col("Transaction ID"),
-            col("Receipt Number"),
-            col("Payment Method"),
-            lit(1).alias("Quantity").cast(DataType::Int64),
-            lit("Trinkgeld").alias("Description"),
-            col("Currency"),
-            col("TG").alias("Price (Gross)"),
-            col("TG").alias("Price (Net)"),
-            lit(0.0).alias("Tax"),
-            lit("").alias("Tax rate"),
-            lit("").alias("Transaction refunded"),
+            col("Datum"),
+            col("Typ"),
+            col("Transaktionsnummer"),
+            col("Zahlungsmethode"),
+            lit(1).alias("Menge").cast(DataType::Int64),
+            lit("Trinkgeld").alias("Beschreibung"),
+            col("Währung"),
+            col("TG").alias("Preis (brutto)"),
+            col("TG").alias("Preis (netto)"),
+            lit(0.0).alias("Steuer"),
+            Expr::Literal(Null).alias("Steuersatz"),
+            col("Konto"),
         ])
         .unique(None, UniqueKeepStrategy::First)
         .collect()?;
@@ -219,64 +217,69 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
     let df = union_df
         .lazy()
         .with_column(
-            col("Date")
+            col("Datum")
+                .str()
+                .extract(lit(r".?(\d\d\.\d\d\.\d\d\d\d), "), 1)
                 .str()
                 .strptime(DataType::Date, raw_date_format, Expr::default())
                 .alias("Date"),
         )
         .with_column(
-            (col("Time") + lit(":00"))
+            (col("Datum").str().extract(lit(r".{10}, (\d\d:\d\d)"), 1) + lit(":00"))
                 .str()
                 .to_time(time_format.clone())
                 .alias("Time"),
         )
         .with_column(
-            col("Description")
+            col("Beschreibung")
                 .str()
                 .strip_chars(lit(Null))
-                .alias("Description"),
+                .alias("Beschreibung"),
         )
+        .with_column(
+            when(col("Steuer").eq(0.0))
+                .then(lit(Null))
+                .otherwise(col("Steuer"))
+                .alias("Tax"),
+        )
+        .with_column(
+            when(col("Steuersatz").eq(lit("")))
+                .then(lit(Null))
+                .when(col("Steuersatz").eq(lit("0%")))
+                .then(lit(Null))
+                .otherwise(col("Steuersatz"))
+                .alias("Tax rate"),
+        )
+        .with_column(infer_payment_method().alias("Payment Method"))
+        .with_column(infer_type().alias("Type"))
         .with_column(infer_topic(time_format).alias("Topic"))
         .join(
-            refunded_ids_1,
-            [col("Transaction ID")],
-            [col("TransactionId")],
-            JoinType::Left.into(),
-        )
-        .join(
-            refunded_ids_2,
-            [col("Transaction refunded")],
-            [col("TransactionId")],
-            JoinType::Left.into(),
-        )
-        .join(
             commission_df,
-            [col("Transaction ID")],
+            [col("Transaktionsnummer")],
             [col("Transaktions-ID")],
             JoinType::Left.into(),
         )
         .with_column(
-            (col("Price (Gross)") / col("Commissioned Total") * col("Commission"))
+            (col("Preis (brutto)") / col("Commissioned Total") * col("Commission"))
                 .round(4)
                 .alias("Commission"),
         )
-        .filter(col("refunded1").is_null().and(col("refunded2").is_null()))
         .select([
-            col("Account"),
+            col("Konto").alias("Account"),
             col("Date"),
             col("Time"),
             col("Type"),
-            col("Transaction ID"),
-            col("Receipt Number"),
+            col("Transaktionsnummer").alias("Transaction ID"),
+            Expr::Literal(Null).alias("Receipt Number"),
             col("Payment Method"),
-            col("Quantity"),
-            col("Description"),
-            col("Currency"),
-            col("Price (Gross)"),
-            col("Price (Net)"),
+            col("Menge").alias("Quantity"),
+            col("Beschreibung").alias("Description"),
+            col("Währung").alias("Currency"),
+            col("Preis (brutto)").alias("Price (Gross)"),
+            col("Preis (netto)").alias("Price (Net)"),
             col("Tax"),
             col("Tax rate"),
-            col("Transaction refunded"),
+            Expr::Literal(Null).alias("Transaction refunded"),
             col("Commission"),
             col("Topic"),
             infer_owner().alias("Owner"),
@@ -287,34 +290,19 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
     Ok(df)
 }
 
-/// returns two `LazyFrames` with transaction ids of refunded transactions.
-/// the first `LazyFrame` ahs columns `TransactionId` and "refunded1" (with static literal 'x' as values)
-/// the second `LazyFrame` ahs columns `TransactionId` and "refunded2" (with static literal 'x' as values)
-fn refunded_id_dfs(sr_df: &DataFrame) -> (LazyFrame, LazyFrame) {
-    let all_transaction_ids = sr_df.clone().lazy().select([col("Transaction ID")]);
-    let ids_of_refunded = sr_df
-        .clone()
-        .lazy()
-        .filter(col("Transaction refunded").is_not_null())
-        .select([col("Transaction refunded")])
-        .join(
-            all_transaction_ids,
-            [col("Transaction refunded")],
-            [col("Transaction ID")],
-            JoinType::Inner.into(),
-        )
-        .select([col("Transaction refunded")])
-        .unique(None, UniqueKeepStrategy::First);
-    let refunded_ids_1 = ids_of_refunded
-        .with_column(col("Transaction refunded").alias("TransactionId"))
-        .with_column(lit("x").alias("refunded1"))
-        .select([col("TransactionId"), col("refunded1")]);
-    let refunded_ids_2 = refunded_ids_1
-        .clone()
-        .select([col("TransactionId"), col("refunded1").alias("refunded2")]);
-    (refunded_ids_1, refunded_ids_2)
+/// Accepts Typ with various values, returning either `Cash` or `Card`
+fn infer_type() -> Expr {
+    when(col("Typ").eq(lit("Verkauf")))
+        .then(lit(RecordType::Sales.to_string()))
+        .otherwise(lit(RecordType::Refund.to_string()))
 }
 
+/// Normalize payment methods
+fn infer_payment_method() -> Expr {
+    when(col("Zahlungsmethode").eq(lit("Bar")))
+        .then(lit(PaymentMethod::Cash.to_string()))
+        .otherwise(lit(PaymentMethod::Card.to_string()))
+}
 /// Infers the `Topic` from the time of sale:
 /// before 14:15 -> `MiTi`
 /// between 14:15 and 18:00 -> `Cafe`
@@ -322,7 +310,7 @@ fn refunded_id_dfs(sr_df: &DataFrame) -> (LazyFrame, LazyFrame) {
 /// If the description starts with "Recircle Tupper Depot", the topic will be `Packaging` regardless of time od day.
 fn infer_topic(time_options: StrptimeOptions) -> Expr {
     when(
-        col("Description")
+        col("Beschreibung")
             .str()
             .starts_with(lit("Recircle Tupper Depot")),
     )
@@ -334,7 +322,7 @@ fn infer_topic(time_options: StrptimeOptions) -> Expr {
     .otherwise(lit(Topic::Cafe.to_string()))
 }
 
-/// Infers the `Owner` from `Topic` and `Description`:
+/// Infers the `Owner` from `Topic` and `Beschreibung`:
 /// - if `Topic` is not `MiTi`, the `Owner` will be blank
 /// - for `Topic::MiTi`, the Owner is `MiTi` if the description matches one of a hardcoded list of Strings.
 ///   Otherwise the owner is `LoLa`.
@@ -342,32 +330,34 @@ fn infer_owner() -> Expr {
     when(col("Topic").neq(lit(Topic::MiTi.to_string())))
         .then(Expr::Literal(Null))
         .when(
-            col("Description")
+            col("Beschreibung")
                 .str()
                 .contains(lit("Hauptgang"), true)
-                .or(col("Description").str().contains(lit("Kinderteller"), true))
-                .or(col("Description")
+                .or(col("Beschreibung")
+                    .str()
+                    .contains(lit("Kinderteller"), true))
+                .or(col("Beschreibung")
                     .str()
                     .contains(lit("Senioren-Mittagstisch"), true))
-                .or(col("Description")
+                .or(col("Beschreibung")
                     .str()
                     .contains(lit("Seniorenmittagstisch"), true))
-                .or(col("Description").str().contains(lit("Kindermenü"), true))
-                .or(col("Description").str().contains(lit("Kinderpasta"), true))
-                .or(col("Description").str().contains(lit("Menü"), true))
-                .or(col("Description").str().contains(lit("Dessert"), true))
-                .or(col("Description").str().contains(lit("Praktik"), true))
-                .or(col("Description").str().contains(lit("Vorspeise"), true))
-                .or(col("Description")
+                .or(col("Beschreibung").str().contains(lit("Kindermenü"), true))
+                .or(col("Beschreibung").str().contains(lit("Kinderpasta"), true))
+                .or(col("Beschreibung").str().contains(lit("Menü"), true))
+                .or(col("Beschreibung").str().contains(lit("Dessert"), true))
+                .or(col("Beschreibung").str().contains(lit("Praktik"), true))
+                .or(col("Beschreibung").str().contains(lit("Vorspeise"), true))
+                .or(col("Beschreibung")
                     .str()
                     .contains(lit("Vorsp\\. \\+ Hauptsp\\."), true))
-                .or(col("Description").str().contains(lit("Hauptspeise"), true))
-                .or(col("Description").str().contains(lit("Trinkgeld"), true))
-                .or(col("Description")
+                .or(col("Beschreibung").str().contains(lit("Hauptspeise"), true))
+                .or(col("Beschreibung").str().contains(lit("Trinkgeld"), true))
+                .or(col("Beschreibung")
                     .str()
                     .strip_chars(lit(Null))
                     .eq(lit(""))
-                    .and(col("Price (Gross)").gt_eq(5.0))),
+                    .and(col("Preis (brutto)").gt_eq(5.0))),
         )
         .then(lit(Owner::MiTi.to_string()))
         .otherwise(lit(Owner::LoLa.to_string()))
@@ -376,14 +366,13 @@ fn infer_owner() -> Expr {
 /// Infers the purpose based on the `Description`: Description "Trinkgeld" leads to `Tip`,
 /// `Consumption` otherwise.
 fn infer_purpose() -> Expr {
-    when(col("Description").str().contains(lit("Trinkgeld"), true))
+    when(col("Beschreibung").str().contains(lit("Trinkgeld"), true))
         .then(lit(Purpose::Tip.to_string()))
         .otherwise(lit(Purpose::Consumption.to_string()))
 }
 
-/// Record Type as defined in the sumup sales report
-#[derive(Debug, Deserialize, Serialize, PartialEq, EnumString, Display)]
-enum RecordType {
+#[derive(Debug, Deserialize, Serialize, PartialEq, EnumString, Display, EnumIter)]
+pub enum RecordType {
     Sales,
     Refund,
 }
@@ -402,9 +391,9 @@ pub enum PaymentMethod {
 pub enum Topic {
     /// "Mittags-Tisch", managed by Verein Mittagstisch, includes the morning café
     MiTi,
-    /// Afternoon café, managed by LoLa
+    /// Afternoon café, managed by `LoLa`
     Cafe,
-    /// ("Vermietung") Room rentals by third parties, managed by LoLa
+    /// ("Vermietung") Room rentals by third parties, managed by `LoLa`
     Verm,
     /// ("Sommerfest" or summer party) Items sold during summer party
     SoFe,
@@ -433,7 +422,7 @@ pub enum Purpose {
 /// Sales by `LoLa` directly does not have an owner.
 #[derive(Debug, Deserialize, Serialize, PartialEq, EnumString, Display, EnumIter)]
 pub enum Owner {
-    /// LoLa as main owner of sales by Mittags-Tisch
+    /// `LoLa` as main owner of sales by Mittags-Tisch
     LoLa,
     /// Mittags-Tisch as main owner of sales by Mittags-Tisch.
     MiTi,
