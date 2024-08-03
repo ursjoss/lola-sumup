@@ -283,6 +283,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
             Expr::Literal(Null).alias("Comment"),
         ])
         .collect()?;
+    warn_on_zero_value_trx(&df)?;
     Ok(df)
 }
 
@@ -365,6 +366,25 @@ fn infer_purpose() -> Expr {
     when(col("Beschreibung").str().contains(lit("Trinkgeld"), true))
         .then(lit(Purpose::Tip.to_string()))
         .otherwise(lit(Purpose::Consumption.to_string()))
+}
+
+// Outputs logs to console if one or more transactions with a net price 0.0 are found
+pub fn warn_on_zero_value_trx(df: &DataFrame) -> Result<(), Box<dyn Error>> {
+    let violating = df
+        .clone()
+        .lazy()
+        .filter(
+            col("Price (Net)")
+                .eq(lit(0.0))
+                .or(col("Price (Net)").is_null()),
+        )
+        .collect()?;
+    if violating.shape().0 > 0 {
+        println!("Records found in intermediate document with net price missing or 0.0:");
+        println!("{violating:?}");
+        println!("Please verify is this is correct and adjust if necessary.");
+    }
+    Ok(())
 }
 
 //Different types of transactions, in data currently only Verkauf (`Sales`)

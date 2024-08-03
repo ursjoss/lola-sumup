@@ -12,6 +12,7 @@ use crate::export::constraint::{
 use crate::export::export_accounting::{gather_df_accounting, validate_acc_constraint};
 use crate::export::export_miti::gather_df_miti;
 use crate::export::export_summary::collect_data;
+use crate::prepare::warn_on_zero_value_trx;
 
 mod constraint;
 mod export_accounting;
@@ -28,6 +29,8 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
         .with_parse_options(parse_option)
         .try_into_reader_with_file_path(Some(input_path.into()))?
         .finish()?;
+
+    warn_on_zero_value_trx(&raw_df)?;
 
     let (mut df, mut df_acc) = crunch_data(raw_df)?;
 
