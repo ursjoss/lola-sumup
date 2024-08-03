@@ -369,7 +369,7 @@ fn infer_purpose() -> Expr {
 }
 
 // Outputs logs to console if one or more transactions with a net price 0.0 are found
-fn warn_on_zero_value_trx(df: &DataFrame) -> Result<(), Box<dyn Error>> {
+pub fn warn_on_zero_value_trx(df: &DataFrame) -> Result<(), Box<dyn Error>> {
     let violating = df
         .clone()
         .lazy()
@@ -380,9 +380,9 @@ fn warn_on_zero_value_trx(df: &DataFrame) -> Result<(), Box<dyn Error>> {
         )
         .collect()?;
     if violating.shape().0 > 0 {
-        println!("Records found with net price missing or 0.0:");
+        println!("Records found in intermediate document with net price missing or 0.0:");
         println!("{violating:?}");
-        println!("Please verify is this is correct and adjust input files or intermediate document if necessary.");
+        println!("Please verify is this is correct and adjust if necessary.");
     }
     Ok(())
 }
