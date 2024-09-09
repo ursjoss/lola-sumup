@@ -303,7 +303,7 @@ fn infer_payment_method() -> Expr {
 /// Infers the `Topic` from the time of sale:
 /// before 14:15 -> `MiTi`
 /// between 14:15 and 18:00 -> `Cafe`
-/// after 18:00 -> `Vermiet`
+/// after 18:00 -> `Culture` or `PaidOut` if description ends with " (PO)".
 /// If the description starts with "Recircle Tupper Depot", the topic will be `Packaging` regardless of time od day.
 fn infer_topic(time_options: StrptimeOptions) -> Expr {
     when(
@@ -314,9 +314,11 @@ fn infer_topic(time_options: StrptimeOptions) -> Expr {
     .then(lit(Topic::Packaging.to_string()))
     .when(col("Time").lt(lit("14:15:00").str().to_time(time_options.clone())))
     .then(lit(Topic::MiTi.to_string()))
-    .when(col("Time").gt(lit("18:00:00").str().to_time(time_options)))
-    .then(lit(Topic::Verm.to_string()))
-    .otherwise(lit(Topic::Cafe.to_string()))
+    .when(col("Time").lt_eq(lit("18:00:00").str().to_time(time_options.clone())))
+    .then(lit(Topic::Cafe.to_string()))
+    .when(col("Beschreibung").str().ends_with(lit(" (PO)")))
+    .then(lit(Topic::PaidOut.to_string()))
+    .otherwise(lit(Topic::Culture.to_string()))
 }
 
 /// Infers the `Owner` from `Topic` and `Beschreibung`:
