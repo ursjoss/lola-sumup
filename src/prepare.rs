@@ -252,7 +252,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         )
         .with_column(infer_payment_method().alias("Payment Method"))
         .with_column(infer_type().alias("Type"))
-        .with_column(infer_topic(time_format).alias("Topic"))
+        .with_column(infer_topic(&time_format).alias("Topic"))
         .join(
             commission_df,
             [col("Transaktionsnummer")],
@@ -305,7 +305,7 @@ fn infer_payment_method() -> Expr {
 /// between 14:15 and 18:00 -> `Cafe`
 /// after 18:00 -> `Culture` or `PaidOut` if description ends with " (PO)".
 /// If the description starts with "Recircle Tupper Depot", the topic will be `Packaging` regardless of time od day.
-fn infer_topic(time_options: StrptimeOptions) -> Expr {
+fn infer_topic(time_options: &StrptimeOptions) -> Expr {
     when(
         col("Beschreibung")
             .str()
