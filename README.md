@@ -35,7 +35,7 @@ The `lola-sumup` command has two subcommands:
 ```
 A cli program to create exports from sumup transactions exported in CSV format
 
-Usage: lola-sumup <COMMAND>
+mmmmmmmmmmmmmmmmmmmmmmmmmmm
 
 Commands:
   prepare  Prepares an enriched intermediate file from the original sumup sales report CSV and transaction report CSV
@@ -86,7 +86,10 @@ The four columns that may be modified are:
   - `Deposit`: Key deposit.
   - `Rental`: Rental fee.
   - `Culture`: Items sold in context of cultural events.
+               Automatically assigned if the transaction occurred after 18:00 --
+               if the description does not end with " (PO)".
   - `PaidOut`: Income paid out in cash to external party.
+               Automatically assigned if the transaction occurred after 18:00 and the description ends with " (PO)".
   - `Packaging`: Sold re-usable packaging for dishes
 - `Owner`: Only relevant for Topic `MiTi`: `MiTi` (for menus produced and sold by Mittagstisch) or `LoLa` (LoLa beverages and food from LoLa, sold by Mittagstisch)
 - `Purpose`: `Consumption` or `Tip` (the former is also used for Topics `Deposit`, `Rental`, `Culture`, or `PaidOut`)
