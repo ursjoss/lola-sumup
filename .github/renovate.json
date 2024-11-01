@@ -1,19 +1,19 @@
 {
-  "extends" : [
-    "config:base",
+  "extends": [
+    "config:recommended",
     ":automergePatch",
     ":semanticCommitTypeAll(chore)"
   ],
-  "labels" : [
+  "labels": [
     "dependencies"
   ],
-  "lockFileMaintenance" : {
-    "enabled" : true
+  "lockFileMaintenance": {
+    "enabled": true
   },
-  "packageRules" : [
+  "packageRules": [
     {
       "matchDepTypes": [
-	"dev-dependencies"
+        "dev-dependencies"
       ],
       "automerge": true
     }
