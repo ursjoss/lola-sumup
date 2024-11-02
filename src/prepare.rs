@@ -301,9 +301,9 @@ fn infer_payment_method() -> Expr {
         .otherwise(lit(PaymentMethod::Card.to_string()))
 }
 /// Infers the `Topic` from the time of sale:
-/// before 14:15 -> `MiTi`
+/// before 06:00 and after 18:00 -> `Culture` or `PaidOut` if description contains " (PO)".
+/// between 06:00 and 14:15 -> `MiTi`
 /// between 14:15 and 18:00 -> `Cafe`
-/// after 18:00 -> `Culture` or `PaidOut` if description contains " (PO)".
 /// If the description starts with "Recircle Tupper Depot", the topic will be `Packaging` regardless of time od day.
 fn infer_topic(time_options: &StrptimeOptions) -> Expr {
     when(
@@ -312,9 +312,17 @@ fn infer_topic(time_options: &StrptimeOptions) -> Expr {
             .starts_with(lit("Recircle Tupper Depot")),
     )
     .then(lit(Topic::Packaging.to_string()))
-    .when(col("Time").lt(lit("14:15:00").str().to_time(time_options.clone())))
+    .when(
+        col("Time")
+            .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
+            .and(col("Time").lt(lit("14:15:00").str().to_time(time_options.clone()))),
+    )
     .then(lit(Topic::MiTi.to_string()))
-    .when(col("Time").lt_eq(lit("18:00:00").str().to_time(time_options.clone())))
+    .when(
+        col("Time")
+            .gt_eq(lit("14:15:00").str().to_time(time_options.clone()))
+            .and(col("Time").lt(lit("18:00:00").str().to_time(time_options.clone()))),
+    )
     .then(lit(Topic::Cafe.to_string()))
     .when(col("Beschreibung").str().contains(lit(" \\(PO\\)"), true))
     .then(lit(Topic::PaidOut.to_string()))
@@ -449,7 +457,8 @@ pub enum Owner {
 
 #[cfg(test)]
 mod tests {
-    use rstest::rstest;
+    use polars::prelude::*;
+    use rstest::*;
 
     use crate::test_fixtures::{
         intermediate_df_01, sales_report_df_01, sales_report_df_02, transaction_report_df_01,
@@ -495,5 +504,65 @@ mod tests {
         let out = combine_input_dfs(&sales_report_df_01, &transaction_report_df_01)
             .expect("should be able to combine input dfs");
         assert_dataframe(&out, &intermediate_df_01);
+    }
+
+    #[fixture]
+    fn topic_sample_df() -> DataFrame {
+        let rtd = "Recircle Tupper Depot";
+        df! [
+            "Beschreibung" => [
+            	"X", "X",
+             	"X", "X",
+              	"X", "X",
+               	"X", "X",
+             	"X (PO)", "X (PO)", "X (PO) x" ,"X (PO)",
+              	rtd, rtd, rtd, rtd, rtd, rtd, rtd, rtd
+            ],
+            "Time" => [
+            	"00:00:00", "05:59:59",
+             	"06:00:00", "14:14:59",
+                "14:15:00", "17:59:59",
+                "18:00:00", "23:59:59",
+                "00:00:00", "05:59:59", "18:00:00", "23:59:59",
+                "00:00:00", "05:59:59", "06:00:00", "14:14:59", "14:15:00", "17:59:59", "18:00:00", "23:59:59"
+            ]
+        ]
+        .unwrap()
+    }
+
+    #[fixture]
+    fn topic_expected_df() -> DataFrame {
+        let culture = Topic::Culture.to_string();
+        let miti = Topic::MiTi.to_string();
+        let cafe = Topic::Cafe.to_string();
+        let paidout = Topic::PaidOut.to_string();
+        let pkg = Topic::Packaging.to_string();
+        df![
+           "Topic" => [
+               culture.clone(), culture.clone(),
+               miti.clone(), miti,
+               cafe.clone(), cafe,
+               culture.clone(), culture,
+               paidout.clone(), paidout.clone(), paidout.clone(), paidout,
+               pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg
+           ]
+       ].unwrap()
+    }
+
+    #[rstest]
+    fn test_infer_topic(topic_sample_df: DataFrame, topic_expected_df: DataFrame) {
+        let time_format = StrptimeOptions {
+            format: Some("%H:%M:%S".into()),
+            strict: true,
+            exact: true,
+            ..Default::default()
+        };
+        let result = topic_sample_df
+            .lazy()
+            .with_column(infer_topic(&time_format).alias("Topic"))
+            .select([col("Topic")])
+            .collect()
+            .unwrap();
+        assert_eq!(result, topic_expected_df);
     }
 }

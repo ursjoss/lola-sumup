@@ -81,16 +81,16 @@ The four columns that may be modified are:
 - `Topic`: The main topic of the transaction, one of
   - `MiTi`: Items sold by Mittagstisch. Automatically assigned if the transaction occurred before 14:15.
   - `Cafe`: Items sold by LoLa Café. Automatically assigned if the transaction occurred between 14:15 and 18:00.
-  - `Verm`: Items sold by Renters of the rooms. Automatically assigned if the transaction occurred after 18:00.
+  - `Verm`: Items sold by Renters of the rooms.
   - `SoFe`: Items sold in context of the summer party ("Sommer-Fest").
   - `Deposit`: Key deposit.
   - `Rental`: Rental fee.
   - `Culture`: Items sold in context of cultural events.
-               Automatically assigned if the transaction occurred after 18:00 --
+               Automatically assigned if the transaction occurred after 18:00 (or before 06:00) --
                if the description does not contain " (PO)".
   - `PaidOut`: Income paid out in cash to external party.
-               Automatically assigned if the transaction occurred after 18:00 and the description contains " (PO)".
-  - `Packaging`: Sold re-usable packaging for dishes
+               Automatically assigned if the transaction occurred after 18:00 (or before 06:00) and the description contains " (PO)".
+  - `Packaging`: Sold re-usable packaging for dishes.
 - `Owner`: Only relevant for Topic `MiTi`: `MiTi` (for menus produced and sold by Mittagstisch) or `LoLa` (LoLa beverages and food from LoLa, sold by Mittagstisch)
 - `Purpose`: `Consumption` or `Tip` (the former is also used for Topics `Deposit`, `Rental`, `Culture`, or `PaidOut`)
 - `Comment`: Empty, can be manually filled to keep some context
