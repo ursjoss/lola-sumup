@@ -22,6 +22,6 @@ jobs:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
         with:
-          prefix-key: "v4-rust"
+          prefix-key: "v5-rust"
       - uses: taiki-e/install-action@just
       - run: just verify
