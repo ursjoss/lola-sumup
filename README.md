@@ -298,6 +298,7 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `10920/10910`: Tips LoLa paid via Card [`Tips_Card` - `MiTi_Tips_Card`]
 - `68450/10920`: Commission for Café, Vermietung, summer party, Deposit, Rental, Cultural Payments, and `PaidOut`, i.e. w/o Mittagstisch [`Commission LoLa`]
 - `59991/20051`: LoLa sponsored reductions (`Sponsored Reductions`)
+- `59991/20120`: LoLa sponsored meals for stagaire (`Total Praktikum`)
 - `20051/10930`: Amount LoLa owes to Mittagstisch (`Debt to MiTi`)
 - `20051/30500`: Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi` = `Income LoLa MiTi`]
 - `10930/10100`: Payment to Mittagstisch (`Debt to MiTi` or `20051/10930`) - posting date according to the actual payment
