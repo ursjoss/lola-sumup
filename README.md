@@ -229,8 +229,10 @@ The columns of the resulting summary file are defined as follows:
 - Statistics relevant for Mittagstisch:
   - `MealCount_Regular`: Number of regular meals per day
   - `MealCount_Reduced`: Number of meals with reductions sponsored by LoLa per day
-  - `MealCount_Praktikum`: Number of meals for stagaire sponsored by LoLa per day
   - `MealCount_Children`: Number of children meals per day
+  - `MealCount_Praktikum`: Number of meals for stagaire sponsored by LoLa per day
+- Sponsored meal reduction for Stagaire
+  - `Total Praktikum`: Total for stagaire meals sponsored by LoLa per day
 
 ### Mittagstisch Report
 

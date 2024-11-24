@@ -126,7 +126,8 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     let meal_count_regular = meal_count(for_meals_of_type(&Regular), ldf.clone());
     let meal_count_reduced = meal_count(for_meals_of_type(&Reduced), ldf.clone());
     let meal_count_praktikum = meal_count(for_meals_of_type(&Praktikum), ldf.clone());
-    let meal_count_children = meal_count(for_meals_of_type(&Children), ldf);
+    let meal_count_children = meal_count(for_meals_of_type(&Children), ldf.clone());
+    let meal_total_praktikum = meal_total(for_meals_of_type(&Praktikum), ldf);
 
     let with_cafe_cash = all_dates.join(
         cafe_cash,
@@ -374,8 +375,13 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         [col("Date")],
         JoinType::Left.into(),
     );
-
-    with_meal_count_children
+    let with_meal_total_praktikum = with_meal_count_children.join(
+        meal_total_praktikum,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    with_meal_total_praktikum
         .with_column(
             (col("MiTi_Cash").fill_null(0.0) + col("MiTi_Card").fill_null(0.0))
                 .round(2)
@@ -613,8 +619,9 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Income LoLa MiTi"),
             col("MealCount_Regular"),
             col("MealCount_Reduced"),
-            col("MealCount_Praktikum"),
             col("MealCount_Children"),
+            col("MealCount_Praktikum"),
+            col("Total Praktikum"),
         ])
         .collect()
 }
@@ -740,6 +747,25 @@ fn owned_consumption_of(
         .and(col("Purpose").neq(lit(Purpose::Tip.to_string())));
     let alias = format!("Gross {topic} ({owner}) {payment_method}");
     (expr, alias)
+}
+
+/// Summed total for meals consumed by internee
+/// Note: The alias is ignored, as it was created for counting, not summing
+fn meal_total(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> LazyFrame {
+    let (predicate, _) = predicate_and_alias;
+    ldf.filter(predicate)
+        .group_by(["Date"])
+        .agg([col("Price (Gross)")
+            .fill_null(0)
+            .sum()
+            .alias("Total Praktikum")
+            .cast(DataType::Float64)])
+        .sort(
+            ["Date"],
+            SortMultipleOptions::new()
+                .with_multithreaded(false)
+                .with_maintain_order(true),
+        )
 }
 
 /// Daily meal count
