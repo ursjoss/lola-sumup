@@ -223,13 +223,13 @@ The columns of the resulting summary file are defined as follows:
   - `Net MiTi (LoLa)`: Net total income Mittagstisch with LoLa items w/o commission [`Gross MiTi (LoLa)` - `LoLa_Commission_MiTi`]
   - `Contribution MiTi`: Share MiTi from selling LoLa items [20% * `Net MiTi (LoLa)`]
   - `Net MiTi (LoLA) - Share LoLa`: 80% of Net total income Mittagstisch with LoLa items w/o commission [`Net MiTi (LoLa)` * 0.8]
-  - `Sponsored Reductions`: Reductions sponsored by LoLa [2 * (`MealCount_Reduced` + `MealCount_Regular`)]
+  - `Sponsored Reductions`: Reductions sponsored by LoLa [2 * (`MealCount_Reduced` + `MealCount_Praktikum`)]
   - `Debt to MiTi`: Net amount LoLa needs to pay out to Mittagstisch [`Net Payment SumUp MiTi` - `Net MiTi (LoLA) - Share LoLa` + `Sponsored Reductions`]
   - `Income LoLa MiTi`: Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi`]
 - Statistics relevant for Mittagstisch:
   - `MealCount_Regular`: Number of regular meals per day
   - `MealCount_Reduced`: Number of meals with reductions sponsored by LoLa per day
-  - `MealCount_Regular`: Number of meals for stagaire sponsored by LoLA per day
+  - `MealCount_Praktikum`: Number of meals for stagaire sponsored by LoLa per day
   - `MealCount_Children`: Number of children meals per day
 
 ### Mittagstisch Report
