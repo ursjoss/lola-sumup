@@ -134,8 +134,8 @@ mod tests {
         let (df1, _) = crunch_data(intermediate_df_04).expect("should crunch");
         assert_eq!(
             df1.shape().0,
-            3,
-            "df1 does not contain 2 records and 1 summary line"
+            4,
+            "df1 does not contain 3 records and 1 summary line"
         );
         assert_eq!(
             df1, summary_df_04,
