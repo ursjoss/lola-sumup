@@ -131,7 +131,7 @@ fn derive_month_from_intermediate(file: Option<&str>) -> Result<String, String> 
 
 /// Derives the month from the account filename (e.g. `konten_<yyyymm>.csv` -> `<yyyymm>`)
 fn derive_month_from_accounts(file: Option<&str>) -> Result<String, String> {
-    derive_month_from(file, "konten", "xls")
+    derive_month_from(file, "konten", "xlsx")
 }
 
 /// Derive the month from the file starting with specified prefix
@@ -225,8 +225,8 @@ mod tests {
     }
 
     #[rstest]
-    #[case(Some("konten_202409.xls"), "202409")]
-    #[case(Some("konten_202410_20241113090027.xls"), "202410")]
+    #[case(Some("konten_202409.xlsx"), "202409")]
+    #[case(Some("konten_202410_20241113090027.xlsx"), "202410")]
     fn test_derive_month_from_accounts(#[case] input: Option<&str>, #[case] expected: String) {
         let result = derive_month_from_accounts(input);
         match result {
