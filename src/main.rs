@@ -7,9 +7,11 @@ use std::path::PathBuf;
 use chrono::Local;
 use clap::{Parser, Subcommand};
 
+use crate::close::do_closing;
 use crate::export::export;
 use crate::prepare::prepare;
 
+mod close;
 mod export;
 mod prepare;
 
@@ -47,6 +49,11 @@ enum Commands {
         /// the intermediate file to process
         intermediate_file: PathBuf,
     },
+    /// Run the monthly closing process
+    Close {
+        /// The spreadsheet export file from the accounting software
+        accounts_file: PathBuf,
+    },
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -65,8 +72,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         ),
         Commands::Export { intermediate_file } => {
             let file_name = intermediate_file.as_os_str().to_str();
-            let month = derive_month_from(file_name)?;
+            let month = derive_month_from_intermediate(file_name)?;
             export(intermediate_file, &month, ts)
+        }
+        Commands::Close { accounts_file } => {
+            let file_name = accounts_file.as_os_str().to_str();
+            let month = derive_month_from_accounts(file_name)?;
+            do_closing(accounts_file, &month, ts)
         }
     }
 }
@@ -113,8 +125,18 @@ fn intermediate_file(month: &String, ts: &String) -> PathBuf {
 }
 
 /// Derives the month from the intermediate filename (e.g. `intermediate_<yyyymm>.csv` -> `<yyyymm>`)
-fn derive_month_from(file: Option<&str>) -> Result<String, String> {
-    let min = "intermediate_yyyymm.csv";
+fn derive_month_from_intermediate(file: Option<&str>) -> Result<String, String> {
+    derive_month_from(file, "intermediate", "csv")
+}
+
+/// Derives the month from the account filename (e.g. `konten_<yyyymm>.csv` -> `<yyyymm>`)
+fn derive_month_from_accounts(file: Option<&str>) -> Result<String, String> {
+    derive_month_from(file, "konten", "xls")
+}
+
+/// Derive the month from the file starting with specified prefix
+fn derive_month_from(file: Option<&str>, prefix: &str, extension: &str) -> Result<String, String> {
+    let min = format!("{prefix}_yyyymm.{extension}");
     let underscore_index = min.find('_').unwrap();
     let static_part = &min[0..=underscore_index];
     let Some(filename) = file else {
@@ -132,13 +154,13 @@ fn derive_month_from(file: Option<&str>) -> Result<String, String> {
         let path = std::path::Path::new(filename);
         if path
             .extension()
-            .is_some_and(|ext| ext.eq_ignore_ascii_case("csv"))
+            .is_some_and(|ext| ext.eq_ignore_ascii_case(extension))
         {
             let start_index = underscore_index + 1;
             let end_index = start_index + 5;
             Ok(filename[start_index..=end_index].into())
         } else {
-            Err("Filename must have extension .csv.".to_string())
+            Err(format!("Filename must have extension .{extension}.").to_string())
         }
     }
 }
@@ -194,8 +216,19 @@ mod tests {
     )]
     #[case(Some("intermediate_202303_.cs"), "Filename must have extension .csv.")]
     #[case(Some("intermediate_202303aaaa"), "Filename must have extension .csv.")]
-    fn test_derive_month_from(#[case] input: Option<&str>, #[case] expected: String) {
-        let result = derive_month_from(input);
+    fn test_derive_month_from_intermediate(#[case] input: Option<&str>, #[case] expected: String) {
+        let result = derive_month_from_intermediate(input);
+        match result {
+            Ok(month) => assert_eq!(month, expected),
+            Err(msg) => assert_eq!(msg, expected),
+        }
+    }
+
+    #[rstest]
+    #[case(Some("konten_202409.xls"), "202409")]
+    #[case(Some("konten_202410_20241113090027.xls"), "202410")]
+    fn test_derive_month_from_accounts(#[case] input: Option<&str>, #[case] expected: String) {
+        let result = derive_month_from_accounts(input);
         match result {
             Ok(month) => assert_eq!(month, expected),
             Err(msg) => assert_eq!(msg, expected),
