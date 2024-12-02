@@ -52,7 +52,29 @@ fn process_input(
         .with_infer_schema_length(Some(1500))
         .with_parse_options(parse_options.clone())
         .try_into_reader_with_file_path(Some(sales_report.into()))?
-        .finish()?;
+        .finish()?
+        .lazy()
+        .with_column(
+            when(
+                col("Beschreibung")
+                    .eq(lit("Mittagstisch-Nachmittag"))
+                    .or(col("Beschreibung").eq(lit("Nachmittag-Abend"))),
+            )
+            .then(0.0)
+            .otherwise(col("Preis (brutto)"))
+            .alias("Preis (brutto)"),
+        )
+        .with_column(
+            when(
+                col("Beschreibung")
+                    .eq(lit("Mittagstisch-Nachmittag"))
+                    .or(col("Beschreibung").eq(lit("Nachmittag-Abend"))),
+            )
+            .then(0.0)
+            .otherwise(col("Preis (netto)"))
+            .alias("Preis (netto)"),
+        )
+        .collect()?;
     let txr_df = CsvReadOptions::default()
         .with_has_header(true)
         .with_infer_schema_length(Some(1500))
