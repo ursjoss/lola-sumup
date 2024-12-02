@@ -6,7 +6,7 @@ use rstest::fixture;
 
 #[fixture]
 pub fn sample_date() -> NaiveDate {
-    NaiveDate::parse_from_str("24.3.2023", "%d.%m.%Y").expect("valid date")
+    NaiveDate::parse_from_str("24.3.23", "%d.%m.%y").expect("valid date")
 }
 
 #[fixture]
@@ -106,7 +106,7 @@ pub fn intermediate_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> Dat
 /// Sample record 02 matching the structure of the intermediate csv file
 #[fixture]
 pub fn intermediate_df_02(sample_date: NaiveDate) -> DataFrame {
-    let date = sample_date.format("%d.%m.%Y").to_string();
+    let date = sample_date.format("%d.%m.%y").to_string();
     df!(
         "Account" => &["a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@B.ch", "a@B.ch", "a@B.ch", "a@B.ch", "a@B.ch", "a@B.ch", "a@B.ch"],
         "Date" => &[date.clone(), date.clone(), date.clone(), date.clone(), date.clone(), date.clone(), date.clone(), date.clone(), date.clone(), date.clone(), date.clone(), date],
@@ -132,7 +132,7 @@ pub fn intermediate_df_02(sample_date: NaiveDate) -> DataFrame {
 /// summary
 #[fixture]
 pub fn summary_df_02(sample_date: NaiveDate) -> DataFrame {
-    let date = sample_date.format("%d.%m.%Y").to_string();
+    let date = sample_date.format("%d.%m.%y").to_string();
     df!(
         "Date" => &[date],
         "MiTi_Cash" => &[Some(16.5)],
@@ -362,7 +362,7 @@ pub fn miti_df_03(sample_date: NaiveDate) -> DataFrame {
 
 #[fixture]
 pub fn sample_date2() -> NaiveDate {
-    NaiveDate::parse_from_str("25.3.2023", "%d.%m.%Y").expect("valid date")
+    NaiveDate::parse_from_str("25.3.23", "%d.%m.%y").expect("valid date")
 }
 
 #[fixture]
@@ -376,9 +376,9 @@ pub fn intermediate_df_04(
     sample_date2: NaiveDate,
     sample_date3: NaiveDate,
 ) -> DataFrame {
-    let date = sample_date.format("%d.%m.%Y").to_string();
-    let date2 = sample_date2.format("%d.%m.%Y").to_string();
-    let date3 = sample_date3.format("%d.%m.%Y").to_string();
+    let date = sample_date.format("%d.%m.%y").to_string();
+    let date2 = sample_date2.format("%d.%m.%y").to_string();
+    let date3 = sample_date3.format("%d.%m.%y").to_string();
     df!(
         "Account" => &["a@b.ch", "a@b.ch", "a@b.ch"],
         "Date" => &[date, date2, date3],
@@ -406,9 +406,9 @@ pub fn summary_df_04(
     sample_date2: NaiveDate,
     sample_date3: NaiveDate,
 ) -> DataFrame {
-    let date = sample_date.format("%d.%m.%Y").to_string();
-    let date2 = sample_date2.format("%d.%m.%Y").to_string();
-    let date3 = sample_date3.format("%d.%m.%Y").to_string();
+    let date = sample_date.format("%d.%m.%y").to_string();
+    let date2 = sample_date2.format("%d.%m.%y").to_string();
+    let date3 = sample_date3.format("%d.%m.%y").to_string();
     df!(
         "Date" => &[Some(date), Some(date2), Some(date3), None],
         "MiTi_Cash" => &[None::<f64>, None::<f64>, Some(11.0), Some(11.0)],

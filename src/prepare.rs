@@ -35,7 +35,7 @@ pub fn prepare(
     CsvWriter::new(iowtr)
         .with_separator(b';')
         .include_header(true)
-        .with_date_format(Some("%d.%m.%Y".into()))
+        .with_date_format(Some("%d.%m.%y".into()))
         .with_time_format(Some("%H:%M:%S".into()))
         .finish(&mut df)?;
     Ok(())
