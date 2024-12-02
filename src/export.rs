@@ -41,6 +41,10 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
                 .str()
                 .strptime(DataType::Date, date_format, Expr::default()),
         )
+        .with_column(col("Payment Method").str().strip_chars(lit(" ")))
+        .with_column(col("Topic").str().strip_chars(lit(" ")))
+        .with_column(col("Owner").str().strip_chars(lit(" ")))
+        .with_column(col("Purpose").str().strip_chars(lit(" ")))
         .collect()?;
 
     warn_on_zero_value_trx(&raw_df)?;
