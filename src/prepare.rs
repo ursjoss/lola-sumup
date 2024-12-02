@@ -388,6 +388,11 @@ pub fn warn_on_zero_value_trx(df: &DataFrame) -> Result<(), Box<dyn Error>> {
                 .eq(lit(0.0))
                 .or(col("Price (Net)").is_null()),
         )
+        .filter(
+            col("Description")
+                .neq(lit("Mittagstisch-Nachmittag"))
+                .and(col("Description").neq(lit("Nachmittag-Abend"))),
+        )
         .collect()?;
     if violating.shape().0 > 0 {
         println!("Records found in intermediate document with net price missing or 0.0:");
