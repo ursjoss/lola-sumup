@@ -571,7 +571,7 @@ mod tests {
         #[case] delta: Option<f64>,
         #[case] account: &str,
     ) -> PolarsResult<()> {
-        let date = NaiveDate::parse_from_str("17.4.2023", "%d.%m.%Y").expect("valid date");
+        let date = NaiveDate::parse_from_str("17.4.23", "%d.%m.%y").expect("valid date");
         let df = df!(
             "Date" => &[date],
             "Payment SumUp" => &[payment_sumup],

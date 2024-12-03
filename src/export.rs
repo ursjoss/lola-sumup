@@ -23,12 +23,29 @@ mod export_summary;
 pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Error>> {
     let parse_option = CsvParseOptions::default()
         .with_separator(b';')
-        .with_try_parse_dates(true);
+        .with_try_parse_dates(false);
+    let date_format = StrptimeOptions {
+        format: Some("%d.%m.%y".into()),
+        strict: true,
+        exact: true,
+        ..Default::default()
+    };
     let raw_df = CsvReadOptions::default()
         .with_has_header(true)
         .with_parse_options(parse_option)
         .try_into_reader_with_file_path(Some(input_path.into()))?
-        .finish()?;
+        .finish()?
+        .lazy()
+        .with_column(
+            col("Date")
+                .str()
+                .strptime(DataType::Date, date_format, Expr::default()),
+        )
+        .with_column(col("Payment Method").str().strip_chars(lit(" ")))
+        .with_column(col("Topic").str().strip_chars(lit(" ")))
+        .with_column(col("Owner").str().strip_chars(lit(" ")))
+        .with_column(col("Purpose").str().strip_chars(lit(" ")))
+        .collect()?;
 
     warn_on_zero_value_trx(&raw_df)?;
 
