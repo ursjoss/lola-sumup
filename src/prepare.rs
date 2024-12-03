@@ -10,7 +10,7 @@ use polars::io::{SerReader, SerWriter};
 use polars::prelude::LiteralValue::Null;
 use polars::prelude::{
     col, lit, when, CsvParseOptions, CsvReadOptions, CsvWriter, Expr, IntoLazy, JoinType,
-    SortMultipleOptions, StrptimeOptions,
+    NamedFromOwned, SortMultipleOptions, StrptimeOptions,
 };
 use polars::series::Series;
 use serde::{Deserialize, Serialize};
@@ -247,6 +247,14 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .alias("Date"),
         )
         .with_column(
+            col("Date")
+                .dt()
+                .weekday()
+                .cast(DataType::Int64)
+                .is_in(lit(Series::from_vec("we".into(), vec![6, 7])))
+                .alias("is_weekend"),
+        )
+        .with_column(
             (col("Datum").str().extract(lit(r".{10}, (\d\d:\d\d)"), 1) + lit(":00"))
                 .str()
                 .to_time(time_format.clone())
@@ -322,6 +330,7 @@ fn infer_payment_method() -> Expr {
         .then(lit(PaymentMethod::Cash.to_string()))
         .otherwise(lit(PaymentMethod::Card.to_string()))
 }
+
 /// Infers the `Topic` from the time of sale:
 /// before 06:00 and after 18:00 -> `Culture` or `PaidOut` if description contains " (PO)".
 /// between 06:00 and 14:15 -> `MiTi`
@@ -337,9 +346,17 @@ fn infer_topic(time_options: &StrptimeOptions) -> Expr {
     .when(
         col("Time")
             .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
-            .and(col("Time").lt(lit("14:15:00").str().to_time(time_options.clone()))),
+            .and(col("Time").lt(lit("14:15:00").str().to_time(time_options.clone())))
+            .and(col("is_weekend").eq(lit(false))),
     )
     .then(lit(Topic::MiTi.to_string()))
+    .when(
+        col("Time")
+            .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
+            .and(col("Time").lt(lit("14:15:00").str().to_time(time_options.clone())))
+            .and(col("is_weekend").eq(lit(true))),
+    )
+    .then(lit(Topic::Cafe.to_string()))
     .when(
         col("Time")
             .gt_eq(lit("14:15:00").str().to_time(time_options.clone()))
@@ -538,21 +555,32 @@ mod tests {
         let rtd = "Recircle Tupper Depot";
         df! [
             "Beschreibung" => [
-            	"X", "X",
-             	"X", "X",
-              	"X", "X",
-               	"X", "X",
-             	"X (PO)", "X (PO)", "X (PO) x" ,"X (PO)",
-              	rtd, rtd, rtd, rtd, rtd, rtd, rtd, rtd
+                "X", "X",
+                "X", "X",
+                "X", "X",
+                "X", "X",
+                "X", "X",
+                "X (PO)", "X (PO)", "X (PO) x" ,"X (PO)",
+            rtd, rtd, rtd, rtd, rtd, rtd, rtd, rtd
             ],
             "Time" => [
-            	"00:00:00", "05:59:59",
-             	"06:00:00", "14:14:59",
+                "00:00:00", "05:59:59",
+                "06:00:00", "14:14:59",
+                "06:00:00", "14:14:59",
                 "14:15:00", "17:59:59",
                 "18:00:00", "23:59:59",
                 "00:00:00", "05:59:59", "18:00:00", "23:59:59",
                 "00:00:00", "05:59:59", "06:00:00", "14:14:59", "14:15:00", "17:59:59", "18:00:00", "23:59:59"
-            ]
+            ],
+            "is_weekend" => [
+                false, false,
+                false, false,
+                true, true,
+                false, false,
+                true, true,
+                false, false, true, true,
+                false, false, false, false, false, true, true, false
+            ],
         ]
         .unwrap()
     }
@@ -568,6 +596,7 @@ mod tests {
            "Topic" => [
                culture.clone(), culture.clone(),
                miti.clone(), miti,
+               cafe.clone(), cafe.clone(),
                cafe.clone(), cafe,
                culture.clone(), culture,
                paidout.clone(), paidout.clone(), paidout.clone(), paidout,
