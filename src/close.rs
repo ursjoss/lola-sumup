@@ -4,8 +4,12 @@ use std::error::Error;
 use std::path::Path;
 use std::string::ToString;
 
+pub fn do_closing_xls(_input_path: &Path, _month: &str, _ts: &str) -> Result<(), Box<dyn Error>> {
+    Ok(())
+}
+
 /// Processes the export from the accounting software, exporting the monthly closing sheet
-pub fn do_closing(input_path: &Path, _month: &str, _ts: &str) -> Result<(), Box<dyn Error>> {
+pub fn do_closing_xlsx(input_path: &Path, _month: &str, _ts: &str) -> Result<(), Box<dyn Error>> {
     let mut workbook: Xlsx<_> = open_workbook(input_path)?;
 
     if let Ok(range) = workbook.worksheet_range("Accounts") {

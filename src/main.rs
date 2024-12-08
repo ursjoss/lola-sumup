@@ -7,7 +7,8 @@ use std::path::PathBuf;
 use chrono::Local;
 use clap::{Parser, Subcommand};
 
-use crate::close::do_closing;
+use crate::close::do_closing_xls;
+use crate::close::do_closing_xlsx;
 use crate::export::export;
 use crate::prepare::prepare;
 
@@ -77,8 +78,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         Commands::Close { accounts_file } => {
             let file_name = accounts_file.as_os_str().to_str();
-            let month = derive_month_from_accounts(file_name)?;
-            do_closing(accounts_file, &month, ts)
+            if let Some(extension) = accounts_file.extension().and_then(|e| e.to_str()) {
+                let month = derive_month_from_accounts(file_name, extension)?;
+                match extension {
+                    "xlsx" => do_closing_xlsx(accounts_file, &month, ts),
+                    "xls" => do_closing_xls(accounts_file, &month, ts),
+                    _ => Err(Box::from(format!(
+                        "File extension {extension} is not supported."
+                    ))),
+                }
+            } else {
+                Err("No valid file extension found".into())
+            }
         }
     }
 }
@@ -129,9 +140,9 @@ fn derive_month_from_intermediate(file: Option<&str>) -> Result<String, String> 
     derive_month_from(file, "intermediate", "csv")
 }
 
-/// Derives the month from the account filename (e.g. `konten_<yyyymm>.csv` -> `<yyyymm>`)
-fn derive_month_from_accounts(file: Option<&str>) -> Result<String, String> {
-    derive_month_from(file, "konten", "xlsx")
+/// Derives the month from the account filename (e.g. `konten_<yyyymm>.xls` -> `<yyyymm>`)
+fn derive_month_from_accounts(file: Option<&str>, extension: &str) -> Result<String, String> {
+    derive_month_from(file, "konten", extension)
 }
 
 /// Derive the month from the file starting with specified prefix
@@ -225,10 +236,15 @@ mod tests {
     }
 
     #[rstest]
-    #[case(Some("konten_202409.xlsx"), "202409")]
-    #[case(Some("konten_202410_20241113090027.xlsx"), "202410")]
-    fn test_derive_month_from_accounts(#[case] input: Option<&str>, #[case] expected: String) {
-        let result = derive_month_from_accounts(input);
+    #[case(Some("konten_202409.xlsx"), "xlsx", "202409")]
+    #[case(Some("konten_202410_20241113090027.xlsx"), "xlsx", "202410")]
+    #[case(Some("konten_202410.xls"), "xls", "202410")]
+    fn test_derive_month_from_accounts(
+        #[case] input: Option<&str>,
+        #[case] extension: &str,
+        #[case] expected: String,
+    ) {
+        let result = derive_month_from_accounts(input, extension);
         match result {
             Ok(month) => assert_eq!(month, expected),
             Err(msg) => assert_eq!(msg, expected),
