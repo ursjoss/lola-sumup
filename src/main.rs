@@ -7,12 +7,13 @@ use std::path::PathBuf;
 use chrono::Local;
 use clap::{Parser, Subcommand};
 
-use crate::close::do_closing_xls;
-use crate::close::do_closing_xlsx;
+use crate::close_xlsx::do_closing_xlsx;
+use crate::close_xml::do_closing_xls;
 use crate::export::export;
 use crate::prepare::prepare;
 
-mod close;
+mod close_xlsx;
+mod close_xml;
 mod export;
 mod prepare;
 
