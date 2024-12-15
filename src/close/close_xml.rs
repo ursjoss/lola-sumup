@@ -7,7 +7,16 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
-pub fn do_closing_xls(input_path: &Path, _month: &str, _ts: &str) -> Result<(), Box<dyn Error>> {
+/// read account information from xml file with ending .xls
+pub fn do_closing_xml(input_path: &Path, _month: &str, _ts: &str) -> Result<(), Box<dyn Error>> {
+    let df = read_xml(input_path)?;
+
+    println!("{df:?}");
+
+    Ok(())
+}
+
+fn read_xml(input_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
     let file = BufReader::new(File::open(input_path)?);
     let mut reader = Reader::from_reader(file);
 
@@ -98,9 +107,7 @@ pub fn do_closing_xls(input_path: &Path, _month: &str, _ts: &str) -> Result<(), 
         }
         buf.clear();
     }
-
-    println!("{df:?}");
-    Ok(())
+    Ok(df)
 }
 
 fn new_row(
