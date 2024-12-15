@@ -7,13 +7,11 @@ use std::path::PathBuf;
 use chrono::Local;
 use clap::{Parser, Subcommand};
 
-use crate::close_xlsx::do_closing_xlsx;
-use crate::close_xml::do_closing_xls;
+use crate::close::close;
 use crate::export::export;
 use crate::prepare::prepare;
 
-mod close_xlsx;
-mod close_xml;
+mod close;
 mod export;
 mod prepare;
 
@@ -77,21 +75,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let month = derive_month_from_intermediate(file_name)?;
             export(intermediate_file, &month, ts)
         }
-        Commands::Close { accounts_file } => {
-            let file_name = accounts_file.as_os_str().to_str();
-            if let Some(extension) = accounts_file.extension().and_then(|e| e.to_str()) {
-                let month = derive_month_from_accounts(file_name, extension)?;
-                match extension {
-                    "xlsx" => do_closing_xlsx(accounts_file, &month, ts),
-                    "xls" => do_closing_xls(accounts_file, &month, ts),
-                    _ => Err(Box::from(format!(
-                        "File extension {extension} is not supported."
-                    ))),
-                }
-            } else {
-                Err("No valid file extension found".into())
-            }
-        }
+        Commands::Close { accounts_file } => close(accounts_file, ts),
     }
 }
 
@@ -142,7 +126,9 @@ fn derive_month_from_intermediate(file: Option<&str>) -> Result<String, String> 
 }
 
 /// Derives the month from the account filename (e.g. `konten_<yyyymm>.xls` -> `<yyyymm>`)
-fn derive_month_from_accounts(file: Option<&str>, extension: &str) -> Result<String, String> {
+/// # Errors
+/// Will return `Err` if `file` does not provide the information on the month.
+pub fn derive_month_from_accounts(file: Option<&str>, extension: &str) -> Result<String, String> {
     derive_month_from(file, "konten", extension)
 }
 
