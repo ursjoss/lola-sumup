@@ -1,6 +1,7 @@
 use polars::prelude::*;
 use quick_xml::events::Event;
 use quick_xml::reader::Reader;
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
@@ -8,10 +9,16 @@ use std::io::BufReader;
 use std::path::Path;
 
 /// read account information from xml file with ending .xls
-pub fn do_closing_xml(input_path: &Path, _month: &str, _ts: &str) -> Result<(), Box<dyn Error>> {
+pub fn do_closing_xml(
+    input_path: &Path,
+    budget: Budget,
+    _month: &str,
+    _ts: &str,
+) -> Result<(), Box<dyn Error>> {
     let df = read_xml(input_path)?;
 
     println!("{df:?}");
+    println!("{budget:?}");
 
     Ok(())
 }
@@ -200,4 +207,29 @@ impl AccountsColumn {
             AccountsColumn::Credit => "Credit",
         }
     }
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Budget {
+    name: String,
+    post_groups: HashMap<String, PostGroup>,
+    posts: HashMap<String, Post>,
+    years: HashMap<String, Year>,
+}
+
+#[derive(Deserialize, Debug)]
+struct PostGroup {
+    name: String,
+    posts: Vec<String>,
+}
+
+#[derive(Deserialize, Debug)]
+struct Post {
+    name: String,
+    account_codes: Vec<String>,
+}
+
+#[derive(Deserialize, Debug)]
+struct Year {
+    amounts: HashMap<String, f64>,
 }
