@@ -211,7 +211,7 @@ impl AccountsColumn {
 
 #[derive(Deserialize, Debug)]
 pub struct Budget {
-    name: String,
+    pub name: String,
     post_groups: HashMap<String, PostGroup>,
     posts: HashMap<String, Post>,
     years: HashMap<String, Year>,

@@ -4,7 +4,9 @@ use crate::derive_month_from_accounts;
 
 use std::error::Error;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+use serde::Deserialize;
 
 mod close_xml;
 
@@ -33,4 +35,21 @@ fn read_budget_config(budget_config_file: &Path) -> Result<Budget, Box<dyn Error
     let toml_str = fs::read_to_string(budget_config_file)?;
     let budget: Budget = toml::from_str(&toml_str)?;
     Ok(budget)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+
+    #[rstest]
+    fn can_read_from_sample_config_file() {
+        let file_path = "sample_config/budget.toml".to_string();
+        let config_file = &PathBuf::from(file_path);
+        let config = read_budget_config(config_file);
+        let Ok(config) = config else {
+            panic!("Invalid config: {config:#?}");
+        };
+        assert_eq!("LoLa Budget", config.name);
+    }
 }
