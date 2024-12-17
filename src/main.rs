@@ -51,6 +51,8 @@ enum Commands {
     },
     /// Run the monthly closing process
     Close {
+        /// the budget configuration file in TOML format
+        budget_config_file: PathBuf,
         /// The spreadsheet export file from the accounting software
         accounts_file: PathBuf,
     },
@@ -75,7 +77,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             let month = derive_month_from_intermediate(file_name)?;
             export(intermediate_file, &month, ts)
         }
-        Commands::Close { accounts_file } => close(accounts_file, ts),
+        Commands::Close {
+            budget_config_file,
+            accounts_file,
+        } => close(budget_config_file, accounts_file, ts),
     }
 }
 
