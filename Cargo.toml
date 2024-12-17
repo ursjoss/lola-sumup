@@ -14,7 +14,6 @@ serde = { version = "1.0.200", features = ["derive"] }
 chrono= { version = "0.4.38", features = ["serde"] }
 strum = { version = "0.26.2" }
 strum_macros = { version = "0.26.2" }
-calamine = "0.26.1"
 quick-xml = { version = "0.37.1", features = ["serde"] }
 
 [dependencies.polars]
