@@ -1,0 +1,186 @@
+name = "LoLa Budget"
+
+[post_groups]
+
+[post_groups.revenue]
+name = "Ertrag"
+posts = ["E30", "E31", "E320", "E321", "E33", "E360", "E365", "E38"]
+
+[post_groups.costs_direct]
+name = "Direkter Aufwand"
+posts = ["A40", "A41", "A42", "AXX"]
+
+[post_groups.costs_staff]
+name = "Personal"
+posts = ["A520", "A521", "A57", "A590", "A599"]
+
+[post_groups.costs_remaining]
+name = "Überiger Aufwand"
+posts = ["A60A", "A60B", "A63", "A65X", "A651", "A66", "A68", "A69"]
+
+[post_groups.costs_extra]
+name = "Ausserordentlicher Ertrag"
+posts = ["RX", "EX", "AX"]
+
+[posts]
+
+[posts.E30]
+name = "Ertrag Restauration"
+account_codes = [
+	"30100",
+	"30200",
+	"30500",
+	"30600",
+	"30700",
+	"30800",
+	"30810",
+	"30900",
+]
+
+[posts.E31]
+name = "Ertrag Vermietunge"
+account_codes = ["31000", "31100"]
+
+[posts.E320]
+name = "Kulturelle Einnahmen"
+account_codes = ["32000"]
+
+[posts.E321]
+name = "Projektertrag / Diverse Erträge"
+account_codes = ["32100", "32900"]
+
+[posts.E33]
+name = "Mitgliederbeiträge"
+account_codes = ["35000"]
+
+[posts.E360]
+name = "Spenden"
+account_codes = ["36000", "36001"]
+
+[posts.E365]
+name = "Projektbeiträge"
+account_codes = [
+	"32020",
+	"32030",
+	"32050",
+	"32092",
+	"32093",
+	"36500",
+	"36501",
+	"36590",
+]
+
+[posts.E38]
+name = "Subventionen"
+account_codes = ["38000"]
+
+[posts.A40]
+name = "Restaurationsaufwand"
+account_codes = ["40000", "40060"]
+
+[posts.A41]
+name = "Projektaufwand"
+account_codes = [
+	"41000",
+	"41001",
+	"41070",
+	"41080",
+	"41090",
+	"41091",
+	"41092",
+	"41093",
+]
+
+[posts.A42]
+name = "Kulturelle Kosten"
+account_codes = ["42000", "42010", "42020", "42060", "42100"]
+
+[posts.AXX]
+name = "Betriebsaufwand"
+account_codes = ["46000", "61000", "61200", "61500", "64000", "64600"]
+
+[posts.RX]
+name = "Reserve"
+account_codes = []
+
+[posts.EX]
+name = "Ertrag"
+account_codes = ["80000"]
+
+[posts.AX]
+name = "Aufwand"
+account_codes = ["80100"]
+
+[years]
+
+[years.2024]
+
+[years.2024.amounts]
+E30 = 30.00
+E31 = 31.00
+E320 = 320.00
+E321 = 321.00
+E33 = 33.00
+E360 = 360.00
+E365 = 368.00
+E38 = 38.00
+
+A40 = 40.00
+A41 = 41.00
+A42 = 42.00
+AXX = 100.00
+
+A520 = 520.00
+A521 = 521.00
+A57 = 57.00
+A590 = -590.00
+A599 = 599.00
+
+A60A = 60.10
+A60B = 60.20
+A63 = 63.00
+A65X = 650.00
+A651 = 651.00
+A66 = 66.00
+A68 = 68.00
+A69 = 69.00
+
+RX = 1.0
+EX = 2.0
+AX = 3.0
+
+[years.2025]
+
+[years.2025.amounts]
+E30 = 30.01
+E31 = 31.01
+E320 = 320.01
+E321 = 321.01
+E33 = 33.01
+E360 = 360.01
+E365 = 368.01
+E38 = 38.01
+
+A40 = 40.01
+A41 = 41.01
+A42 = 42.01
+AXX = 100.01
+
+A520 = 520.01
+A521 = 521.01
+A57 = 57.01
+A590 = -590.01
+A599 = 599.01
+
+A60A = 60.11
+A60B = 60.21
+A63 = 63.01
+A65X = 650.01
+A651 = 651.01
+A66 = 66.01
+A68 = 68.01
+A69 = 69.01
+
+RX = 1.1
+EX = 2.1
+AX = 3.1
