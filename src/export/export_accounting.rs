@@ -42,7 +42,7 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Deposit_Cash").alias("10000/23050"),
             col("Cafe_Cash").alias("10000/30200"),
             col("Verm_Cash").alias("10000/30700"),
-            col("SoFe_Cash").alias("10000/30800"),
+            col("SoFe_Cash").alias("10000/30810"),
             col("Rental_Cash").alias("10000/31000"),
             col("Culture_Cash").alias("10000/32000"),
             col("Packaging_Cash").alias("10000/46000"),
@@ -50,7 +50,7 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Deposit_Card").alias("10920/23050"),
             col("Cafe_Card").alias("10920/30200"),
             col("Verm_Card").alias("10920/30700"),
-            col("SoFe_Card").alias("10920/30800"),
+            col("SoFe_Card").alias("10920/30810"),
             col("Rental_Card").alias("10920/31000"),
             col("Culture_Card").alias("10920/32000"),
             col("Packaging_Card").alias("10920/46000"),
@@ -75,7 +75,7 @@ pub fn validate_acc_constraint(df_acc: &DataFrame) -> Result<(), Box<dyn Error>>
 fn validate_acc_constraint_10920(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
     let net_expr = col("10920/30200")
         + col("10920/30700")
-        + col("10920/30800")
+        + col("10920/30810")
         + col("10920/23050")
         + col("10920/31000")
         + col("10920/32000")
@@ -580,7 +580,7 @@ mod tests {
             "10000/23050" => &[deposit_cash],
             "10000/30200" => &[cafe_cash],
             "10000/30700" => &[verm_cash],
-            "10000/30800" => &[sofe_cash],
+            "10000/30810" => &[sofe_cash],
             "10000/31000" => &[rental_cash],
             "10000/32000" => &[culture_cash],
             "10000/46000" => &[packaging_cash],
@@ -588,7 +588,7 @@ mod tests {
             "10920/23050" => &[deposit_card],
             "10920/30200" => &[cafe_card],
             "10920/30700" => &[verm_card],
-            "10920/30800" => &[sofe_card],
+            "10920/30810" => &[sofe_card],
             "10920/31000" => &[rental_card],
             "10920/32000" => &[culture_card],
             "10920/46000" => &[packaging_card],
