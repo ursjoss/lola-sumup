@@ -10,12 +10,14 @@ use crate::export::constraint::{
     validation_topic_owner,
 };
 use crate::export::export_accounting::{gather_df_accounting, validate_acc_constraint};
+use crate::export::export_banana::gather_df_banana;
 use crate::export::export_miti::gather_df_miti;
 use crate::export::export_summary::collect_data;
 use crate::prepare::warn_on_zero_value_trx;
 
 mod constraint;
 mod export_accounting;
+mod export_banana;
 mod export_miti;
 mod export_summary;
 
@@ -49,15 +51,19 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
 
     warn_on_zero_value_trx(&raw_df)?;
 
-    let (mut df, mut df_acc) = crunch_data(raw_df)?;
+    let (mut df, mut df_acc, mut df_banana) = crunch_data(raw_df, month)?;
 
     export_summary(&month, &ts, &mut df)?;
     export_mittagstisch(&month, &ts, &mut df)?;
-    export_accounting(&month, &ts, &mut df_acc)
+    export_accounting(&month, &ts, &mut df_acc)?;
+    export_banana(&month, &ts, &mut df_banana)
 }
 
-/// returns two dataframes, one for summary/miti, the other for the accounting export.
-fn crunch_data(raw_df: DataFrame) -> Result<(DataFrame, DataFrame), Box<dyn Error>> {
+/// returns three dataframes, one for summary/miti, ianother for the accounting export and the third for banana.
+fn crunch_data(
+    raw_df: DataFrame,
+    month: &str,
+) -> Result<(DataFrame, DataFrame, DataFrame), Box<dyn Error>> {
     validate(&raw_df)?;
 
     let mut df = collect_data(raw_df)?;
@@ -65,7 +71,8 @@ fn crunch_data(raw_df: DataFrame) -> Result<(DataFrame, DataFrame), Box<dyn Erro
 
     let df_acc = gather_df_accounting(&df)?;
     validate_acc_constraint(&df_acc)?;
-    Ok((df, df_acc))
+    let df_banana = gather_df_banana(&df, month)?;
+    Ok((df, df_acc, df_banana))
 }
 
 fn validate(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
@@ -112,6 +119,10 @@ fn export_accounting(
     write_to_file(df_acc, &path_with_prefix("accounting", month, ts))
 }
 
+fn export_banana(month: &&str, ts: &&str, df_acc: &mut DataFrame) -> Result<(), Box<dyn Error>> {
+    write_to_file(df_acc, &path_with_prefix("banana", month, ts))
+}
+
 /// Constructs a path for a CSV file from `prefix`, `month` and `ts` (timestamp).
 fn path_with_prefix(prefix: &str, month: &str, ts: &str) -> PathBuf {
     PathBuf::from(format!("{prefix}_{month}_{ts}.csv"))
@@ -139,16 +150,17 @@ mod tests {
 
     #[rstest]
     fn can_crunch_data_without_panic(intermediate_df_02: DataFrame) {
-        let (df1, df2) = crunch_data(intermediate_df_02).expect("should crunch");
+        let (df1, df2, df3) = crunch_data(intermediate_df_02, "202412").expect("should crunch");
 
         assert_ne!(df1.shape().0, 0, "df1 does not contain records");
         assert_ne!(df2.shape().0, 0, "df2 does not contain records");
+        assert_ne!(df3.shape().0, 0, "df3 does not contain records");
     }
 
     #[rstest]
     fn can_calculate_summary_row(intermediate_df_04: DataFrame, summary_df_04: DataFrame) {
         configure_the_environment();
-        let (df1, _) = crunch_data(intermediate_df_04).expect("should crunch");
+        let (df1, _, _) = crunch_data(intermediate_df_04, "202412").expect("should crunch");
         assert_eq!(
             df1.shape().0,
             4,

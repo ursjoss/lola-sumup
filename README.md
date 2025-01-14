@@ -282,7 +282,7 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `10000/23050`: Total Cash Income Key Deposit [`Deposit_Cash`]
 - `10000/30200`: Total Cash Income Cafe [`Cafe_Cash`]
 - `10000/30700`: Total Cash Income Food Rentals [`Verm_Cash`] (LoLa Food sold by renters)
-- `10000/30800`: Total Cash Income summer party [`SoFe_Cash`] (LoLa Food sold during summer party)
+- `10000/30810`: Total Cash Income summer party [`SoFe_Cash`] (LoLa Food sold during summer party)
 - `10000/31000`: Total Cash Income Rental Fee [`Rental_Cash`] (fees for renting the rooms)
 - `10000/32000`: Total Cash Income Cultural Payments [`Culture_Cash`]
 - `10000/46000`: Total Cash Cost Reduction on Material Cost [`Packaging_Cash`]
@@ -290,7 +290,7 @@ The columns of the resulting accounting.csv file are defined as follows:
 - `10920/23050`: Total Gross Payments Card Key Deposit [`Deposit_Card`]
 - `10920/30200`: Total Gross Payments Card Cafe [`Cafe_Card`]
 - `10920/30700`: Total Gross Payments Card Rentals [`Verm_Card`] (LoLa Food sold by renters)
-- `10920/30800`: Total Gross Payments Card summer party [`SoFe_Card`] (LoLa Food sold during summer party)
+- `10920/30810`: Total Gross Payments Card summer party [`SoFe_Card`] (LoLa Food sold during summer party)
 - `10920/31000`: Total Gross Payments Card Rental Fee [`Rental_Card`] (fees for renting the rooms)
 - `10920/32000`: Total Gross Payments Card Cultural Payments [`Culture_Card`]
 - `10920/46000`: Total Gross Payments Card Reduction on Material Cost [`Packaging_Card`]
@@ -312,5 +312,5 @@ They serve for consolidation purposes:
   Please note that those two columns potentially aggregate multiple entries in the cash account ledger for each day.
 
 Where the absolute net sum for the transitory accounts must not be > 0.05, i.e.:
-- for `10920`: abs(`10920/30200` + `10920/30700` + `10920/30800` + `10920/23050` + `10920/46000` + `10920/31000` + `10920/32000` +`10920/20051` + `10920/10000` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.05
+- for `10920`: abs(`10920/30200` + `10920/30700` + `10920/30810` + `10920/23050` + `10920/46000` + `10920/31000` + `10920/32000` +`10920/20051` + `10920/10000` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.05
 - for `20051`: abs(`10920/20051` - `20051/10930` - `20051/30200` + `59991/20051`) < 0.05
