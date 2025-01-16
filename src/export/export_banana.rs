@@ -65,7 +65,12 @@ pub fn gather_df_banana(df: &DataFrame, month: &str) -> PolarsResult<DataFrame> 
         .transpose(Some("KtSoll/KtHaben"), None);
     transposed?
         .lazy()
-        .with_column(lit(last_of_month).alias("Datum"))
+        .with_column(
+            when(col("KtSoll/KtHaben").eq(lit("10930/10100")))
+                .then(lit(""))
+                .otherwise(lit(last_of_month))
+                .alias("Datum"),
+        )
         .with_column(lit("Sumup").alias("Beschreibung"))
         .with_column(col("KtSoll/KtHaben").str().head(lit(5)).alias("KtSoll"))
         .with_column(col("KtSoll/KtHaben").str().tail(lit(5)).alias("KtHaben"))
