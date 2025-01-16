@@ -2,69 +2,16 @@ use polars::prelude::*;
 use std::error::Error;
 
 /// Produces the accounting dataframe from the summary [df] for import into banana
-pub fn gather_df_banana(df: &DataFrame, month: &str) -> PolarsResult<DataFrame> {
+pub fn gather_df_banana(df_acct: &DataFrame, month: &str) -> PolarsResult<DataFrame> {
     let last_of_month = get_last_of_month(month).expect("should be able to get last of month");
-    let transposed = df
+    df_acct
         .clone()
         .lazy()
         .filter(col("Date").is_null())
-        .with_column(
-            (col("Net Card Total").fill_null(0.0) + col("Tips_Card").fill_null(0.0))
-                .round(2)
-                .alias("Payment SumUp"),
-        )
-        .with_column(
-            (col("Net Card MiTi").fill_null(0.0) + col("MiTi_Tips_Card").fill_null(0.0))
-                .round(2)
-                .alias("Net Card Total MiTi"),
-        )
-        .with_column(
-            (col("Tips_Card").fill_null(0.0) - col("MiTi_Tips_Card").fill_null(0.0))
-                .round(2)
-                .alias("Tips Card LoLa"),
-        )
-        .with_column(
-            (col("Gross Cash").fill_null(0.0)
-                - col("MiTi_Cash").fill_null(0.0)
-                - col("PaidOut Total").fill_null(0.0))
-            .round(2)
-            .alias("Total Cash Debit"),
-        )
-        .with_column(
-            (col("Gross Card LoLa").fill_null(0.0) + col("Tips_Card").fill_null(0.0)
-                - col("MiTi_Tips_Card").fill_null(0.0))
-            .round(2)
-            .alias("Total Card Debit"),
-        )
-        .select([
-            col("Deposit_Cash").alias("10000/23050"),
-            col("Cafe_Cash").alias("10000/30200"),
-            col("Verm_Cash").alias("10000/30700"),
-            col("SoFe_Cash").alias("10000/30810"),
-            col("Rental_Cash").alias("10000/31000"),
-            col("Culture_Cash").alias("10000/32000"),
-            col("Packaging_Cash").alias("10000/46000"),
-            col("PaidOut_Card").alias("10920/10000"),
-            col("Deposit_Card").alias("10920/23050"),
-            col("Cafe_Card").alias("10920/30200"),
-            col("Verm_Card").alias("10920/30700"),
-            col("SoFe_Card").alias("10920/30810"),
-            col("Rental_Card").alias("10920/31000"),
-            col("Culture_Card").alias("10920/32000"),
-            col("Packaging_Card").alias("10920/46000"),
-            col("Net Card Total MiTi").alias("10920/20051"),
-            col("Tips Card LoLa").alias("10920/10910"),
-            col("LoLa_Commission").alias("68450/10920"),
-            col("Sponsored Reductions").alias("59991/20051"),
-            col("Total Praktikum").alias("59991/20120"),
-            col("Debt to MiTi").alias("20051/10930"),
-            col("Income LoLa MiTi").alias("20051/30500"),
-            col("Debt to MiTi").alias("10930/10100"),
-        ])
         .collect()?
-        .transpose(Some("KtSoll/KtHaben"), None);
-    transposed?
+        .transpose(Some("KtSoll/KtHaben"), None)?
         .lazy()
+        .filter(col("KtSoll/KtHaben").str().contains(lit("/"), false))
         .with_column(
             when(col("KtSoll/KtHaben").eq(lit("10930/10100")))
                 .then(lit(""))
