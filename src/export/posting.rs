@@ -1,35 +1,4 @@
-#[derive(Debug)]
-enum PostingType {
-    DepositCash,
-    CafeCash,
-    VermCash,
-    SoFeCash,
-    RentalCash,
-    CultureCash,
-    PackagingCash,
-
-    PaidOutCard,
-
-    DepositCard,
-    CafeCard,
-    VermCard,
-    SoFeCard,
-    RentalCard,
-    CultureCard,
-    PackagingCard,
-
-    NetCardMitiTotal,
-    TipsCardLoLa,
-    LoLaCommission,
-    SponsoredReductions,
-    TotalPraktikum,
-    DebtToMiti,
-    IncomeLoLaMiti,
-    PaymentToMiti,
-}
-
 pub struct Posting {
-    pub posting_type: PostingType,
     pub column_name: &'static str,
     pub alias: &'static str,
     pub description: &'static str,
@@ -37,139 +6,116 @@ pub struct Posting {
 
 impl Posting {
     pub const DEPOSIT_CASH: Posting = Posting {
-        posting_type: PostingType::DepositCash,
         column_name: "Deposit_Cash",
         alias: "10000/23050",
         description: "Deposit Cash",
     };
     pub const CAFE_CASH: Posting = Posting {
-        posting_type: PostingType::CafeCash,
         column_name: "Cafe_Cash",
         alias: "10000/30200",
         description: "Cafe Cash",
     };
     pub const VERM_CASH: Posting = Posting {
-        posting_type: PostingType::VermCash,
         column_name: "Verm_Cash",
         alias: "10000/30700",
         description: "Verm Cash",
     };
     pub const SOFE_CASH: Posting = Posting {
-        posting_type: PostingType::SoFeCash,
         column_name: "SoFe_Cash",
         alias: "10000/30810",
         description: "SoFe Cash",
     };
     pub const RENTAL_CASH: Posting = Posting {
-        posting_type: PostingType::RentalCash,
         column_name: "Rental_Cash",
         alias: "10000/31000",
         description: "Rental Cash",
     };
     pub const CULTURE_CASH: Posting = Posting {
-        posting_type: PostingType::CultureCash,
         column_name: "Culture_Cash",
         alias: "10000/32000",
         description: "Culture Cash",
     };
     pub const PACKAGING_CASH: Posting = Posting {
-        posting_type: PostingType::PackagingCash,
         column_name: "Packaging_Cash",
         alias: "10000/46000",
         description: "Packaging Cash",
     };
     pub const PAIDOUT_CARD: Posting = Posting {
-        posting_type: PostingType::PaidOutCard,
         column_name: "PaidOut_Card",
         alias: "10920/10000",
         description: "PaidOut Card",
     };
     pub const DEPOSIT_CARD: Posting = Posting {
-        posting_type: PostingType::DepositCard,
         column_name: "Deposit_Card",
         alias: "10920/23050",
         description: "Deposit Card",
     };
     pub const CAFE_CARD: Posting = Posting {
-        posting_type: PostingType::CafeCard,
         column_name: "Cafe_Card",
         alias: "10920/30200",
         description: "Cafe Card",
     };
     pub const VERM_CARD: Posting = Posting {
-        posting_type: PostingType::VermCard,
         column_name: "Verm_Card",
         alias: "10920/30700",
         description: "Verm Card",
     };
     pub const SOFE_CARD: Posting = Posting {
-        posting_type: PostingType::SoFeCard,
         column_name: "SoFe_Card",
         alias: "10920/30810",
         description: "SoFe Card",
     };
     pub const RENTAL_CARD: Posting = Posting {
-        posting_type: PostingType::RentalCard,
         column_name: "Rental_Card",
         alias: "10920/31000",
         description: "Rental Card",
     };
     pub const CULTURE_CARD: Posting = Posting {
-        posting_type: PostingType::CultureCard,
         column_name: "Culture_Card",
         alias: "10920/32000",
         description: "Culture Card",
     };
     pub const PACKAGING_CARD: Posting = Posting {
-        posting_type: PostingType::PackagingCard,
         column_name: "Packaging_Card",
         alias: "10920/46000",
         description: "Packaging Card",
     };
     pub const NET_CARD_TOTAL_MITI: Posting = Posting {
-        posting_type: PostingType::NetCardMitiTotal,
         column_name: "Net Card Total MiTi",
         alias: "10920/20051",
         description: "Net Card MiTi Total",
     };
     pub const TIPS_CARD_LOLA: Posting = Posting {
-        posting_type: PostingType::TipsCardLoLa,
         column_name: "Tips Card LoLa",
         alias: "10920/10910",
         description: "Tips Card LoLa",
     };
     pub const LOLA_COMMISSION: Posting = Posting {
-        posting_type: PostingType::LoLaCommission,
         column_name: "LoLa_Commission",
         alias: "68450/10920",
         description: "LoLa Commission",
     };
     pub const SPONSORED_REDUCTIONS: Posting = Posting {
-        posting_type: PostingType::SponsoredReductions,
         column_name: "Sponsored Reductions",
         alias: "59991/20051",
         description: "Sponsored Reductions",
     };
     pub const TOTAL_PRAKTIKUM: Posting = Posting {
-        posting_type: PostingType::TotalPraktikum,
         column_name: "Total Praktikum",
         alias: "59991/20120",
         description: "Total Praktikum",
     };
     pub const DEBT_TO_MITI: Posting = Posting {
-        posting_type: PostingType::DebtToMiti,
         column_name: "Debt to MiTi",
         alias: "20051/10930",
         description: "Debt to MiTi",
     };
     pub const INCOME_LOLA_MITI: Posting = Posting {
-        posting_type: PostingType::IncomeLoLaMiti,
         column_name: "Income LoLa MiTi",
         alias: "20051/30500",
         description: "Income LoLa MiTi",
     };
     pub const PAYMENT_TO_MITI: Posting = Posting {
-        posting_type: PostingType::PaymentToMiti,
         column_name: "Debt to MiTi",
         alias: "10930/10100",
         description: "Payment to MiTi",
