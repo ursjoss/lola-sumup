@@ -1,6 +1,8 @@
 use polars::prelude::*;
 use std::error::Error;
 
+use super::posting::Posting;
+
 /// Produces the accounting dataframe from the summary [df] for import into banana
 pub fn gather_df_banana(df_acct: &DataFrame, month: &str) -> PolarsResult<DataFrame> {
     let last_of_month = get_last_of_month(month).expect("should be able to get last of month");
@@ -13,7 +15,7 @@ pub fn gather_df_banana(df_acct: &DataFrame, month: &str) -> PolarsResult<DataFr
         .lazy()
         .filter(col("KtSoll/KtHaben").str().contains(lit("/"), false))
         .with_column(
-            when(col("KtSoll/KtHaben").eq(lit("10930/10100")))
+            when(col("KtSoll/KtHaben").eq(lit(Posting::PAYMENT_TO_MITI.alias)))
                 .then(lit(""))
                 .otherwise(lit(last_of_month))
                 .alias("Datum"),

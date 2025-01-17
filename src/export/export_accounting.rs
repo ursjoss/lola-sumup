@@ -16,12 +16,12 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
         .with_column(
             (col("Net Card MiTi").fill_null(0.0) + col("MiTi_Tips_Card").fill_null(0.0))
                 .round(2)
-                .alias("Net Card Total MiTi"),
+                .alias(Posting::NET_CARD_TOTAL_MITI.column_name),
         )
         .with_column(
             (col("Tips_Card").fill_null(0.0) - col("MiTi_Tips_Card").fill_null(0.0))
                 .round(2)
-                .alias("Tips Card LoLa"),
+                .alias(Posting::TIPS_CARD_LOLA.column_name),
         )
         .with_column(
             (col("Gross Cash").fill_null(0.0)
