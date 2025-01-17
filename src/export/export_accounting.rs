@@ -2,6 +2,8 @@ use std::error::Error;
 
 use polars::prelude::*;
 
+use crate::export::posting::*;
+
 /// Produces the Accounting dataframe from the summary [df]
 pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
     df.clone()
@@ -39,29 +41,30 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
             col("Payment SumUp"),
             col("Total Cash Debit"),
             col("Total Card Debit"),
-            col("Deposit_Cash").alias("10000/23050"),
-            col("Cafe_Cash").alias("10000/30200"),
-            col("Verm_Cash").alias("10000/30700"),
-            col("SoFe_Cash").alias("10000/30810"),
-            col("Rental_Cash").alias("10000/31000"),
-            col("Culture_Cash").alias("10000/32000"),
-            col("Packaging_Cash").alias("10000/46000"),
-            col("PaidOut_Card").alias("10920/10000"),
-            col("Deposit_Card").alias("10920/23050"),
-            col("Cafe_Card").alias("10920/30200"),
-            col("Verm_Card").alias("10920/30700"),
-            col("SoFe_Card").alias("10920/30810"),
-            col("Rental_Card").alias("10920/31000"),
-            col("Culture_Card").alias("10920/32000"),
-            col("Packaging_Card").alias("10920/46000"),
-            col("Net Card Total MiTi").alias("10920/20051"),
-            col("Tips Card LoLa").alias("10920/10910"),
-            col("LoLa_Commission").alias("68450/10920"),
-            col("Sponsored Reductions").alias("59991/20051"),
-            col("Total Praktikum").alias("59991/20120"),
-            col("Debt to MiTi").alias("20051/10930"),
-            col("Income LoLa MiTi").alias("20051/30500"),
-            col("Debt to MiTi").alias("10930/10100"),
+            col(Posting::DEPOSIT_CASH.column_name).alias(Posting::DEPOSIT_CASH.alias),
+            col(Posting::CAFE_CASH.column_name).alias(Posting::CAFE_CASH.alias),
+            col(Posting::VERM_CASH.column_name).alias(Posting::VERM_CASH.alias),
+            col(Posting::SOFE_CASH.column_name).alias(Posting::SOFE_CASH.alias),
+            col(Posting::RENTAL_CASH.column_name).alias(Posting::RENTAL_CASH.alias),
+            col(Posting::CULTURE_CASH.column_name).alias(Posting::CULTURE_CASH.alias),
+            col(Posting::PACKAGING_CASH.column_name).alias(Posting::PACKAGING_CASH.alias),
+            col(Posting::PAIDOUT_CARD.column_name).alias(Posting::PAIDOUT_CARD.alias),
+            col(Posting::DEPOSIT_CARD.column_name).alias(Posting::DEPOSIT_CARD.alias),
+            col(Posting::CAFE_CARD.column_name).alias(Posting::CAFE_CARD.alias),
+            col(Posting::VERM_CARD.column_name).alias(Posting::VERM_CARD.alias),
+            col(Posting::SOFE_CARD.column_name).alias(Posting::SOFE_CARD.alias),
+            col(Posting::RENTAL_CARD.column_name).alias(Posting::RENTAL_CARD.alias),
+            col(Posting::CULTURE_CARD.column_name).alias(Posting::CULTURE_CARD.alias),
+            col(Posting::PACKAGING_CARD.column_name).alias(Posting::PACKAGING_CARD.alias),
+            col(Posting::NET_CARD_TOTAL_MITI.column_name).alias(Posting::NET_CARD_TOTAL_MITI.alias),
+            col(Posting::TIPS_CARD_LOLA.column_name).alias(Posting::TIPS_CARD_LOLA.alias),
+            col(Posting::LOLA_COMMISSION.column_name).alias(Posting::LOLA_COMMISSION.alias),
+            col(Posting::SPONSORED_REDUCTIONS.column_name)
+                .alias(Posting::SPONSORED_REDUCTIONS.alias),
+            col(Posting::TOTAL_PRAKTIKUM.column_name).alias(Posting::TOTAL_PRAKTIKUM.alias),
+            col(Posting::DEBT_TO_MITI.column_name).alias(Posting::DEBT_TO_MITI.alias),
+            col(Posting::INCOME_LOLA_MITI.column_name).alias(Posting::INCOME_LOLA_MITI.alias),
+            col(Posting::PAYMENT_TO_MITI.column_name).alias(Posting::PAYMENT_TO_MITI.alias),
         ])
         .collect()
 }
@@ -73,25 +76,27 @@ pub fn validate_acc_constraint(df_acc: &DataFrame) -> Result<(), Box<dyn Error>>
 
 /// validates the transitory account 10920 nets to 0
 fn validate_acc_constraint_10920(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
-    let net_expr = col("10920/30200")
-        + col("10920/30700")
-        + col("10920/30810")
-        + col("10920/23050")
-        + col("10920/31000")
-        + col("10920/32000")
-        + col("10920/46000")
-        + col("10920/20051")
-        + col("10920/10000")
-        + col("10920/10910")
+    let net_expr = col(Posting::CAFE_CARD.alias)
+        + col(Posting::VERM_CARD.alias)
+        + col(Posting::SOFE_CARD.alias)
+        + col(Posting::DEPOSIT_CARD.alias)
+        + col(Posting::RENTAL_CARD.alias)
+        + col(Posting::CULTURE_CARD.alias)
+        + col(Posting::PACKAGING_CARD.alias)
+        + col(Posting::NET_CARD_TOTAL_MITI.alias)
+        + col(Posting::PAIDOUT_CARD.alias)
+        + col(Posting::TIPS_CARD_LOLA.alias)
         - col("Payment SumUp")
-        - col("68450/10920");
+        - col(Posting::LOLA_COMMISSION.alias);
     validate_constraint(df_acc, net_expr, "10920")?
 }
 
 /// validates the transitory account 10920 nets to 0
 fn validate_acc_constraint_20051(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
-    let net_expr =
-        col("10920/20051") - col("20051/10930") - col("20051/30500") + col("59991/20051");
+    let net_expr = col(Posting::NET_CARD_TOTAL_MITI.alias)
+        - col(Posting::DEBT_TO_MITI.alias)
+        - col(Posting::INCOME_LOLA_MITI.alias)
+        + col(Posting::SPONSORED_REDUCTIONS.alias);
     validate_constraint(df_acc, net_expr, "20051")?
 }
 

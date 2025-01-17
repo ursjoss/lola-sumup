@@ -20,6 +20,7 @@ mod export_accounting;
 mod export_banana;
 mod export_miti;
 mod export_summary;
+mod posting;
 
 /// Reads the intermediate files and exports all configured reports.
 pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Error>> {
