@@ -8,117 +8,117 @@ impl Posting {
     pub const DEPOSIT_CASH: Posting = Posting {
         column_name: "Deposit_Cash",
         alias: "10000/23050",
-        description: "Deposit Cash",
+        description: "Schlüsseldepot bar",
     };
     pub const CAFE_CASH: Posting = Posting {
         column_name: "Cafe_Cash",
         alias: "10000/30200",
-        description: "Cafe Cash",
+        description: "Cafe bar",
     };
     pub const VERM_CASH: Posting = Posting {
         column_name: "Verm_Cash",
         alias: "10000/30700",
-        description: "Verm Cash",
+        description: "Verkäufe bei Vermietung bar",
     };
     pub const SOFE_CASH: Posting = Posting {
         column_name: "SoFe_Cash",
         alias: "10000/30810",
-        description: "SoFe Cash",
+        description: "Sommerfest bar",
     };
     pub const RENTAL_CASH: Posting = Posting {
         column_name: "Rental_Cash",
         alias: "10000/31000",
-        description: "Rental Cash",
+        description: "Vermietungen bar",
     };
     pub const CULTURE_CASH: Posting = Posting {
         column_name: "Culture_Cash",
         alias: "10000/32000",
-        description: "Culture Cash",
+        description: "Kulturverkäufe bar",
     };
     pub const PACKAGING_CASH: Posting = Posting {
         column_name: "Packaging_Cash",
         alias: "10000/46000",
-        description: "Packaging Cash",
+        description: "Recircle bar",
     };
     pub const PAIDOUT_CARD: Posting = Posting {
         column_name: "PaidOut_Card",
         alias: "10920/10000",
-        description: "PaidOut Card",
+        description: "Auszahlung Kooperationen Kartenzahlungen",
     };
     pub const DEPOSIT_CARD: Posting = Posting {
         column_name: "Deposit_Card",
         alias: "10920/23050",
-        description: "Deposit Card",
+        description: "Schlüsseldepot Karte",
     };
     pub const CAFE_CARD: Posting = Posting {
         column_name: "Cafe_Card",
         alias: "10920/30200",
-        description: "Cafe Card",
+        description: "Cafe Karte",
     };
     pub const VERM_CARD: Posting = Posting {
         column_name: "Verm_Card",
         alias: "10920/30700",
-        description: "Verm Card",
+        description: "Verkäufe Vermietung Karte",
     };
     pub const SOFE_CARD: Posting = Posting {
         column_name: "SoFe_Card",
         alias: "10920/30810",
-        description: "SoFe Card",
+        description: "Sommerfest Karte",
     };
     pub const RENTAL_CARD: Posting = Posting {
         column_name: "Rental_Card",
         alias: "10920/31000",
-        description: "Rental Card",
+        description: "Vermietungen Karte",
     };
     pub const CULTURE_CARD: Posting = Posting {
         column_name: "Culture_Card",
         alias: "10920/32000",
-        description: "Culture Card",
+        description: "Kulturverkäufe Karte",
     };
     pub const PACKAGING_CARD: Posting = Posting {
         column_name: "Packaging_Card",
         alias: "10920/46000",
-        description: "Packaging Card",
+        description: "Recircle Karte",
     };
     pub const NET_CARD_TOTAL_MITI: Posting = Posting {
         column_name: "Net Card Total MiTi",
         alias: "10920/20051",
-        description: "Net Card MiTi Total",
+        description: "Netto-Ertrag + Tips Karte MiTi",
     };
     pub const TIPS_CARD_LOLA: Posting = Posting {
         column_name: "Tips Card LoLa",
         alias: "10920/10910",
-        description: "Tips Card LoLa",
+        description: "Tips Karte LoLa",
     };
     pub const LOLA_COMMISSION: Posting = Posting {
         column_name: "LoLa_Commission",
         alias: "68450/10920",
-        description: "LoLa Commission",
+        description: "Kartenkommission",
     };
     pub const SPONSORED_REDUCTIONS: Posting = Posting {
         column_name: "Sponsored Reductions",
         alias: "59991/20051",
-        description: "Sponsored Reductions",
+        description: "Preisreduktionen",
     };
     pub const TOTAL_PRAKTIKUM: Posting = Posting {
         column_name: "Total Praktikum",
         alias: "59991/20120",
-        description: "Total Praktikum",
+        description: "Essen Praktikum",
     };
     pub const DEBT_TO_MITI: Posting = Posting {
         column_name: "Debt to MiTi",
         alias: "20051/10930",
-        description: "Debt to MiTi",
+        description: "Anteil MiTi",
     };
     pub const INCOME_LOLA_MITI: Posting = Posting {
         column_name: "Income LoLa MiTi",
         alias: "20051/30500",
-        description: "Income LoLa MiTi",
+        description: "Verkäufe Mittagstisch LoLa",
     };
     pub const PAYMENT_TO_MITI: Posting = Posting {
         column_name: "Debt to MiTi",
         alias: "10930/10100",
-        description: "Payment to MiTi",
+        description: "Überweisung an MiTi",
     };
     const ALL: [Posting; 23] = [
         Posting::DEPOSIT_CASH,

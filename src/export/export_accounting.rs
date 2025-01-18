@@ -2,7 +2,7 @@ use std::error::Error;
 
 use polars::prelude::*;
 
-use crate::export::posting::*;
+use crate::export::posting::Posting;
 
 /// Produces the Accounting dataframe from the summary [df]
 pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
