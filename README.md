@@ -314,3 +314,20 @@ They serve for consolidation purposes:
 Where the absolute net sum for the transitory accounts must not be > 0.05, i.e.:
 - for `10920`: abs(`10920/30200` + `10920/30700` + `10920/30810` + `10920/23050` + `10920/46000` + `10920/31000` + `10920/32000` +`10920/20051` + `10920/10000` + `10920/10910` - `Payment SumUp` - `68450/10920`) < 0.05
 - for `20051`: abs(`10920/20051` - `20051/10930` - `20051/30200` + `59991/20051`) < 0.05
+
+### Banana Export
+
+The purpose of the banana export is to provide a copy/paste template with the monthly sumup postings.
+It is basically a different view on the monthly summary line of the accounting report (a pivot view).
+One can copy the cells and simply paste them into the ledger of the banana accounting software.
+
+The columns in the banana.csv spreachsheet are:
+
+- `Datum`: The last day of the month
+- `Rechnung`: Empty placeholder column
+- `Beschreibung`: The posting description, always starting with "SU " (for SumUp)
+- `KtSoll`: The Debit account number
+- `KtHaben`: The Credit account number
+- `Anzahl`: Empty placeholder column
+- `Preis/Einheit`: Empty placeholder column
+- `Betrag CHF`: The posting amount
