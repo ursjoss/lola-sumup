@@ -132,7 +132,7 @@ fn derive_month_from(file: Option<&str>) -> Result<String, String> {
         let path = std::path::Path::new(filename);
         if path
             .extension()
-            .map_or(false, |ext| ext.eq_ignore_ascii_case("csv"))
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("csv"))
         {
             let start_index = underscore_index + 1;
             let end_index = start_index + 5;
