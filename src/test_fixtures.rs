@@ -125,7 +125,7 @@ pub fn intermediate_df_02(sample_date: NaiveDate) -> DataFrame {
         "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption"],
         "Comment" => &[None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>],
     )
-        .expect("valid intermediate dataframe 03")
+        .expect("valid intermediate dataframe 02")
 }
 
 /// Sample record 02 matching the summary df, created from `intermediate_df_02`
