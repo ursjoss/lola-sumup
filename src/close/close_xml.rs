@@ -15,6 +15,8 @@ pub fn do_closing_xml(
     _month: &str,
     _ts: &str,
 ) -> Result<(), Box<dyn Error>> {
+    let b1 = budget.clone();
+    let b2 = budget.clone();
     let balances = read_xml(input_path)?;
     let enriched = balances
         .clone()
@@ -22,12 +24,29 @@ pub fn do_closing_xml(
         .with_column(
             col("Account")
                 .apply(
-                    move |a| get_post(&a, &budget),
+                    move |a| get_name_of_post(&a, &b1),
                     GetOutput::from_type(DataType::String),
                 )
                 .alias("Group"),
         )
+        .with_column(
+            col("Account")
+                .apply(
+                    move |a| get_factor_of_post(&a, &b2),
+                    GetOutput::from_type(DataType::Int8),
+                )
+                .alias("Factor"),
+        )
+        .with_column(
+            col("Account")
+                .apply(
+                    move |a| get_sort_of_post(&a, &budget),
+                    GetOutput::from_type(DataType::Int8),
+                )
+                .alias("Sort"),
+        )
         .filter(
+            // Exceptional accounts that need not be included
             col("Account")
                 .neq(lit("8900"))
                 .or(col("Debit").neq(lit(0.0)))
@@ -40,11 +59,11 @@ pub fn do_closing_xml(
     let aggregated = enriched
         .clone()
         .lazy()
-        .with_column(
-            (col("Credit").fill_null(lit(0.0)) - col("Debit").fill_null(lit(0.0))).alias("Net"),
-        )
-        .group_by(["Group"])
+        .with_column((col("Balance").fill_null(lit(0.0)) * col("Factor")).alias("Net"))
+        .group_by(["Group", "Sort"])
         .agg(&[col("Net").sum()])
+        .sort(["Sort"], Default::default())
+        .select([col("Group"), col("Net")])
         .collect()?;
     println!("{aggregated:?}");
     Ok(())
@@ -68,7 +87,7 @@ fn validate_all_accounts_are_in_budget(enriched: &DataFrame) -> Result<(), Box<d
 }
 
 /// Finds the descriptions of the budget post for given account
-fn get_post(col: &Column, budget: &Budget) -> PolarsResult<Option<Column>> {
+fn get_name_of_post(col: &Column, budget: &Budget) -> PolarsResult<Option<Column>> {
     let accounts = col.str()?;
     Ok(Some(
         accounts
@@ -78,6 +97,37 @@ fn get_post(col: &Column, budget: &Budget) -> PolarsResult<Option<Column>> {
                     .or(None)?
             })
             .collect::<StringChunked>()
+            .into_column(),
+    ))
+}
+
+/// Finds the sort for the post for given account
+fn get_sort_of_post(col: &Column, budget: &Budget) -> PolarsResult<Option<Column>> {
+    get_int_from_post(col, budget, |p| p.sort)
+}
+
+/// Finds the factor for the post for given account
+fn get_factor_of_post(col: &Column, budget: &Budget) -> PolarsResult<Option<Column>> {
+    get_int_from_post(col, budget, |p| p.factor)
+}
+
+fn get_int_from_post<F>(
+    col: &Column,
+    budget: &Budget,
+    int_extractor: F,
+) -> PolarsResult<Option<Column>>
+where
+    F: Fn(&Post) -> i64 + Copy,
+{
+    let accounts = col.str()?;
+    Ok(Some(
+        accounts
+            .into_iter()
+            .map(|a| {
+                a.map(|a| budget.get_post_by_account(a).map(int_extractor))
+                    .or(None)?
+            })
+            .collect::<Int64Chunked>()
             .into_column(),
     ))
 }
@@ -135,11 +185,19 @@ fn read_xml(input_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
                 }
                 b"Row" => {
                     if in_sheet {
+                        let account_index = AccountsColumn::Account as u32;
+                        let description_index = AccountsColumn::Description as u32;
+                        let debit_index = AccountsColumn::Debit as u32;
+                        let credit_index = AccountsColumn::Credit as u32;
+                        let balance_index = AccountsColumn::Balance as u32;
                         let mut df_row = new_row(
-                            row.remove(&10).unwrap_or("account missing".into()),
-                            row.remove(&11).unwrap_or("description missing".into()),
-                            &row.remove(&21).unwrap_or("0.0".into()),
-                            &row.remove(&22).unwrap_or("0.0".into()),
+                            row.remove(&account_index)
+                                .unwrap_or("account missing".into()),
+                            row.remove(&description_index)
+                                .unwrap_or("description missing".into()),
+                            &row.remove(&debit_index).unwrap_or("0.0".into()),
+                            &row.remove(&credit_index).unwrap_or("0.0".into()),
+                            &row.remove(&balance_index).unwrap_or("0.0".into()),
                         )?;
                         df_row = df_row.fill_null(FillNullStrategy::Zero)?;
                         let filtered = df_row
@@ -181,14 +239,17 @@ fn new_row(
     description: String,
     debit: &str,
     credit: &str,
+    balance: &str,
 ) -> Result<DataFrame, Box<dyn Error>> {
     let debit_numeric: f64 = debit.parse().unwrap_or(0.0);
     let credit_numeric: f64 = credit.parse().unwrap_or(0.0);
+    let balance_numeric: f64 = balance.parse().unwrap_or(0.0);
     new_row_with_vecs(
         vec![account],
         vec![description],
         vec![debit_numeric],
         vec![credit_numeric],
+        vec![balance_numeric],
     )
 }
 
@@ -196,6 +257,7 @@ fn new_empty_frame() -> Result<DataFrame, Box<dyn Error>> {
     new_row_with_vecs(
         Vec::<String>::new(),
         Vec::<String>::new(),
+        Vec::<f64>::new(),
         Vec::<f64>::new(),
         Vec::<f64>::new(),
     )
@@ -206,6 +268,7 @@ fn new_row_with_vecs(
     description: Vec<String>,
     debit: Vec<f64>,
     credit: Vec<f64>,
+    balance: Vec<f64>,
 ) -> Result<DataFrame, Box<dyn Error>> {
     let df = DataFrame::new(vec![
         Column::new(
@@ -223,6 +286,10 @@ fn new_row_with_vecs(
         Column::new(
             AccountsColumn::Credit.name().into(),
             Series::new(AccountsColumn::Credit.name().into(), credit),
+        ),
+        Column::new(
+            AccountsColumn::Balance.name().into(),
+            Series::new(AccountsColumn::Balance.name().into(), balance),
         ),
     ])?;
     Ok(df)
@@ -255,6 +322,7 @@ enum AccountsColumn {
     Description = 11,
     Debit = 21,
     Credit = 22,
+    Balance = 23,
 }
 
 impl AccountsColumn {
@@ -264,11 +332,12 @@ impl AccountsColumn {
             AccountsColumn::Description => "Description",
             AccountsColumn::Debit => "Debit",
             AccountsColumn::Credit => "Credit",
+            AccountsColumn::Balance => "Balance",
         }
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Budget {
     pub name: String,
     post_groups: HashMap<String, PostGroup>,
@@ -276,19 +345,21 @@ pub struct Budget {
     years: HashMap<String, Year>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 struct PostGroup {
     name: String,
     posts: Vec<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 struct Post {
     name: String,
     account_codes: Vec<String>,
+    sort: i64,
+    factor: i64,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 struct Year {
     amounts: HashMap<String, f64>,
 }

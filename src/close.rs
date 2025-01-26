@@ -4,9 +4,7 @@ use crate::derive_month_from_accounts;
 
 use std::error::Error;
 use std::fs;
-use std::path::{Path, PathBuf};
-
-use serde::Deserialize;
+use std::path::Path;
 
 mod close_xml;
 
@@ -41,6 +39,7 @@ fn read_budget_config(budget_config_file: &Path) -> Result<Budget, Box<dyn Error
 mod tests {
     use super::*;
     use rstest::rstest;
+    use std::path::{Path, PathBuf};
 
     #[rstest]
     fn can_read_from_sample_config_file() {

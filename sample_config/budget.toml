@@ -26,6 +26,8 @@ posts = ["RX", "EX", "AX"]
 
 [posts.E30]
 name = "Ertrag Restauration"
+sort = 1
+factor = -1
 account_codes = [
 	"30100",
 	"30200",
@@ -38,27 +40,40 @@ account_codes = [
 ]
 
 [posts.E31]
-name = "Ertrag Vermietunge"
+name = "Ertrag Vermietungen"
+sort = 2
+factor = -1
 account_codes = ["31000", "31100"]
 
 [posts.E320]
 name = "Kulturelle Einnahmen"
+sort = 3
+factor = -1
 account_codes = ["32000"]
 
 [posts.E321]
 name = "Projektertrag / Diverse Erträge"
+sort = 4
+factor = -1
+
 account_codes = ["32100", "32900"]
 
 [posts.E33]
 name = "Mitgliederbeiträge"
+sort = 5
+factor = -1
 account_codes = ["35000"]
 
 [posts.E360]
 name = "Spenden"
+sort = 6
+factor = -1
 account_codes = ["36000", "36001"]
 
 [posts.E365]
 name = "Projektbeiträge"
+sort = 7
+factor = -1
 account_codes = [
 	"32020",
 	"32030",
@@ -72,14 +87,20 @@ account_codes = [
 
 [posts.E38]
 name = "Subventionen"
+sort = 8
+factor = -1
 account_codes = ["38000"]
 
 [posts.A40]
 name = "Restaurationsaufwand"
+sort = 9
+factor = 1
 account_codes = ["40000", "40060"]
 
 [posts.A41]
 name = "Projektaufwand"
+sort = 10
+factor = 1
 account_codes = [
 	"41000",
 	"41001",
@@ -93,23 +114,112 @@ account_codes = [
 
 [posts.A42]
 name = "Kulturelle Kosten"
+sort = 11
+factor = 1
 account_codes = ["42000", "42010", "42020", "42060", "42100"]
 
 [posts.AXX]
 name = "Betriebsaufwand"
+sort = 12
+factor = 1
 account_codes = ["46000", "61000", "61200", "61500", "64000", "64600"]
+
+[posts.A520]
+name = "Monatslöhne"
+sort = 13
+factor = 1
+account_codes = ["52000", "52002", "52040", "52050"]
+
+[posts.A521]
+name = "Kleine Entgelte + Überstunden"
+sort = 14
+factor = 1
+account_codes = ["52100"]
+
+[posts.A57]
+name = "Sozialversicherungen"
+sort = 15
+factor = 1
+account_codes = ["57000", "57100", "57200", "57300", "57400"]
+
+[posts.A590]
+name = "Drittbeiträge an Lohnkosten"
+sort = 16
+factor = 1
+account_codes = ["59000"]
+
+[posts.A599]
+name = "übr. Pers. Aufwand/Supi"
+sort = 17
+factor = 1
+account_codes = ["59500", "59990", "59991"]
+
+[posts.A60A]
+name = "Raumaufwand"
+sort = 18
+factor = 1
+account_codes = ["60000", "60100"]
+
+[posts.A60B]
+name = "Hauswartung"
+sort = 19
+factor = 1
+account_codes = ["60500", "60600"]
+
+[posts.A63]
+name = "Versicherungen, Gebühren"
+sort = 20
+factor = 1
+account_codes = ["63000", "63600"]
+
+[posts.A65X]
+name = "Verwaltungskosten"
+sort = 21
+factor = 1
+account_codes = ["65000", "65001", "65030", "65120", "65200", "65300", "65900"]
+
+[posts.A651]
+name = "Telefon/Internet"
+sort = 22
+factor = 1
+account_codes = ["65100"]
+
+[posts.A66]
+name = "Öffentlichkeitsarbeit"
+sort = 23
+factor = 1
+account_codes = ["66000", "66001", "66200", "66500"]
+
+[posts.A68]
+name = "Finanzaufwand"
+sort = 24
+factor = 1
+account_codes = ["68400", "68450"]
+
+[posts.A69]
+name = "Abschreibungen"
+sort = 25
+factor = 1
+account_codes = ["69000"]
 
 [posts.RX]
 name = "Reserve"
+sort = 26
+factor = -1
 account_codes = []
 
 [posts.EX]
 name = "Ertrag"
+sort = 27
+factor = -1
 account_codes = ["80000"]
 
 [posts.AX]
 name = "Aufwand"
+sort = 28
+factor = 1
 account_codes = ["80100"]
+
 
 [years]
 
