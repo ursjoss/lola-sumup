@@ -15,12 +15,71 @@ pub fn do_closing_xml(
     _month: &str,
     _ts: &str,
 ) -> Result<(), Box<dyn Error>> {
-    let df = read_xml(input_path)?;
+    let balances = read_xml(input_path)?;
+    let enriched = balances
+        .clone()
+        .lazy()
+        .with_column(
+            col("Account")
+                .apply(
+                    move |a| get_post(&a, &budget),
+                    GetOutput::from_type(DataType::String),
+                )
+                .alias("Group"),
+        )
+        .filter(
+            col("Account")
+                .neq(lit("8900"))
+                .or(col("Debit").neq(lit(0.0)))
+                .or(col("Credit").neq(lit(0.0))),
+        )
+        .collect()?;
 
-    println!("{df:?}");
-    println!("{budget:?}");
+    validate_all_accounts_are_in_budget(&enriched)?;
 
+    let aggregated = enriched
+        .clone()
+        .lazy()
+        .with_column(
+            (col("Credit").fill_null(lit(0.0)) - col("Debit").fill_null(lit(0.0))).alias("Net"),
+        )
+        .group_by(["Group"])
+        .agg(&[col("Net").sum()])
+        .collect()?;
+    println!("{aggregated:?}");
     Ok(())
+}
+
+// validates the processed data does not contain any accounts that are not in the budget
+fn validate_all_accounts_are_in_budget(enriched: &DataFrame) -> Result<(), Box<dyn Error>> {
+    let unmatched = enriched
+        .clone()
+        .lazy()
+        .filter(col("Group").is_null())
+        .collect()?;
+    if unmatched.shape().0 > 0 {
+        let row_vec = unmatched.get_row(0).unwrap().0;
+        let account = row_vec.first().unwrap().clone();
+        println!("{unmatched:?}");
+        Err(format!("Account {account} is not considered in the budget definition").into())
+    } else {
+        Ok(())
+    }
+}
+
+/// Finds the descriptions of the budget post for given account
+fn get_post(col: &Column, budget: &Budget) -> PolarsResult<Option<Column>> {
+    let accounts = col.str()?;
+    Ok(Some(
+        accounts
+            .into_iter()
+            .map(|a| {
+                a.map(|a| budget.get_post_by_account(a).map(|p| format!("{}", p.name)))
+                    .or(None)?
+            })
+            .collect::<StringChunked>()
+            .into_column(),
+    ))
 }
 
 fn read_xml(input_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
@@ -232,4 +291,14 @@ struct Post {
 #[derive(Deserialize, Debug)]
 struct Year {
     amounts: HashMap<String, f64>,
+}
+
+impl Budget {
+    /// Get the post by account code
+    /// TODO use this to enrich the DataFrame with the post information
+    fn get_post_by_account(&self, account: &str) -> Option<&Post> {
+        self.posts
+            .values()
+            .find(|p| p.account_codes.contains(&account.to_string()))
+    }
 }
