@@ -39,7 +39,7 @@ fn read_budget_config(budget_config_file: &Path) -> Result<Budget, Box<dyn Error
 mod tests {
     use super::*;
     use rstest::rstest;
-    use std::path::{Path, PathBuf};
+    use std::path::PathBuf;
 
     #[rstest]
     fn can_read_from_sample_config_file() {

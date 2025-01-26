@@ -62,7 +62,7 @@ pub fn do_closing_xml(
         .with_column((col("Balance").fill_null(lit(0.0)) * col("Factor")).alias("Net"))
         .group_by(["Group", "Sort"])
         .agg(&[col("Net").sum()])
-        .sort(["Sort"], Default::default())
+        .sort(["Sort"], SortMultipleOptions::default())
         .select([col("Group"), col("Net")])
         .collect()?;
     println!("{aggregated:?}");
@@ -93,7 +93,7 @@ fn get_name_of_post(col: &Column, budget: &Budget) -> PolarsResult<Option<Column
         accounts
             .into_iter()
             .map(|a| {
-                a.map(|a| budget.get_post_by_account(a).map(|p| format!("{}", p.name)))
+                a.map(|a| budget.get_post_by_account(a).map(|p| p.name.to_string()))
                     .or(None)?
             })
             .collect::<StringChunked>()
@@ -366,7 +366,7 @@ struct Year {
 
 impl Budget {
     /// Get the post by account code
-    /// TODO use this to enrich the DataFrame with the post information
+    /// TODO use this to enrich the `DataFrame` with the post information
     fn get_post_by_account(&self, account: &str) -> Option<&Post> {
         self.posts
             .values()
