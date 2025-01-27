@@ -15,6 +15,7 @@ pub fn do_closing_xml(
     _month: &str,
     _ts: &str,
 ) -> Result<(), Box<dyn Error>> {
+    let budget = Arc::new(budget);
     let b1 = budget.clone();
     let b2 = budget.clone();
     let balances = read_xml(input_path)?;
