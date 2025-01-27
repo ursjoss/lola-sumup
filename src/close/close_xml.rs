@@ -12,12 +12,16 @@ use std::path::Path;
 pub fn do_closing_xml(
     input_path: &Path,
     budget: Budget,
-    _month: &str,
+    month: &str,
     _ts: &str,
 ) -> Result<(), Box<dyn Error>> {
     let budget = Arc::new(budget);
     let b1 = budget.clone();
     let b2 = budget.clone();
+    let b3 = budget.clone();
+    let b4 = budget;
+    let year = month.chars().take(4).collect::<String>();
+    println!("year: {year}");
     let balances = read_xml(input_path)?;
     let enriched = balances
         .clone()
@@ -41,10 +45,18 @@ pub fn do_closing_xml(
         .with_column(
             col("Account")
                 .apply(
-                    move |a| get_sort_of_post(&a, &budget),
+                    move |a| get_sort_of_post(&a, &b3),
                     GetOutput::from_type(DataType::Int8),
                 )
                 .alias("Sort"),
+        )
+        .with_column(
+            col("Account")
+                .apply(
+                    move |a| get_budget_of_post(&a, &b4, &year),
+                    GetOutput::from_type(DataType::Int64),
+                )
+                .alias("Budget"),
         )
         .filter(
             // Exceptional accounts that need not be included
@@ -61,10 +73,15 @@ pub fn do_closing_xml(
         .clone()
         .lazy()
         .with_column((col("Balance").fill_null(lit(0.0)) * col("Factor")).alias("Net"))
-        .group_by(["Group", "Sort"])
+        .group_by(["Group", "Sort", "Budget", "Factor"])
         .agg(&[col("Net").sum()])
         .sort(["Sort"], SortMultipleOptions::default())
-        .select([col("Group"), col("Net")])
+        .select([
+            col("Group"),
+            col("Budget"),
+            col("Net"),
+            ((col("Budget") - col("Net")) * col("Factor")).alias("Remaining"),
+        ])
         .collect()?;
     println!("{aggregated:?}");
     Ok(())
@@ -98,6 +115,18 @@ fn get_name_of_post(col: &Column, budget: &Budget) -> PolarsResult<Option<Column
                     .or(None)?
             })
             .collect::<StringChunked>()
+            .into_column(),
+    ))
+}
+
+/// Finds the budget amount of the budget post for given account and year
+fn get_budget_of_post(col: &Column, budget: &Budget, year: &str) -> PolarsResult<Option<Column>> {
+    let accounts = col.str()?;
+    Ok(Some(
+        accounts
+            .into_iter()
+            .map(|a| a.map(|a| budget.get_buget_amount_by_account(a, year)))
+            .collect::<Float64Chunked>()
             .into_column(),
     ))
 }
@@ -367,10 +396,30 @@ struct Year {
 
 impl Budget {
     /// Get the post by account code
-    /// TODO use this to enrich the `DataFrame` with the post information
     fn get_post_by_account(&self, account: &str) -> Option<&Post> {
         self.posts
             .values()
             .find(|p| p.account_codes.contains(&account.to_string()))
+    }
+
+    fn get_post_key_by_account(&self, account: &str) -> Option<String> {
+        self.posts
+            .iter()
+            .find(|(_, p)| p.account_codes.contains(&account.to_string()))
+            .map(|(k, _)| k.to_string())
+    }
+
+    /// get the amount for the given budget account and year
+    fn get_buget_amount_by_account(&self, account: &str, year: &str) -> f64 {
+        let post_key_option = self.get_post_key_by_account(account);
+        if let Some(post_key) = post_key_option {
+            let x = self.years.get(year);
+            println!("x: {x:?}");
+            x.and_then(|y| y.amounts.get(&post_key))
+                .copied()
+                .unwrap_or(-0.0) as f64
+        } else {
+            -0.0
+        }
     }
 }
