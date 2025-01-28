@@ -1,0 +1,296 @@
+name = "LoLa Budget"
+
+[post_groups]
+
+[post_groups.revenue]
+name = "Ertrag"
+posts = ["E30", "E31", "E320", "E321", "E33", "E360", "E365", "E38"]
+
+[post_groups.costs_direct]
+name = "Direkter Aufwand"
+posts = ["A40", "A41", "A42", "AXX"]
+
+[post_groups.costs_staff]
+name = "Personal"
+posts = ["A520", "A521", "A57", "A590", "A599"]
+
+[post_groups.costs_remaining]
+name = "Überiger Aufwand"
+posts = ["A60A", "A60B", "A63", "A65X", "A651", "A66", "A68", "A69"]
+
+[post_groups.costs_extra]
+name = "Ausserordentlicher Ertrag"
+posts = ["RX", "EX", "AX"]
+
+[posts]
+
+[posts.E30]
+name = "Ertrag Restauration"
+sort = 1
+factor = -1
+account_codes = [
+	"30100",
+	"30200",
+	"30500",
+	"30600",
+	"30700",
+	"30800",
+	"30810",
+	"30900",
+]
+
+[posts.E31]
+name = "Ertrag Vermietungen"
+sort = 2
+factor = -1
+account_codes = ["31000", "31100"]
+
+[posts.E320]
+name = "Kulturelle Einnahmen"
+sort = 3
+factor = -1
+account_codes = ["32000"]
+
+[posts.E321]
+name = "Projektertrag / Diverse Erträge"
+sort = 4
+factor = -1
+
+account_codes = ["32100", "32900"]
+
+[posts.E33]
+name = "Mitgliederbeiträge"
+sort = 5
+factor = -1
+account_codes = ["35000"]
+
+[posts.E360]
+name = "Spenden"
+sort = 6
+factor = -1
+account_codes = ["36000", "36001"]
+
+[posts.E365]
+name = "Projektbeiträge"
+sort = 7
+factor = -1
+account_codes = [
+	"32020",
+	"32030",
+	"32050",
+	"32092",
+	"32093",
+	"36500",
+	"36501",
+	"36590",
+]
+
+[posts.E38]
+name = "Subventionen"
+sort = 8
+factor = -1
+account_codes = ["38000"]
+
+[posts.A40]
+name = "Restaurationsaufwand"
+sort = 9
+factor = 1
+account_codes = ["40000", "40060"]
+
+[posts.A41]
+name = "Projektaufwand"
+sort = 10
+factor = 1
+account_codes = [
+	"41000",
+	"41001",
+	"41070",
+	"41080",
+	"41090",
+	"41091",
+	"41092",
+	"41093",
+]
+
+[posts.A42]
+name = "Kulturelle Kosten"
+sort = 11
+factor = 1
+account_codes = ["42000", "42010", "42020", "42060", "42100"]
+
+[posts.AXX]
+name = "Betriebsaufwand"
+sort = 12
+factor = 1
+account_codes = ["46000", "61000", "61200", "61500", "64000", "64600"]
+
+[posts.A520]
+name = "Monatslöhne"
+sort = 13
+factor = 1
+account_codes = ["52000", "52002", "52040", "52050"]
+
+[posts.A521]
+name = "Kleine Entgelte + Überstunden"
+sort = 14
+factor = 1
+account_codes = ["52100"]
+
+[posts.A57]
+name = "Sozialversicherungen"
+sort = 15
+factor = 1
+account_codes = ["57000", "57100", "57200", "57300", "57400"]
+
+[posts.A590]
+name = "Drittbeiträge an Lohnkosten"
+sort = 16
+factor = 1
+account_codes = ["59000"]
+
+[posts.A599]
+name = "übr. Pers. Aufwand/Supi"
+sort = 17
+factor = 1
+account_codes = ["59500", "59990", "59991"]
+
+[posts.A60A]
+name = "Raumaufwand"
+sort = 18
+factor = 1
+account_codes = ["60000", "60100"]
+
+[posts.A60B]
+name = "Hauswartung"
+sort = 19
+factor = 1
+account_codes = ["60500", "60600"]
+
+[posts.A63]
+name = "Versicherungen, Gebühren"
+sort = 20
+factor = 1
+account_codes = ["63000", "63600"]
+
+[posts.A65X]
+name = "Verwaltungskosten"
+sort = 21
+factor = 1
+account_codes = ["65000", "65001", "65030", "65120", "65200", "65300", "65900"]
+
+[posts.A651]
+name = "Telefon/Internet"
+sort = 22
+factor = 1
+account_codes = ["65100"]
+
+[posts.A66]
+name = "Öffentlichkeitsarbeit"
+sort = 23
+factor = 1
+account_codes = ["66000", "66001", "66200", "66500"]
+
+[posts.A68]
+name = "Finanzaufwand"
+sort = 24
+factor = 1
+account_codes = ["68400", "68450"]
+
+[posts.A69]
+name = "Abschreibungen"
+sort = 25
+factor = 1
+account_codes = ["69000"]
+
+[posts.RX]
+name = "Reserve"
+sort = 26
+factor = -1
+account_codes = []
+
+[posts.EX]
+name = "Ertrag"
+sort = 27
+factor = -1
+account_codes = ["80000"]
+
+[posts.AX]
+name = "Aufwand"
+sort = 28
+factor = 1
+account_codes = ["80100"]
+
+
+[years]
+
+[years.2024]
+
+[years.2024.amounts]
+E30 = 30.00
+E31 = 31.00
+E320 = 320.00
+E321 = 321.00
+E33 = 33.00
+E360 = 360.00
+E365 = 368.00
+E38 = 38.00
+
+A40 = 40.00
+A41 = 41.00
+A42 = 42.00
+AXX = 100.00
+
+A520 = 520.00
+A521 = 521.00
+A57 = 57.00
+A590 = -590.00
+A599 = 599.00
+
+A60A = 60.10
+A60B = 60.20
+A63 = 63.00
+A65X = 650.00
+A651 = 651.00
+A66 = 66.00
+A68 = 68.00
+A69 = 69.00
+
+RX = 1.0
+EX = 2.0
+AX = 3.0
+
+[years.2025]
+
+[years.2025.amounts]
+E30 = 30.01
+E31 = 31.01
+E320 = 320.01
+E321 = 321.01
+E33 = 33.01
+E360 = 360.01
+E365 = 368.01
+E38 = 38.01
+
+A40 = 40.01
+A41 = 41.01
+A42 = 42.01
+AXX = 100.01
+
+A520 = 520.01
+A521 = 521.01
+A57 = 57.01
+A590 = -590.01
+A599 = 599.01
+
+A60A = 60.11
+A60B = 60.21
+A63 = 63.01
+A65X = 650.01
+A651 = 651.01
+A66 = 66.01
+A68 = 68.01
+A69 = 69.01
+
+RX = 1.1
+EX = 2.1
+AX = 3.1
