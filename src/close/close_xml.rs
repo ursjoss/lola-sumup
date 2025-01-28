@@ -369,16 +369,20 @@ impl AccountsColumn {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Budget {
-    pub name: String,
-    post_groups: HashMap<String, PostGroup>,
+    #[serde(rename = "name")]
+    pub _name: String,
+    #[serde(rename = "post_groups")]
+    _post_groups: HashMap<String, PostGroup>,
     posts: HashMap<String, Post>,
     years: HashMap<String, Year>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 struct PostGroup {
-    name: String,
-    posts: Vec<String>,
+    #[serde(rename = "name")]
+    _name: String,
+    #[serde(rename = "posts")]
+    _posts: Vec<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]

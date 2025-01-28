@@ -49,6 +49,6 @@ mod tests {
         let Ok(config) = config else {
             panic!("Invalid config: {config:#?}");
         };
-        assert_eq!("LoLa Budget", config.name);
+        assert_eq!("LoLa Budget", config._name);
     }
 }
