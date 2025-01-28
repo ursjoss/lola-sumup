@@ -4,6 +4,7 @@ use quick_xml::reader::Reader;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::error::Error;
+use std::fs;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
@@ -370,7 +371,7 @@ impl AccountsColumn {
 #[derive(Deserialize, Debug, Clone)]
 pub struct Budget {
     #[serde(rename = "name")]
-    pub _name: String,
+    _name: String,
     #[serde(rename = "post_groups")]
     _post_groups: HashMap<String, PostGroup>,
     posts: HashMap<String, Post>,
@@ -387,7 +388,7 @@ struct PostGroup {
 
 #[derive(Deserialize, Debug, Clone)]
 struct Post {
-    name: String,
+    pub name: String,
     account_codes: Vec<String>,
     sort: i64,
     factor: i64,
@@ -421,9 +422,36 @@ impl Budget {
             println!("x: {x:?}");
             x.and_then(|y| y.amounts.get(&post_key))
                 .copied()
-                .unwrap_or(-0.0) as f64
+                .unwrap_or(-0.0)
         } else {
             -0.0
         }
+    }
+}
+
+pub fn read_budget_config(budget_config_file: &Path) -> Result<Budget, Box<dyn Error>> {
+    let toml_str = fs::read_to_string(budget_config_file)?;
+    let budget: Budget = toml::from_str(&toml_str)?;
+    Ok(budget)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+    use std::path::PathBuf;
+
+    #[rstest]
+    fn can_read_from_sample_config_file() {
+        let file_path = "sample_config/budget.toml".to_string();
+        let config_file = &PathBuf::from(file_path);
+        let budget = read_budget_config(config_file);
+        let Ok(budget) = budget else {
+            panic!("Invalid budget: {budget:#?}");
+        };
+        let Some(post) = budget.get_post_by_account("30100") else {
+            panic!("Account 30100 not found in budget");
+        };
+        assert_eq!("Ertrag Restauration", post.name);
     }
 }
