@@ -443,7 +443,7 @@ mod tests {
 
     #[rstest]
     fn can_read_from_sample_config_file() {
-        let file_path = "sample_config/budget.toml".to_string();
+        let file_path = "samples/budget.toml".to_string();
         let config_file = &PathBuf::from(file_path);
         let budget = read_budget_config(config_file);
         let Ok(budget) = budget else {
