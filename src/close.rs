@@ -18,7 +18,10 @@ pub fn close(
         let month = derive_month_from_accounts(account_file_name, extension)?;
         let budget = read_budget_config(budget_config_file)?;
         match extension {
-            "xls" => do_closing_xml(accounts_file, budget, &month, ts),
+            "xls" => {
+                let _ = do_closing_xml(accounts_file, budget, &month, ts);
+                Ok(())
+            }
             _ => Err(Box::from(format!(
                 "File extension {extension} is not supported."
             ))),

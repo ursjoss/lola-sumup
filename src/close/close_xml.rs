@@ -15,7 +15,7 @@ pub fn do_closing_xml(
     budget: Budget,
     month: &str,
     _ts: &str,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<DataFrame, Box<dyn Error>> {
     let budget = Arc::new(budget);
     let b1 = budget.clone();
     let b2 = budget.clone();
@@ -85,7 +85,7 @@ pub fn do_closing_xml(
         ])
         .collect()?;
     println!("{aggregated:?}");
-    Ok(())
+    Ok(aggregated)
 }
 
 // validates the processed data does not contain any accounts that are not in the budget
@@ -441,17 +441,33 @@ mod tests {
     use rstest::rstest;
     use std::path::PathBuf;
 
-    #[rstest]
-    fn can_read_from_sample_config_file() {
+    fn read_budget_from_samples() -> Budget {
         let file_path = "samples/budget.toml".to_string();
         let config_file = &PathBuf::from(file_path);
         let budget = read_budget_config(config_file);
         let Ok(budget) = budget else {
             panic!("Invalid budget: {budget:#?}");
         };
+        budget
+    }
+
+    #[rstest]
+    fn can_read_from_sample_config_file() {
+        let budget = read_budget_from_samples();
         let Some(post) = budget.get_post_by_account("30100") else {
             panic!("Account 30100 not found in budget");
         };
         assert_eq!("Ertrag Restauration", post.name);
+    }
+
+    #[rstest]
+    fn can_run_closing() {
+        let budget = read_budget_from_samples();
+
+        let data = "samples/konten_202412_20250128132200.xls".to_string();
+        let data_file = &PathBuf::from(data);
+        let ts = "20250120072900";
+        let _result = do_closing_xml(data_file, budget, "202410", ts)
+            .expect("Unable to process sample data file.");
     }
 }
