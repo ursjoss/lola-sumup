@@ -18,7 +18,7 @@ quick-xml = { version = "0.37.1", features = ["serde"] }
 toml = "0.8.19"
 
 [dependencies.polars]
-version = "0.45.0"
+version = "0.46.0"
 features = [
     "lazy",
     "dtype-date",
