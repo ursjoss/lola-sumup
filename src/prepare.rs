@@ -9,8 +9,8 @@ use polars::frame::{DataFrame, UniqueKeepStrategy};
 use polars::io::{SerReader, SerWriter};
 use polars::prelude::LiteralValue::Null;
 use polars::prelude::{
-    col, lit, when, CsvParseOptions, CsvReadOptions, CsvWriter, Expr, IntoLazy, JoinType,
-    NamedFromOwned, SortMultipleOptions, StrptimeOptions,
+    CsvParseOptions, CsvReadOptions, CsvWriter, Expr, IntoLazy, JoinType, NamedFromOwned,
+    SortMultipleOptions, StrptimeOptions, col, lit, when,
 };
 use polars::series::Series;
 use serde::{Deserialize, Serialize};

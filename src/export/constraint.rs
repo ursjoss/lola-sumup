@@ -299,9 +299,10 @@ mod tests {
             Ok(()) => assert!(expected_valid),
             Err(e) => {
                 assert!(!expected_valid);
-                assert!(e
-                    .to_string()
-                    .starts_with("Row has an invalid Payment Method!"));
+                assert!(
+                    e.to_string()
+                        .starts_with("Row has an invalid Payment Method!")
+                );
             }
         }
         Ok(())

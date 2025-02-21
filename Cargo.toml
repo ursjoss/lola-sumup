@@ -2,7 +2,7 @@
 name = "lola-sumup"
 version = "0.2.0"
 authors = ["Urs Joss <urs.joss@gmx.ch>"]
-edition = "2021"
+edition = "2024"
 description = "A cli program to create LoLa specific exports from monthly SumUp reports"
 license = "MIT"
 

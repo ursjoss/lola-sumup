@@ -607,11 +607,17 @@ mod tests {
             "10930/10100" => &[debt_to_miti],
         )?;
         match validate_acc_constraint(&df) {
-            Ok(()) => assert!(delta.is_none(), "Would not have expected delta {} on {date}.", delta.unwrap()),
+            Ok(()) => assert!(
+                delta.is_none(),
+                "Would not have expected delta {} on {date}.",
+                delta.unwrap()
+            ),
             Err(e) => match delta {
                 Some(d) => assert_eq!(
                     e.to_string(),
-                    format!("Constraint violation for accounting export on {date}: net value of account {account} is {d} instead of 0.0")
+                    format!(
+                        "Constraint violation for accounting export on {date}: net value of account {account} is {d} instead of 0.0"
+                    )
                 ),
                 None => panic!("Would have expected delta on {date} but not in fixture: {e}"),
             },

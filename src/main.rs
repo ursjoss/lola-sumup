@@ -85,10 +85,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 pub fn configure_the_environment() {
-    env::set_var("POLARS_FMT_TABLE_ROUNDED_CORNERS", "1");
-    env::set_var("POLARS_FMT_MAX_COLS", "70");
-    env::set_var("POLARS_FMT_MAX_ROWS", "100");
-    env::set_var("POLARS_FMT_STR_LEN", "50");
+    unsafe {
+        env::set_var("POLARS_FMT_TABLE_ROUNDED_CORNERS", "1");
+        env::set_var("POLARS_FMT_MAX_COLS", "70");
+        env::set_var("POLARS_FMT_MAX_ROWS", "100");
+        env::set_var("POLARS_FMT_STR_LEN", "50");
+    };
 }
 
 /// Returns the current timestamp in format `<yyyymmddHHMMSS>`.
@@ -212,7 +214,10 @@ mod tests {
     #[case(Some("intermediate_202303.csv"), "202303")]
     #[case(Some("intermediate_202312_mod.csv"), "202312")]
     #[case(None, "Unable to derive filename for intermediate file.")]
-    #[case(Some("intermediat_202303.csv"), "Filename 'intermediat_202303.csv' should have at least 23 characters (intermediate_yyyymm.csv), but has only 22.")]
+    #[case(
+        Some("intermediat_202303.csv"),
+        "Filename 'intermediat_202303.csv' should have at least 23 characters (intermediate_yyyymm.csv), but has only 22."
+    )]
     #[case(
         Some("abcdefghijkl_202303.csv"),
         "Filename must start with 'intermediate_'."
