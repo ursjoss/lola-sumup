@@ -1,7 +1,7 @@
 # lola-sumup
 
 
-[![](https://github.com/ursjoss/lola-sumup/workflows/Verify/badge.svg?branch=main)](https://github.com/ursjoss/lola-sumup/actions/workflows/verify.yml)
+[![](https://github.com/ursjoss/lola-sumup/actions/workflows/verify.yml/badge.svg?branch=main)](https://github.com/ursjoss/lola-sumup/actions/workflows/verify.yml)
 
 CLI to evaluate the monthly SumUp CSV extracts and extract LoLa specific reports.
 
