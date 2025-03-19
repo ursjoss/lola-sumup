@@ -2,7 +2,8 @@
   "extends": [
     "config:recommended",
     ":automergePatch",
-    ":semanticCommitTypeAll(chore)"
+    ":semanticCommitTypeAll(chore)",
+    "helpers:pinGitHubActionDigests"
   ],
   "labels": [
     "dependencies"
