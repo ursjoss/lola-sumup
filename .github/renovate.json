@@ -28,9 +28,9 @@
       "matchUpdateTypes": [
         "digest"
       ],
-        "automerge": true,
-        "automergeType": "branch"
-        "requiredStatusChecks": ["Verify"]
-      }
+      "automerge": true,
+      "automergeType": "branch",
+      "requiredStatusChecks": ["Verify"]
+    }
   ]
 }
