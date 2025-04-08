@@ -42,6 +42,8 @@ fn sales_report_with_trx_id(
         "Menge" => &[1_i64],
         "Beschreibung" => &[" foo "],
         "Währung" => &["CHF"],
+        "Preis vor Rabatt" => &[16.0],
+        "Rabatt" => &[0.0],
         "Preis (brutto)" => &[16.0],
         "Preis (netto)" => &[16.0],
         "Steuer" => &[0.0],
