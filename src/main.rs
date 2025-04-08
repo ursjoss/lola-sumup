@@ -93,9 +93,9 @@ pub fn configure_the_environment() {
     };
 }
 
-/// Returns the current timestamp in format `<yyyymmddHHMMSS>`.
+/// Returns the current timestamp in format `<yyyymmdd_HHMMSS>`.
 fn ts_now() -> String {
-    Local::now().format("%Y%m%d%H%M%S").to_string()
+    Local::now().format("%Y%m%d_%H%M%S").to_string()
 }
 
 /// Ensures the validity of the value of the month parameter.
@@ -120,9 +120,9 @@ fn month_in_range(input: &str) -> Result<String, String> {
     }
 }
 
-/// Provides path for the intermediate file (`intermediate_<yyyymm>_<yyyymmddHHMMSS>.csv`)
+/// Provides path for the intermediate file (`intermediate_<yyyymm>_<yyyymmdd_HHMMSS>.csv`)
 /// with `<yyyymm>` standing for the month being processed and
-/// `<yyyymmddHHMMSS>` representing the execution timestamp.
+/// `<yyyymmdd_HHMMSS>` representing the execution timestamp.
 fn intermediate_file(month: &String, ts: &String) -> PathBuf {
     PathBuf::from(format!("intermediate_{month}_{ts}.csv"))
 }
@@ -187,7 +187,9 @@ mod tests {
     fn test_ts_new() {
         let ts = ts_now();
         println!("timestamp: {ts}");
-        assert!(ts.parse::<i64>().is_ok());
+        assert!(&ts[..8].parse::<i64>().is_ok());
+        assert_eq!("_", &ts[8..9]);
+        assert!(&ts[9..].parse::<i64>().is_ok());
     }
 
     #[rstest]
