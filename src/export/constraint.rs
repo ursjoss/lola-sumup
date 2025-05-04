@@ -80,7 +80,7 @@ fn validate_field(
         .filter(
             col(field)
                 .fill_null(lit(""))
-                .is_in(lit(Series::from_iter(values)))
+                .is_in(lit(Series::from_iter(values)), false)
                 .not(),
         )
         .select(columns)
