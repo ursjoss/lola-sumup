@@ -45,7 +45,11 @@ pub fn gather_df_banana(df_acct: &DataFrame, month: &str) -> PolarsResult<DataFr
         )
         .with_column(col("KtSoll/KtHaben").str().head(lit(5)).alias("KtSoll"))
         .with_column(col("KtSoll/KtHaben").str().tail(lit(5)).alias("KtHaben"))
-        .with_column(col("column_0").round(2).alias("Betrag CHF"))
+        .with_column(
+            col("column_0")
+                .round(2, RoundMode::HalfToEven)
+                .alias("Betrag CHF"),
+        )
         .filter(col("Betrag CHF").neq(lit(0.0)))
         .select([
             col("Datum"),

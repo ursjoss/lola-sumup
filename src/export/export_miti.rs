@@ -10,42 +10,42 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
         )
         .with_column(
             (col("MiTi_Cash").fill_null(0.0) + col("MiTi_Tips_Cash").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Total Cash"),
         )
         .with_column(
             (col("MiTi_Card").fill_null(0.0) + col("MiTi_Tips_Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Total Card"),
         )
         .with_column(
             (col("MiTi_Tips_Cash").fill_null(0.0) + col("MiTi_Tips_Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Tips Total"),
         )
         .with_column(
             (col("MiTi Total").fill_null(0.0) + col("Tips Total").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Payment Total"),
         )
         .with_column(
             (col("Gross MiTi (LoLa)").fill_null(0.0) - col("LoLa_Commission_MiTi").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Net Income LoLa"),
         )
         .with_column(
             (col("Gross MiTi (LoLa)").fill_null(0.0) * lit(0.8))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Gross MiTi LoLa (LoLa)"),
         )
         .with_column(
             (col("Gross MiTi (LoLa)").fill_null(0.0) * lit(0.2))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Gross MiTi LoLa (MiTi)"),
         )
         .with_column(
             (col("Net MiTi (LoLA) - Share LoLa").fill_null(0.0) * lit(-1))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Verkauf LoLa (80%)"),
         )
         .select([

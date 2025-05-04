@@ -384,47 +384,47 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     with_meal_total_praktikum
         .with_column(
             (col("MiTi_Cash").fill_null(0.0) + col("MiTi_Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("MiTi Total"),
         )
         .with_column(
             (col("Cafe_Cash").fill_null(0.0) + col("Cafe_Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Cafe Total"),
         )
         .with_column(
             (col("Verm_Cash").fill_null(0.0) + col("Verm_Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Verm Total"),
         )
         .with_column(
             (col("SoFe_Cash").fill_null(0.0) + col("SoFe_Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("SoFe Total"),
         )
         .with_column(
             (col("Deposit_Cash").fill_null(0.0) + col("Deposit_Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Deposit Total"),
         )
         .with_column(
             (col("Packaging_Cash").fill_null(0.0) + col("Packaging_Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Packaging Total"),
         )
         .with_column(
             (col("Rental_Cash").fill_null(0.0) + col("Rental_Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Rental Total"),
         )
         .with_column(
             (col("Culture_Cash").fill_null(0.0) + col("Culture_Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Culture Total"),
         )
         .with_column(
             (col("PaidOut_Cash").fill_null(0.0) + col("PaidOut_Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("PaidOut Total"),
         )
         .with_column(
@@ -437,7 +437,7 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 + col("Rental_Cash").fill_null(0.0)
                 + col("Culture_Cash").fill_null(0.0)
                 + col("PaidOut_Cash").fill_null(0.0))
-            .round(2)
+            .round(2, RoundMode::HalfToEven)
             .alias("Gross Cash"),
         )
         .with_column(
@@ -450,107 +450,107 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 + col("Rental_Card").fill_null(0.0)
                 + col("Culture_Card").fill_null(0.0)
                 + col("PaidOut_Card").fill_null(0.0))
-            .round(2)
+            .round(2, RoundMode::HalfToEven)
             .alias("Gross Card"),
         )
         .with_column(
             col("MiTi_Card")
                 .fill_null(0.0)
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Gross Card MiTi"),
         )
         .with_column(
             (col("Gross Card").fill_null(0.0) - col("MiTi_Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Gross Card LoLa"),
         )
         .with_column(
             (col("Gross Cash").fill_null(0.0) + col("Gross Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Gross Total"),
         )
         .with_column(
             (col("Tips_Cash").fill_null(0.0) + col("Tips_Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Tips Total"),
         )
         .with_column(
             (col("Gross Cash").fill_null(0.0) + col("Tips_Cash").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("SumUp Cash"),
         )
         .with_column(
             (col("Gross Card").fill_null(0.0) + col("Tips_Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("SumUp Card"),
         )
         .with_column(
             (col("SumUp Cash") + col("SumUp Card"))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("SumUp Total"),
         )
         .with_column(
             (col("MiTi_Commission").fill_null(0.0) + col("LoLa_Commission").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Total Commission"),
         )
         .with_column(
             (col("Gross Card MiTi").fill_null(0.0) - col("MiTi_Commission").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Net Card MiTi"),
         )
         .with_column(
             (col("Gross Card LoLa").fill_null(0.0) - col("LoLa_Commission").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Net Card LoLa"),
         )
         .with_column(
             (col("Gross Card").fill_null(0.0) - col("Total Commission").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Net Card Total"),
         )
         .with_column(
             (col("MiTi_Card").fill_null(0.0) + col("MiTi_Tips_Card").fill_null(0.0)
                 - col("MiTi_Total_Commission").fill_null(0.0))
-            .round(2)
+            .round(2, RoundMode::HalfToEven)
             .alias("Net Payment SumUp MiTi"),
         )
         .with_column(
             (col("Gross MiTi (MiTi) Card").fill_null(0.0) - col("MiTi_Commission").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Net MiTi (MiTi) Card"),
         )
         .with_column(
             (col("Gross MiTi (LoLa)").fill_null(0.0) - col("LoLa_Commission_MiTi").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Net MiTi (LoLa)"),
         )
         .with_column(
             (lit(0.2) * col("Net MiTi (LoLa)").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Contribution MiTi"),
         )
         .with_column(
             (col("Gross MiTi (LoLa)").fill_null(0.0) - col("Contribution MiTi").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Income LoLa MiTi"),
         )
         .with_column(
             (col("Net MiTi (LoLa)") * lit(0.8))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Net MiTi (LoLA) - Share LoLa"),
         )
         .with_column(
             (lit(2.0)
                 * (col("MealCount_Reduced").fill_null(0)
                     + col("MealCount_Praktikum").fill_null(0)))
-            .round(2)
+            .round(2, RoundMode::HalfToEven)
             .alias("Sponsored Reductions"),
         )
         .with_column(
             (col("Net Payment SumUp MiTi") - col("Net MiTi (LoLA) - Share LoLa")
                 + col("Sponsored Reductions"))
-            .round(2)
+            .round(2, RoundMode::HalfToEven)
             .alias("Debt to MiTi"),
         )
         .select([
@@ -648,7 +648,7 @@ fn key_figure_by_date_for(
         .agg([col(key_figure)
             .sum()
             .fill_null(0.0)
-            .round(2)
+            .round(2, RoundMode::HalfToEven)
             .alias(alias.as_str())
             .cast(DataType::Float64)])
         .sort(

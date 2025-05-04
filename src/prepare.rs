@@ -289,7 +289,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         )
         .with_column(
             (col("Preis (brutto)") / col("Commissioned Total") * col("Commission"))
-                .round(4)
+                .round(4, RoundMode::HalfToEven)
                 .alias("Commission"),
         )
         .select([
