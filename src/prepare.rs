@@ -7,11 +7,7 @@ use std::path::Path;
 use polars::datatypes::DataType;
 use polars::frame::{DataFrame, UniqueKeepStrategy};
 use polars::io::{SerReader, SerWriter};
-use polars::prelude::LiteralValue::Null;
-use polars::prelude::{
-    CsvParseOptions, CsvReadOptions, CsvWriter, Expr, IntoLazy, JoinType, NamedFromOwned,
-    SortMultipleOptions, StrptimeOptions, col, lit, when,
-};
+use polars::prelude::*;
 use polars::series::Series;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
@@ -230,7 +226,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
             col("TG").alias("Preis (brutto)"),
             col("TG").alias("Preis (netto)"),
             lit(0.0).alias("Steuer"),
-            Expr::Literal(Null).alias("Steuersatz"),
+            lit(NULL).alias("Steuersatz"),
             col("Konto"),
         ])
         .unique(None, UniqueKeepStrategy::First)
@@ -265,20 +261,20 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .with_column(
             col("Beschreibung")
                 .str()
-                .strip_chars(lit(Null))
+                .strip_chars(lit(NULL))
                 .alias("Beschreibung"),
         )
         .with_column(
             when(col("Steuer").eq(0.0))
-                .then(lit(Null))
+                .then(lit(NULL))
                 .otherwise(col("Steuer"))
                 .alias("Tax"),
         )
         .with_column(
             when(col("Steuersatz").eq(lit("")))
-                .then(lit(Null))
+                .then(lit(NULL))
                 .when(col("Steuersatz").eq(lit("0%")))
-                .then(lit(Null))
+                .then(lit(NULL))
                 .otherwise(col("Steuersatz"))
                 .alias("Tax rate"),
         )
@@ -312,7 +308,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
             col("Topic"),
             infer_owner().alias("Owner"),
             infer_purpose().alias("Purpose"),
-            Expr::Literal(Null).alias("Comment"),
+            lit(NULL).alias("Comment"),
         ])
         .collect()?;
     warn_on_zero_value_trx(&df)?;
@@ -376,7 +372,7 @@ fn infer_topic(time_options: &StrptimeOptions) -> Expr {
 ///   Otherwise the owner is `LoLa`.
 fn infer_owner() -> Expr {
     when(col("Topic").neq(lit(Topic::MiTi.to_string())))
-        .then(Expr::Literal(Null))
+        .then(lit(NULL))
         .when(
             col("Beschreibung")
                 .str()
@@ -403,7 +399,7 @@ fn infer_owner() -> Expr {
                 .or(col("Beschreibung").str().contains(lit("Trinkgeld"), true))
                 .or(col("Beschreibung")
                     .str()
-                    .strip_chars(lit(Null))
+                    .strip_chars(lit(NULL))
                     .eq(lit(""))
                     .and(col("Preis (brutto)").gt_eq(5.0))),
         )
