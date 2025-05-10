@@ -10,30 +10,30 @@ pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
         .lazy()
         .with_column(
             (col("Net Card Total").fill_null(0.0) + col("Tips_Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias("Payment SumUp"),
         )
         .with_column(
             (col("Net Card MiTi").fill_null(0.0) + col("MiTi_Tips_Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias(Posting::NET_CARD_TOTAL_MITI.column_name),
         )
         .with_column(
             (col("Tips_Card").fill_null(0.0) - col("MiTi_Tips_Card").fill_null(0.0))
-                .round(2)
+                .round(2, RoundMode::HalfToEven)
                 .alias(Posting::TIPS_CARD_LOLA.column_name),
         )
         .with_column(
             (col("Gross Cash").fill_null(0.0)
                 - col("MiTi_Cash").fill_null(0.0)
                 - col("PaidOut Total").fill_null(0.0))
-            .round(2)
+            .round(2, RoundMode::HalfToEven)
             .alias("Total Cash Debit"),
         )
         .with_column(
             (col("Gross Card LoLa").fill_null(0.0) + col("Tips_Card").fill_null(0.0)
                 - col("MiTi_Tips_Card").fill_null(0.0))
-            .round(2)
+            .round(2, RoundMode::HalfToEven)
             .alias("Total Card Debit"),
         )
         .select([
@@ -109,7 +109,12 @@ fn validate_constraint(
         .clone()
         .lazy()
         .with_column(net_expr.alias("Net"))
-        .filter(col("Net").round(2).abs().gt(lit(0.05)))
+        .filter(
+            col("Net")
+                .round(2, RoundMode::HalfToEven)
+                .abs()
+                .gt(lit(0.05)),
+        )
         .collect()?;
     Ok(if violations.shape().0 > 0 {
         let row_vec = violations.get_row(0).unwrap().0;
