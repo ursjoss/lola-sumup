@@ -20,16 +20,16 @@ toml = "0.8.19"
 [dependencies.polars]
 version = "0.48.1"
 features = [
-    "lazy",
-    "dtype-date",
-    "temporal",
-    "strings",
+    "abs",
     "concat_str",
+    "dtype-date",
+    "is_in",
+    "lazy",
     "regex",
     "round_series",
-    "is_in",
     "semi_anti_join",
-    "abs",
+    "strings",
+    "temporal",
 ]
 
 [dev-dependencies]
