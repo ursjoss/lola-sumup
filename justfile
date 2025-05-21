@@ -10,12 +10,12 @@ watch:
 
 # Run the tests
 test:
-	cargo hack test --feature-powerset
+	cargo test
 
 # Run the static code analysis
 lint:
 	cargo fmt -- --check
-	cargo hack clippy --feature-powerset --all-targets
+	cargo clippy
 
 # Build the documentation
 doc *args:
