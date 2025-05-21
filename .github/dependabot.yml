@@ -4,7 +4,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    pin-versions: true
+    groups:
+      all-actions:
+        patterns: [ "*" ]
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
