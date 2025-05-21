@@ -9,13 +9,13 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.5.4", features = ["derive"] }
-serde = { version = "1.0.200", features = ["derive"] }
-chrono= { version = "0.4.38", features = ["serde"] }
-strum = { version = "0.27.0" }
-strum_macros = { version = "0.27.0" }
-quick-xml = { version = "0.37.1", features = ["serde"] }
-toml = "0.8.19"
+clap = { version = "4.5.38", features = ["derive"] }
+serde = { version = "1.0.219", features = ["derive"] }
+chrono= { version = "0.4.41", features = ["serde"] }
+strum = { version = "0.27.1" }
+strum_macros = { version = "0.27.1" }
+quick-xml = { version = "0.37.5", features = ["serde"] }
+toml = "0.8.22"
 
 [dependencies.polars]
 version = "0.48.1"
@@ -35,7 +35,7 @@ features = [
 ]
 
 [dev-dependencies]
-pretty_assertions = "1.4.0"
+pretty_assertions = "1.4.1"
 rstest = "0.25.0"
 
 [profile.dev]
