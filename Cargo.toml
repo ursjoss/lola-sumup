@@ -22,7 +22,9 @@ version = "0.48.1"
 features = [
     "abs",
     "concat_str",
+    "dtype-categorical",
     "dtype-date",
+    "dtype-i128",
     "is_in",
     "lazy",
     "regex",
