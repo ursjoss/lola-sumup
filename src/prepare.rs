@@ -118,7 +118,7 @@ fn fail_on_missing_trx(txr_df: &DataFrame, sr_df: &DataFrame) -> Result<(), Box<
         .lazy()
         .filter(
             col("Status")
-                .is_in(lit(Series::from_iter(valid_stati.clone())), false)
+                .is_in(lit(Series::from_iter(valid_stati.clone())).implode(), false)
                 .and(col("Transaktions-ID").is_not_null()),
         )
         .select([col("Transaktions-ID")]);
@@ -249,7 +249,10 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .dt()
                 .weekday()
                 .cast(DataType::Int64)
-                .is_in(lit(Series::from_vec("we".into(), vec![6, 7])), false)
+                .is_in(
+                    lit(Series::from_vec("we".into(), vec![6, 7])).implode(),
+                    false,
+                )
                 .alias("is_weekend"),
         )
         .with_column(
