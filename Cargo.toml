@@ -15,7 +15,7 @@ chrono= { version = "0.4.41", features = ["serde"] }
 strum = { version = "0.27.1" }
 strum_macros = { version = "0.27.1" }
 quick-xml = { version = "0.37.5", features = ["serde"] }
-toml = "0.8.22"
+toml = "0.8.23"
 
 [dependencies.polars]
 version = "0.48.1"
