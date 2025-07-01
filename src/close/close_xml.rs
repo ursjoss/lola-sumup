@@ -253,7 +253,7 @@ fn read_xml(input_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
             },
             Ok(Event::Text(e)) => {
                 if in_sheet && in_cell {
-                    cell_value = e.unescape()?.into_owned();
+                    cell_value = e.decode()?.into_owned();
                 }
             }
             Ok(Event::Eof) => break,
