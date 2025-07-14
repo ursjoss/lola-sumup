@@ -15,7 +15,7 @@ The user may redact the content of those three columns, as the simple heuristics
 out of the box.
 
 The (potentially redacted) intermediate file is consumed by the second `export` step.
-It generates three different exports from it, dedicated to different purposes in the context of LoLa's
+It generates four different exports from it, dedicated to different purposes in the context of LoLa's
 monthly closing process.
 
 ## Versions
@@ -144,8 +144,9 @@ Options:
   -V, --version  Print version
 ```
 
-It produces three exports (with month and execution timestamp accordingly):
+It produces four exports (with month and execution timestamp accordingly):
 - `accounting_202305_20230603142503.csv`
+- `banana_202305_20230603142503.csv`
 - `mittagstisch_202305_20230603142503.csv`
 - `summary_202305_20230603142503.csv`
 
