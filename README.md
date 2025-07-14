@@ -322,7 +322,7 @@ The purpose of the banana export is to provide a copy/paste template with the mo
 It is basically a different view on the monthly summary line of the accounting report (a pivot view).
 One can copy the cells and simply paste them into the ledger of the banana accounting software.
 
-The columns in the banana.csv spreachsheet are:
+The columns in the banana.csv spreadsheet are:
 
 - `Datum`: The last day of the month
 - `Rechnung`: Empty placeholder column
