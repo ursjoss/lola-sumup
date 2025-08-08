@@ -53,11 +53,13 @@ pub fn gather_df_banana(df_acct: &DataFrame, month: &str) -> PolarsResult<DataFr
         .filter(col("Betrag CHF").neq(lit(0.0)))
         .select([
             col("Datum"),
+            lit("").alias("Beleg"),
             lit("").alias("Rechnung"),
             col("Beschreibung"),
             col("KtSoll"),
             col("KtHaben"),
             lit("").alias("Anzahl"),
+            lit("").alias("Einheit"),
             lit("").alias("Preis/Einheit"),
             col("Betrag CHF"),
         ])
