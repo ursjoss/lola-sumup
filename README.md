@@ -325,10 +325,11 @@ One can copy the cells and simply paste them into the ledger of the banana accou
 The columns in the banana.csv spreadsheet are:
 
 - `Datum`: The last day of the month
-- `Rechnung`: Empty placeholder column
+- `Beleg`: Empty placeholder column
 - `Beschreibung`: The posting description, always starting with "SU " (for SumUp)
 - `KtSoll`: The Debit account number
 - `KtHaben`: The Credit account number
 - `Anzahl`: Empty placeholder column
+- `Einheit`: Empty placeholder column
 - `Preis/Einheit`: Empty placeholder column
 - `Betrag CHF`: The posting amount
