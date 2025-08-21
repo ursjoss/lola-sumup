@@ -7,7 +7,12 @@ CLI to evaluate the monthly SumUp CSV extracts and extract LoLa specific reports
 
 ## Summary
 
-The cli application `lola-sumup` has two subcommands: `prepare` and `export`.
+The cli application `lola-sumup` is used in different phases of the monthly-closing process of the
+Quartiertreffpunkt LoLa in Basel.
+
+There are two subcommands used in the prepration of the monthly closing process: `prepare` and `export`.
+Another subcommand is used to process the accounting information after the closing, to produce a condenses
+view on the monhtly accounts: `close`.
 
 The `prepare` subcommand parses two SumUp extracts with monthly data and creates an intermediate file,
 combining data from both reports, enriched with three columns `Topic`, `Owner`, and `Purpose`.
@@ -17,6 +22,10 @@ out of the box.
 The (potentially redacted) intermediate file is consumed by the second `export` step.
 It generates four different exports from it, dedicated to different purposes in the context of LoLa's
 monthly closing process.
+
+After the general ledger has been updated, the accounts are exported to an Excel file via Banana
+accounting software. The subcommand `close` process the excel and aggregates the year-to-date figures
+on the level of the LoLa budget.
 
 ## Versions
 
@@ -30,16 +39,17 @@ lola-sumup has been adapted in a non-backwards-compatible way.
 
 ## CLI
 
-The `lola-sumup` command has two subcommands:
+The `lola-sumup` command has three subcommands:
 
 ```
-A cli program to create exports from sumup transactions exported in CSV format
+A cli program to create LoLa specific exports from monthly SumUp reports
 
-mmmmmmmmmmmmmmmmmmmmmmmmmmm
+Usage: lola-sumup <COMMAND>
 
 Commands:
-  prepare  Prepares an enriched intermediate file from the original sumup sales report CSV and transaction report CSV
+  prepare  Prepares an enriched intermediate file from the original `SumUp` sales report CSV and transaction report CSV
   export   Consumes the (potentially redacted) intermediate file and exports to different special purpose CSV files
+  close    Run the monthly closing process
   help     Print this message or the help of the given subcommand(s)
 
 Options:
@@ -149,6 +159,26 @@ It produces four exports (with month and execution timestamp accordingly):
 - `banana_202305_20230603142503.csv`
 - `mittagstisch_202305_20230603142503.csv`
 - `summary_202305_20230603142503.csv`
+
+### The close step
+
+The `lola-sumup close` command:
+
+```
+Run the monthly closing process
+
+Usage: lola-sumup close <BUDGET_CONFIG_FILE> <ACCOUNTS_FILE>
+
+Arguments:
+  <BUDGET_CONFIG_FILE>  the budget configuration file in TOML format
+  <ACCOUNTS_FILE>       The spreadsheet export file from the accounting software
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
+```
+
+It dumps the aggregated year-to-date figures to the command line.
 
 ## Description of the exports
 
