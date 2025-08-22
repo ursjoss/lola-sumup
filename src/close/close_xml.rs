@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use polars::prelude::*;
 use quick_xml::events::Event;
 use quick_xml::reader::Reader;
@@ -22,70 +23,73 @@ pub fn do_closing_xml(
     let b3 = budget.clone();
     let b4 = budget;
     let year = month.chars().take(4).collect::<String>();
-    println!("year: {year}");
-    let balances = read_xml(input_path)?;
-    let enriched = balances
-        .clone()
-        .lazy()
-        .with_column(
-            col("Account")
-                .apply(
-                    move |a| get_name_of_post(&a, &b1),
-                    GetOutput::from_type(DataType::String),
-                )
-                .alias("Group"),
-        )
-        .with_column(
-            col("Account")
-                .apply(
-                    move |a| get_factor_of_post(&a, &b2),
-                    GetOutput::from_type(DataType::Int8),
-                )
-                .alias("Factor"),
-        )
-        .with_column(
-            col("Account")
-                .apply(
-                    move |a| get_sort_of_post(&a, &b3),
-                    GetOutput::from_type(DataType::Int8),
-                )
-                .alias("Sort"),
-        )
-        .with_column(
-            col("Account")
-                .apply(
-                    move |a| get_budget_of_post(&a, &b4, &year),
-                    GetOutput::from_type(DataType::Int64),
-                )
-                .alias("Budget"),
-        )
-        .filter(
-            // Exceptional accounts that need not be included
-            col("Account")
-                .neq(lit("8900"))
-                .or(col("Debit").neq(lit(0.0)))
-                .or(col("Credit").neq(lit(0.0))),
-        )
-        .collect()?;
+    let cut_off_date = cut_off_date(month);
+    let journal = read_xml(input_path, &cut_off_date)?;
 
-    validate_all_accounts_are_in_budget(&enriched)?;
+    println!("{journal:?}");
+    Ok(journal)
+    //let enriched = balances
+    //    .clone()
+    //    .lazy()
+    //    .with_column(
+    //        col("Account")
+    //            .apply(
+    //                move |a| get_name_of_post(&a, &b1),
+    //                GetOutput::from_type(DataType::String),
+    //            )
+    //            .alias("Group"),
+    //    )
+    //    .with_column(
+    //        col("Account")
+    //            .apply(
+    //                move |a| get_factor_of_post(&a, &b2),
+    //                GetOutput::from_type(DataType::Int8),
+    //            )
+    //            .alias("Factor"),
+    //    )
+    //    .with_column(
+    //        col("Account")
+    //            .apply(
+    //                move |a| get_sort_of_post(&a, &b3),
+    //                GetOutput::from_type(DataType::Int8),
+    //            )
+    //            .alias("Sort"),
+    //    )
+    //    .with_column(
+    //        col("Account")
+    //            .apply(
+    //                move |a| get_budget_of_post(&a, &b4, &year),
+    //                GetOutput::from_type(DataType::Int64),
+    //            )
+    //            .alias("Budget"),
+    //    )
+    //    .filter(
+    //        // Exceptional accounts that need not be included
+    //        col("Account")
+    //            .neq(lit("8900"))
+    //            .or(col("Debit").neq(lit(0.0)))
+    //            .or(col("Credit").neq(lit(0.0))),
+    //    )
+    //    .collect()?;
 
-    let aggregated = enriched
-        .clone()
-        .lazy()
-        .with_column((col("Balance").fill_null(lit(0.0)) * col("Factor")).alias("Net"))
-        .group_by(["Group", "Sort", "Budget", "Factor"])
-        .agg(&[col("Net").sum()])
-        .sort(["Sort"], SortMultipleOptions::default())
-        .select([
-            col("Group"),
-            col("Budget"),
-            col("Net"),
-            ((col("Budget") - col("Net")) * col("Factor")).alias("Remaining"),
-        ])
-        .collect()?;
-    println!("{aggregated:?}");
-    Ok(aggregated)
+    //validate_all_accounts_are_in_budget(&enriched)?;
+
+    //let aggregated = enriched
+    //    .clone()
+    //    .lazy()
+    //    .with_column((col("Balance").fill_null(lit(0.0)) * col("Factor")).alias("Net"))
+    //    .group_by(["Group", "Sort", "Budget", "Factor"])
+    //    .agg(&[col("Net").sum()])
+    //    .sort(["Sort"], SortMultipleOptions::default())
+    //    .select([
+    //        col("Group"),
+    //        col("Budget"),
+    //        col("Net"),
+    //        ((col("Budget") - col("Net")) * col("Factor")).alias("Remaining"),
+    //    ])
+    //    .collect()?;
+    //println!("{aggregated:?}");
+    //Ok(aggregated)
 }
 
 // validates the processed data does not contain any accounts that are not in the budget
@@ -103,6 +107,19 @@ fn validate_all_accounts_are_in_budget(enriched: &DataFrame) -> Result<(), Box<d
     } else {
         Ok(())
     }
+}
+
+fn cut_off_date(input: &str) -> String {
+    let year: i32 = input[0..4].parse().unwrap();
+    let month: u32 = input[4..6].parse().unwrap();
+    let (next_year, next_month) = if month == 12 {
+        (year + 1, 1)
+    } else {
+        (year, month + 1)
+    };
+    NaiveDate::from_ymd_opt(next_year, next_month, 1).map_or("2000-01-01".to_string(), |d| {
+        d.format("%Y-%m-%d").to_string()
+    })
 }
 
 /// Finds the descriptions of the budget post for given account
@@ -163,7 +180,7 @@ where
     ))
 }
 
-fn read_xml(input_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
+fn read_xml(input_path: &Path, cut_off_date: &str) -> Result<DataFrame, Box<dyn Error>> {
     let file = BufReader::new(File::open(input_path)?);
     let mut reader = Reader::from_reader(file);
 
@@ -183,7 +200,7 @@ fn read_xml(input_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
                 b"Worksheet" => {
                     for attr in e.attributes().flatten() {
                         if attr.key.as_ref() == b"ss:Name"
-                            && attr.unescape_value()? == Sheet::Accounts.name()
+                            && attr.unescape_value()? == Sheet::Journal.name()
                         {
                             in_sheet = true;
                         }
@@ -216,33 +233,36 @@ fn read_xml(input_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
                 }
                 b"Row" => {
                     if in_sheet {
-                        let account_index = AccountsColumn::Account as u32;
-                        let description_index = AccountsColumn::Description as u32;
-                        let debit_index = AccountsColumn::Debit as u32;
-                        let credit_index = AccountsColumn::Credit as u32;
-                        let balance_index = AccountsColumn::Balance as u32;
+                        let date_index = JournalColumn::Date as u32;
+                        let description_index = JournalColumn::Description as u32;
+                        let debit_index = JournalColumn::Debit as u32;
+                        let credit_index = JournalColumn::Credit as u32;
+                        let amount_index = JournalColumn::Amount as u32;
                         let mut df_row = new_row(
-                            row.remove(&account_index)
-                                .unwrap_or("account missing".into()),
+                            &row.remove(&date_index).unwrap_or("1/1/2100".into()),
                             row.remove(&description_index)
                                 .unwrap_or("description missing".into()),
-                            &row.remove(&debit_index).unwrap_or("0.0".into()),
-                            &row.remove(&credit_index).unwrap_or("0.0".into()),
-                            &row.remove(&balance_index).unwrap_or("0.0".into()),
+                            &row.remove(&debit_index).unwrap_or("debit missing".into()),
+                            &row.remove(&credit_index).unwrap_or("credit missing".into()),
+                            &row.remove(&amount_index).unwrap_or("0.0".into()),
                         )?;
                         df_row = df_row.fill_null(FillNullStrategy::Zero)?;
                         let filtered = df_row
                             .clone()
                             .lazy()
                             .filter(
-                                col("Account").is_not_null().and(
-                                    col("Account")
-                                        .str()
-                                        .contains(lit(r"^[3456789]\d{3,4}$"), false),
-                                ),
+                                col("Date")
+                                    .is_not_null()
+                                    .and(
+                                        col("Date")
+                                            .str()
+                                            .contains(lit(r"^\d{4}-\d{2}-\d{2}$"), false),
+                                    )
+                                    .and(col("Date").lt(lit(cut_off_date))),
                             )
-                            .select([col("Account")])
-                            .collect()?;
+                            .select([col("Date")])
+                            .collect()
+                            .unwrap();
                         if filtered.shape().0 > 0 {
                             df = df.vstack(&df_row)?;
                         }
@@ -266,21 +286,20 @@ fn read_xml(input_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
 }
 
 fn new_row(
-    account: String,
+    date: &str,
     description: String,
     debit: &str,
     credit: &str,
-    balance: &str,
+    amount: &str,
 ) -> Result<DataFrame, Box<dyn Error>> {
-    let debit_numeric: f64 = debit.parse().unwrap_or(0.0);
-    let credit_numeric: f64 = credit.parse().unwrap_or(0.0);
-    let balance_numeric: f64 = balance.parse().unwrap_or(0.0);
+    let date_trunc = &date[..10.min(date.len())];
+    let amount_numeric: f64 = amount.parse().unwrap_or(0.0);
     new_row_with_vecs(
-        vec![account],
+        vec![date_trunc.to_string()],
         vec![description],
-        vec![debit_numeric],
-        vec![credit_numeric],
-        vec![balance_numeric],
+        vec![debit.into()],
+        vec![credit.into()],
+        vec![amount_numeric],
     )
 }
 
@@ -288,39 +307,39 @@ fn new_empty_frame() -> Result<DataFrame, Box<dyn Error>> {
     new_row_with_vecs(
         Vec::<String>::new(),
         Vec::<String>::new(),
-        Vec::<f64>::new(),
-        Vec::<f64>::new(),
+        Vec::<String>::new(),
+        Vec::<String>::new(),
         Vec::<f64>::new(),
     )
 }
 
 fn new_row_with_vecs(
-    account: Vec<String>,
+    date: Vec<String>,
     description: Vec<String>,
-    debit: Vec<f64>,
-    credit: Vec<f64>,
-    balance: Vec<f64>,
+    debit: Vec<String>,
+    credit: Vec<String>,
+    amount: Vec<f64>,
 ) -> Result<DataFrame, Box<dyn Error>> {
     let df = DataFrame::new(vec![
         Column::new(
-            AccountsColumn::Account.name().into(),
-            Series::new(AccountsColumn::Account.name().into(), account),
+            JournalColumn::Date.name().into(),
+            Series::new(JournalColumn::Date.name().into(), date),
         ),
         Column::new(
-            AccountsColumn::Description.name().into(),
-            Series::new(AccountsColumn::Description.name().into(), description),
+            JournalColumn::Description.name().into(),
+            Series::new(JournalColumn::Description.name().into(), description),
         ),
         Column::new(
-            AccountsColumn::Debit.name().into(),
-            Series::new(AccountsColumn::Debit.name().into(), debit),
+            JournalColumn::Debit.name().into(),
+            Series::new(JournalColumn::Debit.name().into(), debit),
         ),
         Column::new(
-            AccountsColumn::Credit.name().into(),
-            Series::new(AccountsColumn::Credit.name().into(), credit),
+            JournalColumn::Credit.name().into(),
+            Series::new(JournalColumn::Credit.name().into(), credit),
         ),
         Column::new(
-            AccountsColumn::Balance.name().into(),
-            Series::new(AccountsColumn::Balance.name().into(), balance),
+            JournalColumn::Amount.name().into(),
+            Series::new(JournalColumn::Amount.name().into(), amount),
         ),
     ])?;
     Ok(df)
@@ -329,18 +348,18 @@ fn new_row_with_vecs(
 /// The worksheets in the workbook
 #[derive(Debug, Clone, Copy)]
 enum Sheet {
-    Accounts = 0,
+    _Accounts = 0,
     _Totals = 1,
-    _Journal = 2,
+    Journal = 2,
     _FileInfo = 3,
 }
 
 impl Sheet {
     fn name(self) -> &'static str {
         match self {
-            Sheet::Accounts => "Accounts",
+            Sheet::_Accounts => "Accounts",
             Sheet::_Totals => "Totals",
-            Sheet::_Journal => "Journal",
+            Sheet::Journal => "Journal",
             Sheet::_FileInfo => "FileInfo",
         }
     }
@@ -364,6 +383,28 @@ impl AccountsColumn {
             AccountsColumn::Debit => "Debit",
             AccountsColumn::Credit => "Credit",
             AccountsColumn::Balance => "Balance",
+        }
+    }
+}
+
+/// The columns in the worksheet Journal, index is one-based
+#[derive(Debug, Clone, Copy)]
+enum JournalColumn {
+    Date = 8,
+    Description = 20,
+    Debit = 22,
+    Credit = 24,
+    Amount = 29,
+}
+
+impl JournalColumn {
+    fn name(self) -> &'static str {
+        match self {
+            JournalColumn::Date => "Date",
+            JournalColumn::Description => "Description",
+            JournalColumn::Debit => "Debit",
+            JournalColumn::Credit => "Credit",
+            JournalColumn::Amount => "Amount",
         }
     }
 }
