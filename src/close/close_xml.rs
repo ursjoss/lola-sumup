@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use polars::prelude::*;
 use quick_xml::events::Event;
 use quick_xml::reader::Reader;
@@ -16,14 +17,244 @@ pub fn do_closing_xml(
     month: &str,
     _ts: &str,
 ) -> Result<DataFrame, Box<dyn Error>> {
+    let journal = read_xml(input_path)?;
+    let aggregated = aggregate_balances(&journal, budget, month)?;
+    println!("{aggregated:?}");
+    Ok(aggregated)
+}
+
+/// reads the Excel XML format, extracting columns from sheet Journal:
+/// Date, Description, Debit, Credit, Amount.
+fn read_xml(input_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
+    let file = BufReader::new(File::open(input_path)?);
+    let mut reader = Reader::from_reader(file);
+
+    reader.config_mut().trim_text(true);
+
+    let mut buf = Vec::new();
+    let mut in_sheet = false;
+    let mut in_cell = false;
+    let mut cell_value = String::new();
+    let mut index: Option<u32> = None;
+    let mut row: HashMap<u32, String> = HashMap::new();
+    let mut df = new_empty_frame()?;
+
+    loop {
+        match reader.read_event_into(&mut buf) {
+            Ok(Event::Start(ref e)) => match e.name().as_ref() {
+                b"Worksheet" => {
+                    for attr in e.attributes().flatten() {
+                        if attr.key.as_ref() == b"ss:Name"
+                            && attr.unescape_value()? == Sheet::Journal.name()
+                        {
+                            in_sheet = true;
+                        }
+                    }
+                }
+                b"Cell" => {
+                    for attr in e.attributes().flatten() {
+                        if attr.key.as_ref() == b"ss:Index" {
+                            index = Some(attr.unescape_value()?.parse::<u32>()?);
+                            in_cell = in_sheet;
+                        }
+                    }
+                }
+                _ => {}
+            },
+            Ok(Event::End(ref e)) => match e.name().as_ref() {
+                b"Worksheet" => {
+                    cell_value.clear();
+                    in_sheet = false;
+                    in_cell = false;
+                    row.clear();
+                }
+                b"Cell" => {
+                    if in_cell {
+                        if let Some(i) = index {
+                            row.insert(i, cell_value.clone());
+                        }
+                        in_cell = false;
+                    }
+                }
+                b"Row" => {
+                    if in_sheet {
+                        let date_index = JournalColumn::Date as u32;
+                        let description_index = JournalColumn::Description as u32;
+                        let debit_index = JournalColumn::Debit as u32;
+                        let credit_index = JournalColumn::Credit as u32;
+                        let amount_index = JournalColumn::Amount as u32;
+                        let mut df_row = new_row(
+                            &row.remove(&date_index).unwrap_or("1/1/2100".into()),
+                            row.remove(&description_index)
+                                .unwrap_or("description missing".into()),
+                            &row.remove(&debit_index).unwrap_or("debit missing".into()),
+                            &row.remove(&credit_index).unwrap_or("credit missing".into()),
+                            &row.remove(&amount_index).unwrap_or("0.0".into()),
+                        )?;
+                        df_row = df_row.fill_null(FillNullStrategy::Zero)?;
+                        let filtered = df_row
+                            .clone()
+                            .lazy()
+                            .filter(
+                                col("Date").is_not_null().and(
+                                    col("Date")
+                                        .str()
+                                        .contains(lit(r"^\d{4}-\d{2}-\d{2}$"), false),
+                                ),
+                            )
+                            .select([col("Date")])
+                            .collect()
+                            .unwrap();
+                        if filtered.shape().0 > 0 {
+                            df = df.vstack(&df_row)?;
+                        }
+                        row.clear();
+                    }
+                }
+                _ => {}
+            },
+            Ok(Event::Text(e)) => {
+                if in_sheet && in_cell {
+                    cell_value = e.decode()?.into_owned();
+                }
+            }
+            Ok(Event::Eof) => break,
+            Err(e) => return Err(Box::from(e)),
+            _ => {}
+        }
+        buf.clear();
+    }
+    Ok(df)
+}
+
+/// calculates the first day to be ignored, e.g.
+/// returns 2025-08-01 for month 202507
+fn cut_off_date(last_valid_month: &str) -> String {
+    let year: i32 = last_valid_month[0..4].parse().unwrap();
+    let month: u32 = last_valid_month[4..6].parse().unwrap();
+    let (next_year, next_month) = if month == 12 {
+        (year + 1, 1)
+    } else {
+        (year, month + 1)
+    };
+    NaiveDate::from_ymd_opt(next_year, next_month, 1).map_or("2000-01-01".to_string(), |d| {
+        d.format("%Y-%m-%d").to_string()
+    })
+}
+
+fn new_row(
+    date: &str,
+    description: String,
+    debit: &str,
+    credit: &str,
+    amount: &str,
+) -> Result<DataFrame, Box<dyn Error>> {
+    let date_trunc = &date[..10.min(date.len())];
+    let amount_numeric: f64 = amount.parse().unwrap_or(0.0);
+    new_row_with_vecs(
+        vec![date_trunc.to_string()],
+        vec![description],
+        vec![debit.into()],
+        vec![credit.into()],
+        vec![amount_numeric],
+    )
+}
+
+fn new_empty_frame() -> Result<DataFrame, Box<dyn Error>> {
+    new_row_with_vecs(
+        Vec::<String>::new(),
+        Vec::<String>::new(),
+        Vec::<String>::new(),
+        Vec::<String>::new(),
+        Vec::<f64>::new(),
+    )
+}
+
+fn new_row_with_vecs(
+    date: Vec<String>,
+    description: Vec<String>,
+    debit: Vec<String>,
+    credit: Vec<String>,
+    amount: Vec<f64>,
+) -> Result<DataFrame, Box<dyn Error>> {
+    let df = DataFrame::new(vec![
+        Column::new(
+            JournalColumn::Date.name().into(),
+            Series::new(JournalColumn::Date.name().into(), date),
+        ),
+        Column::new(
+            JournalColumn::Description.name().into(),
+            Series::new(JournalColumn::Description.name().into(), description),
+        ),
+        Column::new(
+            JournalColumn::Debit.name().into(),
+            Series::new(JournalColumn::Debit.name().into(), debit),
+        ),
+        Column::new(
+            JournalColumn::Credit.name().into(),
+            Series::new(JournalColumn::Credit.name().into(), credit),
+        ),
+        Column::new(
+            JournalColumn::Amount.name().into(),
+            Series::new(JournalColumn::Amount.name().into(), amount),
+        ),
+    ])?;
+    Ok(df)
+}
+
+/// gets the balances and aggregates them on budget level
+fn aggregate_balances(
+    journal: &DataFrame,
+    budget: Budget,
+    month: &str,
+) -> Result<DataFrame, Box<dyn Error>> {
+    let balances = get_balances_from(journal, month)?;
+    let aggregated = enrich_and_aggregate(&balances, budget, month)?;
+    Ok(aggregated)
+}
+
+/// Transforms the journal into balances for the relevant accounts up to and including the month specified.
+fn get_balances_from(journal: &DataFrame, month: &str) -> Result<DataFrame, Box<dyn Error>> {
+    let debits = journal
+        .clone()
+        .lazy()
+        .select([col("Debit").alias("Account"), col("Amount"), col("Date")])
+        .collect()?;
+    let credits = journal
+        .clone()
+        .lazy()
+        .select([col("Credit").alias("Account"), -col("Amount"), col("Date")])
+        .collect()?;
+    let debits_and_credits = debits.vstack(&credits)?;
+
+    let cut_off_date = cut_off_date(month);
+    let balances = debits_and_credits
+        .clone()
+        .lazy()
+        .filter(
+            col("Account")
+                .str()
+                .contains(lit(r"^[3456789]\d{3,4}$"), false)
+                .and(col("Date").lt(lit(cut_off_date.clone()))),
+        )
+        .group_by(["Account"])
+        .agg(&[col("Amount").sum().alias("Balance")])
+        .collect()?;
+    Ok(balances)
+}
+
+/// enriches the balances with budget
+fn enrich_and_aggregate(
+    balances: &DataFrame,
+    budget: Budget,
+    month: &str,
+) -> Result<DataFrame, Box<dyn Error>> {
+    let year = month.chars().take(4).collect::<String>();
     let budget = Arc::new(budget);
     let b1 = budget.clone();
     let b2 = budget.clone();
     let b3 = budget.clone();
     let b4 = budget;
-    let year = month.chars().take(4).collect::<String>();
-    println!("year: {year}");
-    let balances = read_xml(input_path)?;
     let enriched = balances
         .clone()
         .lazy()
@@ -61,10 +292,7 @@ pub fn do_closing_xml(
         )
         .filter(
             // Exceptional accounts that need not be included
-            col("Account")
-                .neq(lit("8900"))
-                .or(col("Debit").neq(lit(0.0)))
-                .or(col("Credit").neq(lit(0.0))),
+            col("Account").neq(lit("8900")),
         )
         .collect()?;
 
@@ -84,7 +312,6 @@ pub fn do_closing_xml(
             ((col("Budget") - col("Net")) * col("Factor")).alias("Remaining"),
         ])
         .collect()?;
-    println!("{aggregated:?}");
     Ok(aggregated)
 }
 
@@ -163,207 +390,44 @@ where
     ))
 }
 
-fn read_xml(input_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
-    let file = BufReader::new(File::open(input_path)?);
-    let mut reader = Reader::from_reader(file);
-
-    reader.config_mut().trim_text(true);
-
-    let mut buf = Vec::new();
-    let mut in_sheet = false;
-    let mut in_cell = false;
-    let mut cell_value = String::new();
-    let mut index: Option<u32> = None;
-    let mut row: HashMap<u32, String> = HashMap::new();
-    let mut df = new_empty_frame()?;
-
-    loop {
-        match reader.read_event_into(&mut buf) {
-            Ok(Event::Start(ref e)) => match e.name().as_ref() {
-                b"Worksheet" => {
-                    for attr in e.attributes().flatten() {
-                        if attr.key.as_ref() == b"ss:Name"
-                            && attr.unescape_value()? == Sheet::Accounts.name()
-                        {
-                            in_sheet = true;
-                        }
-                    }
-                }
-                b"Cell" => {
-                    for attr in e.attributes().flatten() {
-                        if attr.key.as_ref() == b"ss:Index" {
-                            index = Some(attr.unescape_value()?.parse::<u32>()?);
-                            in_cell = in_sheet;
-                        }
-                    }
-                }
-                _ => {}
-            },
-            Ok(Event::End(ref e)) => match e.name().as_ref() {
-                b"Worksheet" => {
-                    cell_value.clear();
-                    in_sheet = false;
-                    in_cell = false;
-                    row.clear();
-                }
-                b"Cell" => {
-                    if in_cell {
-                        if let Some(i) = index {
-                            row.insert(i, cell_value.clone());
-                        }
-                        in_cell = false;
-                    }
-                }
-                b"Row" => {
-                    if in_sheet {
-                        let account_index = AccountsColumn::Account as u32;
-                        let description_index = AccountsColumn::Description as u32;
-                        let debit_index = AccountsColumn::Debit as u32;
-                        let credit_index = AccountsColumn::Credit as u32;
-                        let balance_index = AccountsColumn::Balance as u32;
-                        let mut df_row = new_row(
-                            row.remove(&account_index)
-                                .unwrap_or("account missing".into()),
-                            row.remove(&description_index)
-                                .unwrap_or("description missing".into()),
-                            &row.remove(&debit_index).unwrap_or("0.0".into()),
-                            &row.remove(&credit_index).unwrap_or("0.0".into()),
-                            &row.remove(&balance_index).unwrap_or("0.0".into()),
-                        )?;
-                        df_row = df_row.fill_null(FillNullStrategy::Zero)?;
-                        let filtered = df_row
-                            .clone()
-                            .lazy()
-                            .filter(
-                                col("Account").is_not_null().and(
-                                    col("Account")
-                                        .str()
-                                        .contains(lit(r"^[3456789]\d{3,4}$"), false),
-                                ),
-                            )
-                            .select([col("Account")])
-                            .collect()?;
-                        if filtered.shape().0 > 0 {
-                            df = df.vstack(&df_row)?;
-                        }
-                        row.clear();
-                    }
-                }
-                _ => {}
-            },
-            Ok(Event::Text(e)) => {
-                if in_sheet && in_cell {
-                    cell_value = e.decode()?.into_owned();
-                }
-            }
-            Ok(Event::Eof) => break,
-            Err(e) => return Err(Box::from(e)),
-            _ => {}
-        }
-        buf.clear();
-    }
-    Ok(df)
-}
-
-fn new_row(
-    account: String,
-    description: String,
-    debit: &str,
-    credit: &str,
-    balance: &str,
-) -> Result<DataFrame, Box<dyn Error>> {
-    let debit_numeric: f64 = debit.parse().unwrap_or(0.0);
-    let credit_numeric: f64 = credit.parse().unwrap_or(0.0);
-    let balance_numeric: f64 = balance.parse().unwrap_or(0.0);
-    new_row_with_vecs(
-        vec![account],
-        vec![description],
-        vec![debit_numeric],
-        vec![credit_numeric],
-        vec![balance_numeric],
-    )
-}
-
-fn new_empty_frame() -> Result<DataFrame, Box<dyn Error>> {
-    new_row_with_vecs(
-        Vec::<String>::new(),
-        Vec::<String>::new(),
-        Vec::<f64>::new(),
-        Vec::<f64>::new(),
-        Vec::<f64>::new(),
-    )
-}
-
-fn new_row_with_vecs(
-    account: Vec<String>,
-    description: Vec<String>,
-    debit: Vec<f64>,
-    credit: Vec<f64>,
-    balance: Vec<f64>,
-) -> Result<DataFrame, Box<dyn Error>> {
-    let df = DataFrame::new(vec![
-        Column::new(
-            AccountsColumn::Account.name().into(),
-            Series::new(AccountsColumn::Account.name().into(), account),
-        ),
-        Column::new(
-            AccountsColumn::Description.name().into(),
-            Series::new(AccountsColumn::Description.name().into(), description),
-        ),
-        Column::new(
-            AccountsColumn::Debit.name().into(),
-            Series::new(AccountsColumn::Debit.name().into(), debit),
-        ),
-        Column::new(
-            AccountsColumn::Credit.name().into(),
-            Series::new(AccountsColumn::Credit.name().into(), credit),
-        ),
-        Column::new(
-            AccountsColumn::Balance.name().into(),
-            Series::new(AccountsColumn::Balance.name().into(), balance),
-        ),
-    ])?;
-    Ok(df)
-}
-
 /// The worksheets in the workbook
 #[derive(Debug, Clone, Copy)]
 enum Sheet {
-    Accounts = 0,
+    _Accounts = 0,
     _Totals = 1,
-    _Journal = 2,
+    Journal = 2,
     _FileInfo = 3,
 }
 
 impl Sheet {
     fn name(self) -> &'static str {
         match self {
-            Sheet::Accounts => "Accounts",
+            Sheet::_Accounts => "Accounts",
             Sheet::_Totals => "Totals",
-            Sheet::_Journal => "Journal",
+            Sheet::Journal => "Journal",
             Sheet::_FileInfo => "FileInfo",
         }
     }
 }
 
-/// The columns in the worksheet Accounts, index is one-based
+/// The columns in the worksheet Journal, index is one-based
 #[derive(Debug, Clone, Copy)]
-enum AccountsColumn {
-    Account = 10,
-    Description = 11,
-    Debit = 21,
-    Credit = 22,
-    Balance = 23,
+enum JournalColumn {
+    Date = 8,
+    Description = 20,
+    Debit = 22,
+    Credit = 24,
+    Amount = 29,
 }
 
-impl AccountsColumn {
+impl JournalColumn {
     fn name(self) -> &'static str {
         match self {
-            AccountsColumn::Account => "Account",
-            AccountsColumn::Description => "Description",
-            AccountsColumn::Debit => "Debit",
-            AccountsColumn::Credit => "Credit",
-            AccountsColumn::Balance => "Balance",
+            JournalColumn::Date => "Date",
+            JournalColumn::Description => "Description",
+            JournalColumn::Debit => "Debit",
+            JournalColumn::Credit => "Credit",
+            JournalColumn::Amount => "Amount",
         }
     }
 }
@@ -419,7 +483,6 @@ impl Budget {
         let post_key_option = self.get_post_key_by_account(account);
         if let Some(post_key) = post_key_option {
             let x = self.years.get(year);
-            println!("x: {x:?}");
             x.and_then(|y| y.amounts.get(&post_key))
                 .copied()
                 .unwrap_or(-0.0)
@@ -438,6 +501,10 @@ pub fn read_budget_config(budget_config_file: &Path) -> Result<Budget, Box<dyn E
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{
+        test_fixtures::{aggregated_df_01_202505, aggregated_df_01_202507, journal_df_01},
+        test_utils::assert_dataframe,
+    };
     use rstest::rstest;
     use std::path::PathBuf;
 
@@ -469,5 +536,36 @@ mod tests {
         let ts = "20250120072900";
         let _result = do_closing_xml(data_file, budget, "202410", ts)
             .expect("Unable to process sample data file.");
+    }
+
+    #[rstest]
+    #[case("202411", "2024-12-01")]
+    #[case("202412", "2025-01-01")]
+    #[case("202507", "2025-08-01")]
+    fn test_cut_off_date(#[case] month: &str, #[case] expected: &str) {
+        let actual = cut_off_date(month);
+        assert_eq!(actual, expected);
+    }
+
+    #[rstest]
+    fn test_aggregate_balances_by_202505(
+        journal_df_01: DataFrame,
+        aggregated_df_01_202505: DataFrame,
+    ) {
+        test_aggregate_balances_by("202505", journal_df_01, aggregated_df_01_202505);
+    }
+
+    #[rstest]
+    fn test_aggregate_balances_by_202507(
+        journal_df_01: DataFrame,
+        aggregated_df_01_202507: DataFrame,
+    ) {
+        test_aggregate_balances_by("202507", journal_df_01, aggregated_df_01_202507);
+    }
+
+    fn test_aggregate_balances_by(month: &str, journal: DataFrame, expected: DataFrame) {
+        let budget = read_budget_from_samples();
+        let actual = aggregate_balances(&journal, budget, month).expect("can aggregate balances");
+        assert_dataframe(&actual, &expected);
     }
 }
