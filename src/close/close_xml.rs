@@ -26,70 +26,90 @@ pub fn do_closing_xml(
     let cut_off_date = cut_off_date(month);
     let journal = read_xml(input_path, &cut_off_date)?;
 
-    println!("{journal:?}");
-    Ok(journal)
-    //let enriched = balances
-    //    .clone()
-    //    .lazy()
-    //    .with_column(
-    //        col("Account")
-    //            .apply(
-    //                move |a| get_name_of_post(&a, &b1),
-    //                GetOutput::from_type(DataType::String),
-    //            )
-    //            .alias("Group"),
-    //    )
-    //    .with_column(
-    //        col("Account")
-    //            .apply(
-    //                move |a| get_factor_of_post(&a, &b2),
-    //                GetOutput::from_type(DataType::Int8),
-    //            )
-    //            .alias("Factor"),
-    //    )
-    //    .with_column(
-    //        col("Account")
-    //            .apply(
-    //                move |a| get_sort_of_post(&a, &b3),
-    //                GetOutput::from_type(DataType::Int8),
-    //            )
-    //            .alias("Sort"),
-    //    )
-    //    .with_column(
-    //        col("Account")
-    //            .apply(
-    //                move |a| get_budget_of_post(&a, &b4, &year),
-    //                GetOutput::from_type(DataType::Int64),
-    //            )
-    //            .alias("Budget"),
-    //    )
-    //    .filter(
-    //        // Exceptional accounts that need not be included
-    //        col("Account")
-    //            .neq(lit("8900"))
-    //            .or(col("Debit").neq(lit(0.0)))
-    //            .or(col("Credit").neq(lit(0.0))),
-    //    )
-    //    .collect()?;
+    let debits = journal
+        .clone()
+        .lazy()
+        .select([col("Debit").alias("Account"), col("Amount")])
+        .collect()?;
+    let credits = journal
+        .clone()
+        .lazy()
+        .select([col("Credit").alias("Account"), -col("Amount")])
+        .collect()?;
+    let debits_and_credits = debits.vstack(&credits)?;
 
-    //validate_all_accounts_are_in_budget(&enriched)?;
+    let balances = debits_and_credits
+        .clone()
+        .lazy()
+        .filter(
+            col("Account")
+                .str()
+                .contains(lit(r"^[3456789]\d{3,4}$"), false),
+        )
+        .group_by(["Account"])
+        .agg(&[col("Amount").sum().alias("Balance")])
+        .collect()?;
 
-    //let aggregated = enriched
-    //    .clone()
-    //    .lazy()
-    //    .with_column((col("Balance").fill_null(lit(0.0)) * col("Factor")).alias("Net"))
-    //    .group_by(["Group", "Sort", "Budget", "Factor"])
-    //    .agg(&[col("Net").sum()])
-    //    .sort(["Sort"], SortMultipleOptions::default())
-    //    .select([
-    //        col("Group"),
-    //        col("Budget"),
-    //        col("Net"),
-    //        ((col("Budget") - col("Net")) * col("Factor")).alias("Remaining"),
-    //    ])
-    //    .collect()?;
-    //println!("{aggregated:?}");
-    //Ok(aggregated)
+    let enriched = balances
+        .clone()
+        .lazy()
+        .with_column(
+            col("Account")
+                .apply(
+                    move |a| get_name_of_post(&a, &b1),
+                    GetOutput::from_type(DataType::String),
+                )
+                .alias("Group"),
+        )
+        .with_column(
+            col("Account")
+                .apply(
+                    move |a| get_factor_of_post(&a, &b2),
+                    GetOutput::from_type(DataType::Int8),
+                )
+                .alias("Factor"),
+        )
+        .with_column(
+            col("Account")
+                .apply(
+                    move |a| get_sort_of_post(&a, &b3),
+                    GetOutput::from_type(DataType::Int8),
+                )
+                .alias("Sort"),
+        )
+        .with_column(
+            col("Account")
+                .apply(
+                    move |a| get_budget_of_post(&a, &b4, &year),
+                    GetOutput::from_type(DataType::Int64),
+                )
+                .alias("Budget"),
+        )
+        .filter(
+            // Exceptional accounts that need not be included
+            col("Account").neq(lit("8900")),
+        )
+        .collect()?;
+
+    validate_all_accounts_are_in_budget(&enriched)?;
+
+    let aggregated = enriched
+        .clone()
+        .lazy()
+        .with_column((col("Balance").fill_null(lit(0.0)) * col("Factor")).alias("Net"))
+        .group_by(["Group", "Sort", "Budget", "Factor"])
+        .agg(&[col("Net").sum()])
+        .sort(["Sort"], SortMultipleOptions::default())
+        .select([
+            col("Group"),
+            col("Budget"),
+            col("Net"),
+            ((col("Budget") - col("Net")) * col("Factor")).alias("Remaining"),
+        ])
+        .collect()?;
+
+    println!("{aggregated:?}");
+    Ok(aggregated)
 }
 
 // validates the processed data does not contain any accounts that are not in the budget
@@ -365,28 +385,6 @@ impl Sheet {
     }
 }
 
-/// The columns in the worksheet Accounts, index is one-based
-#[derive(Debug, Clone, Copy)]
-enum AccountsColumn {
-    Account = 10,
-    Description = 11,
-    Debit = 21,
-    Credit = 22,
-    Balance = 23,
-}
-
-impl AccountsColumn {
-    fn name(self) -> &'static str {
-        match self {
-            AccountsColumn::Account => "Account",
-            AccountsColumn::Description => "Description",
-            AccountsColumn::Debit => "Debit",
-            AccountsColumn::Credit => "Credit",
-            AccountsColumn::Balance => "Balance",
-        }
-    }
-}
-
 /// The columns in the worksheet Journal, index is one-based
 #[derive(Debug, Clone, Copy)]
 enum JournalColumn {
@@ -460,7 +458,6 @@ impl Budget {
         let post_key_option = self.get_post_key_by_account(account);
         if let Some(post_key) = post_key_option {
             let x = self.years.get(year);
-            println!("x: {x:?}");
             x.and_then(|y| y.amounts.get(&post_key))
                 .copied()
                 .unwrap_or(-0.0)
