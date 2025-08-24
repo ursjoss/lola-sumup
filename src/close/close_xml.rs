@@ -208,7 +208,7 @@ fn aggregate_balances(
     budget: Budget,
     month: &str,
 ) -> Result<DataFrame, Box<dyn Error>> {
-    let balances = get_balances_from(&journal, month)?;
+    let balances = get_balances_from(journal, month)?;
     let aggregated = enrich_and_aggregate(&balances, budget, month)?;
     Ok(aggregated)
 }
