@@ -485,3 +485,41 @@ pub fn summary_df_04(
 }
 
 //end region
+
+//region:05 closing
+
+#[fixture]
+pub fn journal_df_01() -> DataFrame {
+    df!(
+        "Date" => &["2025-01-01", "2025-05-16", "2025-07-20"],
+        "Description" => &["Posting 1", "Posting 2", "Posting 3"],
+        "Debit" => &["10100", "36000", "30100"],
+        "Credit" => &["30100", "30700", "31000"],
+        "Amount" => &[1000.0, 200.0, 100.0],
+    )
+    .expect("valid journal dataframe 01")
+}
+
+#[fixture]
+pub fn aggregated_df_01_202505() -> DataFrame {
+    df!(
+       "Group" => ["Ertrag Restauration", "Spenden"],
+       "Budget" => [30.01, 360.01],
+       "Net" => [1200.0, -200.0],
+       "Remaining" => [1169.99, -560.01],
+    )
+    .expect("valid journal dataframe 01")
+}
+
+#[fixture]
+pub fn aggregated_df_01_202507() -> DataFrame {
+    df!(
+       "Group" => ["Ertrag Restauration", "Ertrag Vermietungen", "Spenden"],
+       "Budget" => [30.01, 31.01, 360.01],
+       "Net" => [1100.0, 100.0, -200.0],
+       "Remaining" => [1069.99, 68.99, -560.01],
+    )
+    .expect("valid journal dataframe 01")
+}
+
+//end region

@@ -17,190 +17,15 @@ pub fn do_closing_xml(
     month: &str,
     _ts: &str,
 ) -> Result<DataFrame, Box<dyn Error>> {
-    let budget = Arc::new(budget);
-    let b1 = budget.clone();
-    let b2 = budget.clone();
-    let b3 = budget.clone();
-    let b4 = budget;
-    let year = month.chars().take(4).collect::<String>();
-    let cut_off_date = cut_off_date(month);
-    let journal = read_xml(input_path, &cut_off_date)?;
-
-    let debits = journal
-        .clone()
-        .lazy()
-        .select([col("Debit").alias("Account"), col("Amount")])
-        .collect()?;
-    let credits = journal
-        .clone()
-        .lazy()
-        .select([col("Credit").alias("Account"), -col("Amount")])
-        .collect()?;
-    let debits_and_credits = debits.vstack(&credits)?;
-
-    let balances = debits_and_credits
-        .clone()
-        .lazy()
-        .filter(
-            col("Account")
-                .str()
-                .contains(lit(r"^[3456789]\d{3,4}$"), false),
-        )
-        .group_by(["Account"])
-        .agg(&[col("Amount").sum().alias("Balance")])
-        .collect()?;
-
-    let enriched = balances
-        .clone()
-        .lazy()
-        .with_column(
-            col("Account")
-                .apply(
-                    move |a| get_name_of_post(&a, &b1),
-                    GetOutput::from_type(DataType::String),
-                )
-                .alias("Group"),
-        )
-        .with_column(
-            col("Account")
-                .apply(
-                    move |a| get_factor_of_post(&a, &b2),
-                    GetOutput::from_type(DataType::Int8),
-                )
-                .alias("Factor"),
-        )
-        .with_column(
-            col("Account")
-                .apply(
-                    move |a| get_sort_of_post(&a, &b3),
-                    GetOutput::from_type(DataType::Int8),
-                )
-                .alias("Sort"),
-        )
-        .with_column(
-            col("Account")
-                .apply(
-                    move |a| get_budget_of_post(&a, &b4, &year),
-                    GetOutput::from_type(DataType::Int64),
-                )
-                .alias("Budget"),
-        )
-        .filter(
-            // Exceptional accounts that need not be included
-            col("Account").neq(lit("8900")),
-        )
-        .collect()?;
-
-    validate_all_accounts_are_in_budget(&enriched)?;
-
-    let aggregated = enriched
-        .clone()
-        .lazy()
-        .with_column((col("Balance").fill_null(lit(0.0)) * col("Factor")).alias("Net"))
-        .group_by(["Group", "Sort", "Budget", "Factor"])
-        .agg(&[col("Net").sum()])
-        .sort(["Sort"], SortMultipleOptions::default())
-        .select([
-            col("Group"),
-            col("Budget"),
-            col("Net"),
-            ((col("Budget") - col("Net")) * col("Factor")).alias("Remaining"),
-        ])
-        .collect()?;
-
+    let journal = read_xml(input_path)?;
+    let aggregated = aggregate_balances(&journal, budget, month)?;
     println!("{aggregated:?}");
     Ok(aggregated)
 }
 
-// validates the processed data does not contain any accounts that are not in the budget
-fn validate_all_accounts_are_in_budget(enriched: &DataFrame) -> Result<(), Box<dyn Error>> {
-    let unmatched = enriched
-        .clone()
-        .lazy()
-        .filter(col("Group").is_null())
-        .collect()?;
-    if unmatched.shape().0 > 0 {
-        let row_vec = unmatched.get_row(0).unwrap().0;
-        let account = row_vec.first().unwrap().clone();
-        println!("{unmatched:?}");
-        Err(format!("Account {account} is not considered in the budget definition").into())
-    } else {
-        Ok(())
-    }
-}
-
-fn cut_off_date(input: &str) -> String {
-    let year: i32 = input[0..4].parse().unwrap();
-    let month: u32 = input[4..6].parse().unwrap();
-    let (next_year, next_month) = if month == 12 {
-        (year + 1, 1)
-    } else {
-        (year, month + 1)
-    };
-    NaiveDate::from_ymd_opt(next_year, next_month, 1).map_or("2000-01-01".to_string(), |d| {
-        d.format("%Y-%m-%d").to_string()
-    })
-}
-
-/// Finds the descriptions of the budget post for given account
-fn get_name_of_post(col: &Column, budget: &Budget) -> PolarsResult<Option<Column>> {
-    let accounts = col.str()?;
-    Ok(Some(
-        accounts
-            .into_iter()
-            .map(|a| {
-                a.map(|a| budget.get_post_by_account(a).map(|p| p.name.to_string()))
-                    .or(None)?
-            })
-            .collect::<StringChunked>()
-            .into_column(),
-    ))
-}
-
-/// Finds the budget amount of the budget post for given account and year
-fn get_budget_of_post(col: &Column, budget: &Budget, year: &str) -> PolarsResult<Option<Column>> {
-    let accounts = col.str()?;
-    Ok(Some(
-        accounts
-            .into_iter()
-            .map(|a| a.map(|a| budget.get_buget_amount_by_account(a, year)))
-            .collect::<Float64Chunked>()
-            .into_column(),
-    ))
-}
-
-/// Finds the sort for the post for given account
-fn get_sort_of_post(col: &Column, budget: &Budget) -> PolarsResult<Option<Column>> {
-    get_int_from_post(col, budget, |p| p.sort)
-}
-
-/// Finds the factor for the post for given account
-fn get_factor_of_post(col: &Column, budget: &Budget) -> PolarsResult<Option<Column>> {
-    get_int_from_post(col, budget, |p| p.factor)
-}
-
-fn get_int_from_post<F>(
-    col: &Column,
-    budget: &Budget,
-    int_extractor: F,
-) -> PolarsResult<Option<Column>>
-where
-    F: Fn(&Post) -> i64 + Copy,
-{
-    let accounts = col.str()?;
-    Ok(Some(
-        accounts
-            .into_iter()
-            .map(|a| {
-                a.map(|a| budget.get_post_by_account(a).map(int_extractor))
-                    .or(None)?
-            })
-            .collect::<Int64Chunked>()
-            .into_column(),
-    ))
-}
-
-fn read_xml(input_path: &Path, cut_off_date: &str) -> Result<DataFrame, Box<dyn Error>> {
+/// reads the Excel XML format, extracting columns from sheet Journal:
+/// Date, Description, Debit, Credit, Amount.
+fn read_xml(input_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
     let file = BufReader::new(File::open(input_path)?);
     let mut reader = Reader::from_reader(file);
 
@@ -271,14 +96,11 @@ fn read_xml(input_path: &Path, cut_off_date: &str) -> Result<DataFrame, Box<dyn 
                             .clone()
                             .lazy()
                             .filter(
-                                col("Date")
-                                    .is_not_null()
-                                    .and(
-                                        col("Date")
-                                            .str()
-                                            .contains(lit(r"^\d{4}-\d{2}-\d{2}$"), false),
-                                    )
-                                    .and(col("Date").lt(lit(cut_off_date))),
+                                col("Date").is_not_null().and(
+                                    col("Date")
+                                        .str()
+                                        .contains(lit(r"^\d{4}-\d{2}-\d{2}$"), false),
+                                ),
                             )
                             .select([col("Date")])
                             .collect()
@@ -303,6 +125,21 @@ fn read_xml(input_path: &Path, cut_off_date: &str) -> Result<DataFrame, Box<dyn 
         buf.clear();
     }
     Ok(df)
+}
+
+/// calculates the first day to be ignored, e.g.
+/// returns 2025-08-01 for month 202507
+fn cut_off_date(last_valid_month: &str) -> String {
+    let year: i32 = last_valid_month[0..4].parse().unwrap();
+    let month: u32 = last_valid_month[4..6].parse().unwrap();
+    let (next_year, next_month) = if month == 12 {
+        (year + 1, 1)
+    } else {
+        (year, month + 1)
+    };
+    NaiveDate::from_ymd_opt(next_year, next_month, 1).map_or("2000-01-01".to_string(), |d| {
+        d.format("%Y-%m-%d").to_string()
+    })
 }
 
 fn new_row(
@@ -363,6 +200,194 @@ fn new_row_with_vecs(
         ),
     ])?;
     Ok(df)
+}
+
+/// gets the balances and aggregates them on budget level
+fn aggregate_balances(
+    journal: &DataFrame,
+    budget: Budget,
+    month: &str,
+) -> Result<DataFrame, Box<dyn Error>> {
+    let balances = get_balances_from(&journal, month)?;
+    let aggregated = enrich_and_aggregate(&balances, budget, month)?;
+    Ok(aggregated)
+}
+
+/// Transforms the journal into balances for the relevant accounts up to and including the month specified.
+fn get_balances_from(journal: &DataFrame, month: &str) -> Result<DataFrame, Box<dyn Error>> {
+    let debits = journal
+        .clone()
+        .lazy()
+        .select([col("Debit").alias("Account"), col("Amount"), col("Date")])
+        .collect()?;
+    let credits = journal
+        .clone()
+        .lazy()
+        .select([col("Credit").alias("Account"), -col("Amount"), col("Date")])
+        .collect()?;
+    let debits_and_credits = debits.vstack(&credits)?;
+
+    let cut_off_date = cut_off_date(month);
+    let balances = debits_and_credits
+        .clone()
+        .lazy()
+        .filter(
+            col("Account")
+                .str()
+                .contains(lit(r"^[3456789]\d{3,4}$"), false)
+                .and(col("Date").lt(lit(cut_off_date.clone()))),
+        )
+        .group_by(["Account"])
+        .agg(&[col("Amount").sum().alias("Balance")])
+        .collect()?;
+    Ok(balances)
+}
+
+/// enriches the balances with budget
+fn enrich_and_aggregate(
+    balances: &DataFrame,
+    budget: Budget,
+    month: &str,
+) -> Result<DataFrame, Box<dyn Error>> {
+    let year = month.chars().take(4).collect::<String>();
+    let budget = Arc::new(budget);
+    let b1 = budget.clone();
+    let b2 = budget.clone();
+    let b3 = budget.clone();
+    let b4 = budget;
+    let enriched = balances
+        .clone()
+        .lazy()
+        .with_column(
+            col("Account")
+                .apply(
+                    move |a| get_name_of_post(&a, &b1),
+                    GetOutput::from_type(DataType::String),
+                )
+                .alias("Group"),
+        )
+        .with_column(
+            col("Account")
+                .apply(
+                    move |a| get_factor_of_post(&a, &b2),
+                    GetOutput::from_type(DataType::Int8),
+                )
+                .alias("Factor"),
+        )
+        .with_column(
+            col("Account")
+                .apply(
+                    move |a| get_sort_of_post(&a, &b3),
+                    GetOutput::from_type(DataType::Int8),
+                )
+                .alias("Sort"),
+        )
+        .with_column(
+            col("Account")
+                .apply(
+                    move |a| get_budget_of_post(&a, &b4, &year),
+                    GetOutput::from_type(DataType::Int64),
+                )
+                .alias("Budget"),
+        )
+        .filter(
+            // Exceptional accounts that need not be included
+            col("Account").neq(lit("8900")),
+        )
+        .collect()?;
+
+    validate_all_accounts_are_in_budget(&enriched)?;
+
+    let aggregated = enriched
+        .clone()
+        .lazy()
+        .with_column((col("Balance").fill_null(lit(0.0)) * col("Factor")).alias("Net"))
+        .group_by(["Group", "Sort", "Budget", "Factor"])
+        .agg(&[col("Net").sum()])
+        .sort(["Sort"], SortMultipleOptions::default())
+        .select([
+            col("Group"),
+            col("Budget"),
+            col("Net"),
+            ((col("Budget") - col("Net")) * col("Factor")).alias("Remaining"),
+        ])
+        .collect()?;
+    Ok(aggregated)
+}
+
+// validates the processed data does not contain any accounts that are not in the budget
+fn validate_all_accounts_are_in_budget(enriched: &DataFrame) -> Result<(), Box<dyn Error>> {
+    let unmatched = enriched
+        .clone()
+        .lazy()
+        .filter(col("Group").is_null())
+        .collect()?;
+    if unmatched.shape().0 > 0 {
+        let row_vec = unmatched.get_row(0).unwrap().0;
+        let account = row_vec.first().unwrap().clone();
+        println!("{unmatched:?}");
+        Err(format!("Account {account} is not considered in the budget definition").into())
+    } else {
+        Ok(())
+    }
+}
+
+/// Finds the descriptions of the budget post for given account
+fn get_name_of_post(col: &Column, budget: &Budget) -> PolarsResult<Option<Column>> {
+    let accounts = col.str()?;
+    Ok(Some(
+        accounts
+            .into_iter()
+            .map(|a| {
+                a.map(|a| budget.get_post_by_account(a).map(|p| p.name.to_string()))
+                    .or(None)?
+            })
+            .collect::<StringChunked>()
+            .into_column(),
+    ))
+}
+
+/// Finds the budget amount of the budget post for given account and year
+fn get_budget_of_post(col: &Column, budget: &Budget, year: &str) -> PolarsResult<Option<Column>> {
+    let accounts = col.str()?;
+    Ok(Some(
+        accounts
+            .into_iter()
+            .map(|a| a.map(|a| budget.get_buget_amount_by_account(a, year)))
+            .collect::<Float64Chunked>()
+            .into_column(),
+    ))
+}
+
+/// Finds the sort for the post for given account
+fn get_sort_of_post(col: &Column, budget: &Budget) -> PolarsResult<Option<Column>> {
+    get_int_from_post(col, budget, |p| p.sort)
+}
+
+/// Finds the factor for the post for given account
+fn get_factor_of_post(col: &Column, budget: &Budget) -> PolarsResult<Option<Column>> {
+    get_int_from_post(col, budget, |p| p.factor)
+}
+
+fn get_int_from_post<F>(
+    col: &Column,
+    budget: &Budget,
+    int_extractor: F,
+) -> PolarsResult<Option<Column>>
+where
+    F: Fn(&Post) -> i64 + Copy,
+{
+    let accounts = col.str()?;
+    Ok(Some(
+        accounts
+            .into_iter()
+            .map(|a| {
+                a.map(|a| budget.get_post_by_account(a).map(int_extractor))
+                    .or(None)?
+            })
+            .collect::<Int64Chunked>()
+            .into_column(),
+    ))
 }
 
 /// The worksheets in the workbook
@@ -476,6 +501,10 @@ pub fn read_budget_config(budget_config_file: &Path) -> Result<Budget, Box<dyn E
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{
+        test_fixtures::{aggregated_df_01_202505, aggregated_df_01_202507, journal_df_01},
+        test_utils::assert_dataframe,
+    };
     use rstest::rstest;
     use std::path::PathBuf;
 
@@ -507,5 +536,36 @@ mod tests {
         let ts = "20250120072900";
         let _result = do_closing_xml(data_file, budget, "202410", ts)
             .expect("Unable to process sample data file.");
+    }
+
+    #[rstest]
+    #[case("202411", "2024-12-01")]
+    #[case("202412", "2025-01-01")]
+    #[case("202507", "2025-08-01")]
+    fn test_cut_off_date(#[case] month: &str, #[case] expected: &str) {
+        let actual = cut_off_date(month);
+        assert_eq!(actual, expected);
+    }
+
+    #[rstest]
+    fn test_aggregate_balances_by_202505(
+        journal_df_01: DataFrame,
+        aggregated_df_01_202505: DataFrame,
+    ) {
+        test_aggregate_balances_by("202505", journal_df_01, aggregated_df_01_202505);
+    }
+
+    #[rstest]
+    fn test_aggregate_balances_by_202507(
+        journal_df_01: DataFrame,
+        aggregated_df_01_202507: DataFrame,
+    ) {
+        test_aggregate_balances_by("202507", journal_df_01, aggregated_df_01_202507);
+    }
+
+    fn test_aggregate_balances_by(month: &str, journal: DataFrame, expected: DataFrame) {
+        let budget = read_budget_from_samples();
+        let actual = aggregate_balances(&journal, budget, month).expect("can aggregate balances");
+        assert_dataframe(&actual, &expected);
     }
 }
