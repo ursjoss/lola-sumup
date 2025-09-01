@@ -4,9 +4,10 @@ use polars::prelude::*;
 
 use crate::export::posting::Posting;
 
-/// Produces the Accounting dataframe from the summary [df]
-pub fn gather_df_accounting(df: &DataFrame) -> PolarsResult<DataFrame> {
-    df.clone()
+/// Produces the Accounting dataframe from the details [df]
+pub fn gather_df_accounting(df_det: &DataFrame) -> PolarsResult<DataFrame> {
+    df_det
+        .clone()
         .lazy()
         .with_column(
             (col("Net Card Total").fill_null(0.0) + col("Tips_Card").fill_null(0.0))
@@ -132,15 +133,15 @@ mod tests {
     use chrono::NaiveDate;
     use rstest::rstest;
 
-    use crate::test_fixtures::{accounting_df_03, summary_df_03};
+    use crate::test_fixtures::{accounting_df_03, details_df_03};
     use crate::test_utils::assert_dataframe;
 
     use super::*;
 
     #[rstest]
-    fn test_gather_df_accounting(summary_df_03: DataFrame, accounting_df_03: DataFrame) {
+    fn test_gather_df_accounting(details_df_03: DataFrame, accounting_df_03: DataFrame) {
         let out =
-            gather_df_accounting(&summary_df_03).expect("should be able to collect accounting_df");
+            gather_df_accounting(&details_df_03).expect("should be able to collect accounting_df");
         assert_dataframe(&out, &accounting_df_03);
     }
 

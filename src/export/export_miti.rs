@@ -1,8 +1,9 @@
 use polars::prelude::*;
 
-/// Produces the Mittagstisch dataframe from the summary [df]
-pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
-    df.clone()
+/// Produces the Mittagstisch dataframe from the details [df]
+pub fn gather_df_miti(df_det: &DataFrame) -> PolarsResult<DataFrame> {
+    df_det
+        .clone()
         .lazy()
         .with_column(
             (col("MealCount_Reduced").fill_null(0) + col("MealCount_Praktikum").fill_null(0))
@@ -79,14 +80,14 @@ pub fn gather_df_miti(df: &DataFrame) -> PolarsResult<DataFrame> {
 mod tests {
     use rstest::rstest;
 
-    use crate::test_fixtures::{miti_df_03, summary_df_03};
+    use crate::test_fixtures::{details_df_03, miti_df_03};
     use crate::test_utils::assert_dataframe;
 
     use super::*;
 
     #[rstest]
-    fn test_gather_df_miti(summary_df_03: DataFrame, miti_df_03: DataFrame) {
-        let out = gather_df_miti(&summary_df_03).expect("should be able to collect miti_df");
+    fn test_gather_df_miti(details_df_03: DataFrame, miti_df_03: DataFrame) {
+        let out = gather_df_miti(&details_df_03).expect("should be able to collect miti_df");
         assert_dataframe(&out, &miti_df_03);
     }
 }

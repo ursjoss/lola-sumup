@@ -158,7 +158,7 @@ It produces four exports (with month and execution timestamp accordingly):
 - `accounting_202305_20230603142503.csv`
 - `banana_202305_20230603142503.csv`
 - `mittagstisch_202305_20230603142503.csv`
-- `summary_202305_20230603142503.csv`
+- `detailed_202305_20230603142503.csv`
 
 ### The close step
 
@@ -181,89 +181,6 @@ Options:
 It dumps the aggregated year-to-date figures to the command line.
 
 ## Description of the exports
-
-### Summary Report
-
-The summary file collects all original and derived columns that are required to build the other reports or for deeper insights.
-
-The columns of the resulting summary file are defined as follows:
-
-- Generic Columns:
-  - `Date`: Calendar Date
-- Gross Values of consumptions of topics `MiTi`, `Cafe`, `Verm` (commissions not subtracted) split by payment method
-  - `MiTi_Cash`: Gross Cash Income Mittagstisch (including LoLa beverages)
-  - `MiTi_Card`: Gross Card Income Mittagstisch (including LoLa beverages)
-  - `MiTi Total`: Total Gross Income Mittagstisch (including LoLa beverages) [`MiTi_Cash` + `MiTi_Card`], also [`Gross MiTi (MiTi)` + `Gross MiTi (LoLa)`]
-  - `Cafe_Cash`: Gross Cash Income Café
-  - `Cafe_Card`: Gross Card Income Café
-  - `Cafe Total`: Total Gross Income Café [`Cafe_Cash` + `Cafe_Card`]
-  - `Verm_Cash`: Gross Cash Income Rentals
-  - `Verm_Card`: Gross Card Income Rentals
-  - `Verm Total`: Total Gross Income Rentals [`Verm_Cash` + `Verm_Card`]
-  - `SoFe_Cash`: Gross Cash summer party
-  - `SoFe_Card`: Gross Card summer party
-  - `SoFe Total`: Total Gross summer party [`SoFe_Cash` + `SoFe_Card`]
-  - `Deposit_Cash`: Gross Cash Key Deposit
-  - `Deposit_Card`: Gross Card Key Deposit
-  - `Deposit Total`: Total Gross Key Deposit [`Deposit_Cash` + `Deposit_Card`]
-  - `Packaging_Cash`: Gross Cash Key Deposit
-  - `Packaging_Card`: Gross Card Key Deposit
-  - `Packaging Total`: Total Gross Key Deposit [`Packaging_Cash` + `Packaging_Card`]
-  - `Rental_Cash`: Gross Cash Rental Payment
-  - `Rental_Card`: Gross Card Rental Payment
-  - `Rental Total`: Total Gross Rental Payment [`Rental_Cash` + `Rental_Card`]
-  - `Culture_Cash`: Gross Cash Culture
-  - `Culture_Card`: Gross Card Culture
-  - `Culture Total`: Total Gross Culture [`Culture_Cash` + `Culture_Card`]
-  - `PaidOut_Cash`: Gross Cash PaidOut
-  - `PaidOut_Card`: Gross Card PaidOut
-  - `PaidOut Total`: Total Gross PaidOut [`PaidOut_Cash` + `PaidOut_Card`]
-- Gross values consumption, Tips and total reported values by payment method:
-  - `Gross Cash`: Total Gross Income Cash [`MiTi_Cash` + `Cafe_Cash` + `Verm_Cash` + `SoFe_Cash` + `Deposit_Cash` + `Packaging_Cash` + `Rental_Cash` + `Culture_Cash` + `PaidOut_Cash`]
-  - `Tips_Cash`: Tips Cash
-  - `SumUp Cash`: Total Income Cash [`Gross Cash` + `Tips_Cash`]
-  - `Gross Card`: Gross Gross Income Card [`MiTi_Card` + `Cafe_Card` + `Verm_Card` + `SoFe_Card` + `Deposit_Card` + `Packaging_Card` + `Rental_Card` + `Culture_Card` + `PaidOut_Card`]
-  - `Tips_Card`: Tips Card
-  - `SumUp Card`: Total Gross Income Card [`Gross Card` + `Tips_Card`]
-  - `Gross Total`: Gross Total Income [`Gross Cash` + `Gross Card`]
-  - `Tips Total`: [`Tips_Cash` + `Tips_Card`]
-  - `SumUp Total`: [`Gross Total` + `Tips Total`] or [`SumUp Cash` + `SumUp Card`]
-- Card related payments: Gross values, commission and net values by topic:
-  - `Gross Card MiTi`: Gross Card Income Mittagstisch [`MiTi_Card`] (including beverages LoLa)
-  - `MiTi_Commission`: Card Commission for Mittagstisch (Menus and Tips, but not from LoLa beverages)
-  - `Net Card MiTi`: Net Card Income Mittagstisch [`Gross Card MiTi` - `MiTi_Commission`] - commission on meals and tips are deducted, sales of beverages still included
-  - `Gross Card LoLa`: Gross Card Income LoLa (Café, Vermietungen, summer party, Deposit, Rental, Culture) [`Cafe_Card` + `Verm_Card` + `SoFe_Card` + `Deposit_Card` + `Rental_Card` + `Culture_Card` + `PaidOut_Card`]
-  - `LoLa_Commission`: Card Commission for LoLa (non-Mittagstisch related, but including commission for items sold by MiTi)
-  - `LoLa_Commission_MiTi`: Card Commission for LoLa items sold by MiTi only, so not from Café or Rentals
-  - `Net Card LoLa`: Net Card Income LoLa (Café and Vermietungen) [`Gross Card LoLa` - `LoLa_Commission`]
-  - `Gross Card Total`: Gross Card Income (MiTi, Café, Vermietungen) [`Gross Card MiTi` + `Gross Card LoLa`]
-  - `Total Commission`: Card Commission Total (MiTi, Café, Vermietungen) [`MiTi_Commission` + `LoLa_Commission`]
-  - `Net Card Total`: Total Net Card Income [`Gross Card Total` - `Total Commission`]
-  - `Net Payment SumUp MiTi`: Total Net Payment SumUp Mittagstisch related (Net card payments concerning Mittagstisch (Sales from meals, tips, sales of LoLa goods paid via card)) [`MiTi_Card` + `MiTi_Tips_Card` - `MiTi_Total_Commission`]
-- Tips by Topic:
-  - `MiTi_Tips_Cash`: Tips for Mittagstisch paid in Cash
-  - `MiTi_Tips_Card`: Tips for Mittagstisch paid by Card
-  - `MiTi_Tips`: Tips for Mittagstisch (Total) [`MiTi_Tips_Cash` + `MiTi_Tips_Card`]
-  - `Cafe_Tips`: Tips for Café
-  - `Verm_Tips`: Tips for Vermietungen
-- Split of Topic Mittagstisch by Owner:
-  - `Gross MiTi (MiTi)`: Gross Income Mittagstisch from their own Menus (paid via Card or Cash)
-  - `Gross MiTi (LoLa)`: Gross Income Mittagstisch with LoLa-items (Beverages...) (paid via Card or Cash)
-  - `Gross MiTi (MiTi) Card`: Gross Income Mittagstisch from their own Menus (paid via Card only) (not including tips)
-  - `Net MiTi (MiTi) Card`: Net Income Mittagstisch Menus w/o commission paid by card [`Gross MiTi (MiTi) Card` - `MiTi_Commission`]
-  - `Net MiTi (LoLa)`: Net total income Mittagstisch with LoLa items w/o commission [`Gross MiTi (LoLa)` - `LoLa_Commission_MiTi`]
-  - `Contribution MiTi`: Share MiTi from selling LoLa items [20% * `Net MiTi (LoLa)`]
-  - `Net MiTi (LoLA) - Share LoLa`: 80% of Net total income Mittagstisch with LoLa items w/o commission [`Net MiTi (LoLa)` * 0.8]
-  - `Sponsored Reductions`: Reductions sponsored by LoLa [2 * (`MealCount_Reduced` + `MealCount_Praktikum`)]
-  - `Debt to MiTi`: Net amount LoLa needs to pay out to Mittagstisch [`Net Payment SumUp MiTi` - `Net MiTi (LoLA) - Share LoLa` + `Sponsored Reductions`]
-  - `Income LoLa MiTi`: Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi`]
-- Statistics relevant for Mittagstisch:
-  - `MealCount_Regular`: Number of regular meals per day
-  - `MealCount_Reduced`: Number of meals with reductions sponsored by LoLa per day
-  - `MealCount_Children`: Number of children meals per day
-  - `MealCount_Praktikum`: Number of meals for stagaire sponsored by LoLa per day
-- Sponsored meal reduction for Stagaire
-  - `Total Praktikum`: Total for stagaire meals sponsored by LoLa per day
 
 ### Mittagstisch Report
 
@@ -363,3 +280,88 @@ The columns in the banana.csv spreadsheet are:
 - `Einheit`: Empty placeholder column
 - `Preis/Einheit`: Empty placeholder column
 - `Betrag CHF`: The posting amount
+
+### Detailed Report
+
+The detailed export file collects all original and derived columns that are required to build the other reports or for deeper insights.
+It may seem overwhelming. It is not used as a regular export, but serves for debugging purposes, if one needs to understand how specific
+columns are calculated.
+
+The columns of the resulting detailed export file are defined as follows:
+
+- Generic Columns:
+  - `Date`: Calendar Date
+- Gross Values of consumptions of topics `MiTi`, `Cafe`, `Verm` (commissions not subtracted) split by payment method
+  - `MiTi_Cash`: Gross Cash Income Mittagstisch (including LoLa beverages)
+  - `MiTi_Card`: Gross Card Income Mittagstisch (including LoLa beverages)
+  - `MiTi Total`: Total Gross Income Mittagstisch (including LoLa beverages) [`MiTi_Cash` + `MiTi_Card`], also [`Gross MiTi (MiTi)` + `Gross MiTi (LoLa)`]
+  - `Cafe_Cash`: Gross Cash Income Café
+  - `Cafe_Card`: Gross Card Income Café
+  - `Cafe Total`: Total Gross Income Café [`Cafe_Cash` + `Cafe_Card`]
+  - `Verm_Cash`: Gross Cash Income Rentals
+  - `Verm_Card`: Gross Card Income Rentals
+  - `Verm Total`: Total Gross Income Rentals [`Verm_Cash` + `Verm_Card`]
+  - `SoFe_Cash`: Gross Cash summer party
+  - `SoFe_Card`: Gross Card summer party
+  - `SoFe Total`: Total Gross summer party [`SoFe_Cash` + `SoFe_Card`]
+  - `Deposit_Cash`: Gross Cash Key Deposit
+  - `Deposit_Card`: Gross Card Key Deposit
+  - `Deposit Total`: Total Gross Key Deposit [`Deposit_Cash` + `Deposit_Card`]
+  - `Packaging_Cash`: Gross Cash Key Deposit
+  - `Packaging_Card`: Gross Card Key Deposit
+  - `Packaging Total`: Total Gross Key Deposit [`Packaging_Cash` + `Packaging_Card`]
+  - `Rental_Cash`: Gross Cash Rental Payment
+  - `Rental_Card`: Gross Card Rental Payment
+  - `Rental Total`: Total Gross Rental Payment [`Rental_Cash` + `Rental_Card`]
+  - `Culture_Cash`: Gross Cash Culture
+  - `Culture_Card`: Gross Card Culture
+  - `Culture Total`: Total Gross Culture [`Culture_Cash` + `Culture_Card`]
+  - `PaidOut_Cash`: Gross Cash PaidOut
+  - `PaidOut_Card`: Gross Card PaidOut
+  - `PaidOut Total`: Total Gross PaidOut [`PaidOut_Cash` + `PaidOut_Card`]
+- Gross values consumption, Tips and total reported values by payment method:
+  - `Gross Cash`: Total Gross Income Cash [`MiTi_Cash` + `Cafe_Cash` + `Verm_Cash` + `SoFe_Cash` + `Deposit_Cash` + `Packaging_Cash` + `Rental_Cash` + `Culture_Cash` + `PaidOut_Cash`]
+  - `Tips_Cash`: Tips Cash
+  - `SumUp Cash`: Total Income Cash [`Gross Cash` + `Tips_Cash`]
+  - `Gross Card`: Gross Gross Income Card [`MiTi_Card` + `Cafe_Card` + `Verm_Card` + `SoFe_Card` + `Deposit_Card` + `Packaging_Card` + `Rental_Card` + `Culture_Card` + `PaidOut_Card`]
+  - `Tips_Card`: Tips Card
+  - `SumUp Card`: Total Gross Income Card [`Gross Card` + `Tips_Card`]
+  - `Gross Total`: Gross Total Income [`Gross Cash` + `Gross Card`]
+  - `Tips Total`: [`Tips_Cash` + `Tips_Card`]
+  - `SumUp Total`: [`Gross Total` + `Tips Total`] or [`SumUp Cash` + `SumUp Card`]
+- Card related payments: Gross values, commission and net values by topic:
+  - `Gross Card MiTi`: Gross Card Income Mittagstisch [`MiTi_Card`] (including beverages LoLa)
+  - `MiTi_Commission`: Card Commission for Mittagstisch (Menus and Tips, but not from LoLa beverages)
+  - `Net Card MiTi`: Net Card Income Mittagstisch [`Gross Card MiTi` - `MiTi_Commission`] - commission on meals and tips are deducted, sales of beverages still included
+  - `Gross Card LoLa`: Gross Card Income LoLa (Café, Vermietungen, summer party, Deposit, Rental, Culture) [`Cafe_Card` + `Verm_Card` + `SoFe_Card` + `Deposit_Card` + `Rental_Card` + `Culture_Card` + `PaidOut_Card`]
+  - `LoLa_Commission`: Card Commission for LoLa (non-Mittagstisch related, but including commission for items sold by MiTi)
+  - `LoLa_Commission_MiTi`: Card Commission for LoLa items sold by MiTi only, so not from Café or Rentals
+  - `Net Card LoLa`: Net Card Income LoLa (Café and Vermietungen) [`Gross Card LoLa` - `LoLa_Commission`]
+  - `Gross Card Total`: Gross Card Income (MiTi, Café, Vermietungen) [`Gross Card MiTi` + `Gross Card LoLa`]
+  - `Total Commission`: Card Commission Total (MiTi, Café, Vermietungen) [`MiTi_Commission` + `LoLa_Commission`]
+  - `Net Card Total`: Total Net Card Income [`Gross Card Total` - `Total Commission`]
+  - `Net Payment SumUp MiTi`: Total Net Payment SumUp Mittagstisch related (Net card payments concerning Mittagstisch (Sales from meals, tips, sales of LoLa goods paid via card)) [`MiTi_Card` + `MiTi_Tips_Card` - `MiTi_Total_Commission`]
+- Tips by Topic:
+  - `MiTi_Tips_Cash`: Tips for Mittagstisch paid in Cash
+  - `MiTi_Tips_Card`: Tips for Mittagstisch paid by Card
+  - `MiTi_Tips`: Tips for Mittagstisch (Total) [`MiTi_Tips_Cash` + `MiTi_Tips_Card`]
+  - `Cafe_Tips`: Tips for Café
+  - `Verm_Tips`: Tips for Vermietungen
+- Split of Topic Mittagstisch by Owner:
+  - `Gross MiTi (MiTi)`: Gross Income Mittagstisch from their own Menus (paid via Card or Cash)
+  - `Gross MiTi (LoLa)`: Gross Income Mittagstisch with LoLa-items (Beverages...) (paid via Card or Cash)
+  - `Gross MiTi (MiTi) Card`: Gross Income Mittagstisch from their own Menus (paid via Card only) (not including tips)
+  - `Net MiTi (MiTi) Card`: Net Income Mittagstisch Menus w/o commission paid by card [`Gross MiTi (MiTi) Card` - `MiTi_Commission`]
+  - `Net MiTi (LoLa)`: Net total income Mittagstisch with LoLa items w/o commission [`Gross MiTi (LoLa)` - `LoLa_Commission_MiTi`]
+  - `Contribution MiTi`: Share MiTi from selling LoLa items [20% * `Net MiTi (LoLa)`]
+  - `Net MiTi (LoLA) - Share LoLa`: 80% of Net total income Mittagstisch with LoLa items w/o commission [`Net MiTi (LoLa)` * 0.8]
+  - `Sponsored Reductions`: Reductions sponsored by LoLa [2 * (`MealCount_Reduced` + `MealCount_Praktikum`)]
+  - `Debt to MiTi`: Net amount LoLa needs to pay out to Mittagstisch [`Net Payment SumUp MiTi` - `Net MiTi (LoLA) - Share LoLa` + `Sponsored Reductions`]
+  - `Income LoLa MiTi`: Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi`]
+- Statistics relevant for Mittagstisch:
+  - `MealCount_Regular`: Number of regular meals per day
+  - `MealCount_Reduced`: Number of meals with reductions sponsored by LoLa per day
+  - `MealCount_Children`: Number of children meals per day
+  - `MealCount_Praktikum`: Number of meals for stagaire sponsored by LoLa per day
+- Sponsored meal reduction for Stagaire
+  - `Total Praktikum`: Total for stagaire meals sponsored by LoLa per day

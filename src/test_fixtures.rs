@@ -103,7 +103,7 @@ pub fn intermediate_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> Dat
 
 //endregion
 
-//region:02 - from intermediate to summary
+//region:02 - from intermediate to details
 
 /// Sample record 02 matching the structure of the intermediate csv file
 #[fixture]
@@ -130,10 +130,10 @@ pub fn intermediate_df_02(sample_date: NaiveDate) -> DataFrame {
         .expect("valid intermediate dataframe 02")
 }
 
-/// Sample record 02 matching the summary df, created from `intermediate_df_02`
-/// summary
+/// Sample record 02 matching the details df, created from `intermediate_df_02`
+/// details
 #[fixture]
-pub fn summary_df_02(sample_date: NaiveDate) -> DataFrame {
+pub fn details_df_02(sample_date: NaiveDate) -> DataFrame {
     let date = sample_date.format("%d.%m.%y").to_string();
     df!(
         "Date" => &[date],
@@ -205,18 +205,18 @@ pub fn summary_df_02(sample_date: NaiveDate) -> DataFrame {
         "MealCount_Praktikum" => &[None::<i64>],
         "Total Praktikum" => &[None::<i64>],
     )
-    .expect("valid summary dataframe 02")
+    .expect("valid details dataframe 02")
 }
 
 //endregion
 
-//region:03 - from summary to accounting / miti
+//region:03 - from details to accounting / miti
 
-/// Sample record 03 matching the summary dataframe created from the intermediate csv file
+/// Sample record 03 matching the details dataframe created from the intermediate csv file
 /// accounting
 /// miti
 #[fixture]
-pub fn summary_df_03(sample_date: NaiveDate) -> DataFrame {
+pub fn details_df_03(sample_date: NaiveDate) -> DataFrame {
     let date = sample_date.format("%d.%m.%Y").to_string();
     df!(
         "Date" => &[date],
@@ -288,10 +288,10 @@ pub fn summary_df_03(sample_date: NaiveDate) -> DataFrame {
         "MealCount_Praktikum" => &[1],
         "Total Praktikum" => &[11.0],
     )
-    .expect("valid summary dataframe 02")
+    .expect("valid details dataframe 02")
 }
 
-/// Sample record 03 matching the accounting dataframe created from summary_df_03
+/// Sample record 03 matching the accounting dataframe created from details_df_03
 #[fixture]
 pub fn accounting_df_03(sample_date: NaiveDate) -> DataFrame {
     let date = sample_date.format("%d.%m.%Y").to_string();
@@ -327,7 +327,7 @@ pub fn accounting_df_03(sample_date: NaiveDate) -> DataFrame {
     .expect("Valid accounting df 03")
 }
 
-/// Sample record 03 matching the miti dataframe created from summary_df_03
+/// Sample record 03 matching the miti dataframe created from details_df_03
 #[fixture]
 pub fn miti_df_03(sample_date: NaiveDate) -> DataFrame {
     let date = sample_date.format("%d.%m.%Y").to_string();
@@ -360,7 +360,7 @@ pub fn miti_df_03(sample_date: NaiveDate) -> DataFrame {
 
 //endregion
 
-//region:04 - from intermediate to summary - validating total row
+//region:04 - from intermediate to details - validating total row
 
 #[fixture]
 pub fn sample_date2() -> NaiveDate {
@@ -403,7 +403,7 @@ pub fn intermediate_df_04(
 }
 
 #[fixture]
-pub fn summary_df_04(
+pub fn details_df_04(
     sample_date: NaiveDate,
     sample_date2: NaiveDate,
     sample_date3: NaiveDate,
@@ -481,7 +481,7 @@ pub fn summary_df_04(
         "MealCount_Praktikum" => &[None::<i64>, None::<i64>, Some(1), Some(1)],
         "Total Praktikum" => &[None::<f64>, None::<f64>, Some(11.0), Some(11.0)],
     )
-    .expect("valid summary dataframe 04")
+    .expect("valid details dataframe 04")
 }
 
 //end region

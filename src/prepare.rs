@@ -159,7 +159,7 @@ fn fail_on_missing_trx(txr_df: &DataFrame, sr_df: &DataFrame) -> Result<(), Box<
     }
 }
 
-/// Combines the sales report and transaction report dataframes into the summary dataframe.
+/// Combines the sales report and transaction report dataframes into the intermediate dataframe.
 #[allow(clippy::too_many_lines)]
 fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame, Box<dyn Error>> {
     let raw_date_format = StrptimeOptions {

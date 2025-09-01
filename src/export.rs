@@ -11,15 +11,15 @@ use crate::export::constraint::{
 };
 use crate::export::export_accounting::{gather_df_accounting, validate_acc_constraint};
 use crate::export::export_banana::gather_df_banana;
+use crate::export::export_details::collect_data;
 use crate::export::export_miti::gather_df_miti;
-use crate::export::export_summary::collect_data;
 use crate::prepare::warn_on_zero_value_trx;
 
 mod constraint;
 mod export_accounting;
 mod export_banana;
+mod export_details;
 mod export_miti;
-mod export_summary;
 mod posting;
 
 /// Reads the intermediate files and exports all configured reports.
@@ -52,28 +52,28 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
 
     warn_on_zero_value_trx(&raw_df)?;
 
-    let (mut df, mut df_acc, mut df_banana) = crunch_data(raw_df, month)?;
+    let (mut df_det, mut df_acc, mut df_banana) = crunch_data(raw_df, month)?;
 
-    export_summary(&month, &ts, &mut df)?;
-    export_mittagstisch(&month, &ts, &mut df)?;
+    export_details(&month, &ts, &mut df_det)?;
+    export_mittagstisch(&month, &ts, &mut df_det)?;
     export_accounting(&month, &ts, &mut df_acc)?;
     export_banana(&month, &ts, &mut df_banana)
 }
 
-/// returns three dataframes, one for summary/miti, ianother for the accounting export and the third for banana.
+/// returns three dataframes, one for details/miti, another for the accounting export and the third for banana.
 fn crunch_data(
     raw_df: DataFrame,
     month: &str,
 ) -> Result<(DataFrame, DataFrame, DataFrame), Box<dyn Error>> {
     validate(&raw_df)?;
 
-    let mut df = collect_data(raw_df)?;
-    df.extend(&df.clone().lazy().sum().collect()?)?;
+    let mut df_det = collect_data(raw_df)?;
+    df_det.extend(&df_det.clone().lazy().sum().collect()?)?;
 
-    let df_acc = gather_df_accounting(&df)?;
+    let df_acc = gather_df_accounting(&df_det)?;
     validate_acc_constraint(&df_acc.clone())?;
     let df_banana = gather_df_banana(&df_acc.clone(), month)?;
-    Ok((df, df_acc, df_banana))
+    Ok((df_det, df_acc, df_banana))
 }
 
 fn validate(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
@@ -99,14 +99,18 @@ fn validate(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn export_summary(month: &&str, ts: &&str, df: &mut DataFrame) -> Result<(), Box<dyn Error>> {
-    write_to_file(df, &path_with_prefix("summary", month, ts))?;
+fn export_details(month: &&str, ts: &&str, df: &mut DataFrame) -> Result<(), Box<dyn Error>> {
+    write_to_file(df, &path_with_prefix("details", month, ts))?;
     Ok(())
 }
 
-fn export_mittagstisch(month: &&str, ts: &&str, df: &mut DataFrame) -> Result<(), Box<dyn Error>> {
+fn export_mittagstisch(
+    month: &&str,
+    ts: &&str,
+    df_det: &mut DataFrame,
+) -> Result<(), Box<dyn Error>> {
     write_to_file(
-        &mut gather_df_miti(df)?,
+        &mut gather_df_miti(df_det)?,
         &path_with_prefix("mittagstisch", month, ts),
     )?;
     Ok(())
@@ -139,14 +143,14 @@ fn write_to_file(df: &mut DataFrame, path: &dyn AsRef<Path>) -> Result<(), Box<d
     Ok(())
 }
 
-// Those tests fail since the introduction of the banana export. To metho dcrunch_data works fine though. Investigation necessary
+// Those tests fail since the introduction of the banana export. To method crunch_data works fine though. Investigation necessary
 //#[cfg(test)]
 //mod tests {
 //    use crate::configure_the_environment;
 //    use pretty_assertions::assert_ne;
 //    use rstest::rstest;
 //
-//    use crate::test_fixtures::{intermediate_df_02, intermediate_df_04, summary_df_04};
+//    use crate::test_fixtures::{intermediate_df_02, intermediate_df_04, details_df_04};
 //
 //    use super::*;
 //
@@ -160,7 +164,7 @@ fn write_to_file(df: &mut DataFrame, path: &dyn AsRef<Path>) -> Result<(), Box<d
 //    }
 //
 //    #[rstest]
-//    fn can_calculate_summary_row(intermediate_df_04: DataFrame, summary_df_04: DataFrame) {
+//    fn can_calculate_summary_row(intermediate_df_04: DataFrame, details_df_04: DataFrame) {
 //        configure_the_environment();
 //        let (df1, _, _) = crunch_data(intermediate_df_04, "202412").expect("should crunch");
 //        assert_eq!(
@@ -169,7 +173,7 @@ fn write_to_file(df: &mut DataFrame, path: &dyn AsRef<Path>) -> Result<(), Box<d
 //            "df1 does not contain 3 records and 1 summary line"
 //        );
 //        assert_eq!(
-//            df1, summary_df_04,
+//            df1, details_df_04,
 //            "unexpected summary for intermediate_df_04"
 //        );
 //    }
