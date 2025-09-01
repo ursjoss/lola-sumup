@@ -158,7 +158,7 @@ It produces four exports (with month and execution timestamp accordingly):
 - `accounting_202305_20230603142503.csv`
 - `banana_202305_20230603142503.csv`
 - `mittagstisch_202305_20230603142503.csv`
-- `summary_202305_20230603142503.csv`
+- `detailed_202305_20230603142503.csv`
 
 ### The close step
 
@@ -281,11 +281,13 @@ The columns in the banana.csv spreadsheet are:
 - `Preis/Einheit`: Empty placeholder column
 - `Betrag CHF`: The posting amount
 
-### Summary Report
+### Detailed Report
 
-The summary file collects all original and derived columns that are required to build the other reports or for deeper insights.
+The detailed export file collects all original and derived columns that are required to build the other reports or for deeper insights.
+It may seem overwhelming. It is not used as a regular export, but serves for debugging purposes, if one needs to understand how specific
+columns are calculated.
 
-The columns of the resulting summary file are defined as follows:
+The columns of the resulting detailed export file are defined as follows:
 
 - Generic Columns:
   - `Date`: Calendar Date

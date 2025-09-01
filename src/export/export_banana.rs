@@ -18,7 +18,7 @@ fn get_description(col: &Column) -> PolarsResult<Option<Column>> {
     ))
 }
 
-/// Produces the accounting dataframe from the summary [df] for import into banana
+/// Produces the accounting dataframe from the accounting [df] for import into banana
 pub fn gather_df_banana(df_acct: &DataFrame, month: &str) -> PolarsResult<DataFrame> {
     let last_of_month = get_last_of_month(month).expect("should be able to get last of month");
     df_acct
