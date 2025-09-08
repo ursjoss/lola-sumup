@@ -120,11 +120,11 @@ fn month_in_range(input: &str) -> Result<String, String> {
     }
 }
 
-/// Provides path for the intermediate file (`intermediate_<yyyymm>_<yyyymmdd_HHMMSS>.csv`)
+/// Provides path for the intermediate file (`intermediate_<yyyymm>_<yyyymmdd_HHMMSS>.xlsx`)
 /// with `<yyyymm>` standing for the month being processed and
 /// `<yyyymmdd_HHMMSS>` representing the execution timestamp.
 fn intermediate_file(month: &String, ts: &String) -> PathBuf {
-    PathBuf::from(format!("intermediate_{month}_{ts}.csv"))
+    PathBuf::from(format!("intermediate_{month}_{ts}.xlsx"))
 }
 
 /// Derives the month from the intermediate filename (e.g. `intermediate_<yyyymm>.csv` -> `<yyyymm>`)

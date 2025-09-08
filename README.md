@@ -15,7 +15,7 @@ Another subcommand is used to process the accounting information after the closi
 view on the monhtly accounts: `close`.
 
 The `prepare` subcommand parses two SumUp extracts with monthly data and creates an intermediate file,
-combining data from both reports, enriched with three columns `Topic`, `Owner`, and `Purpose`.
+an Excel file combining data from both reports, enriched with three columns `Topic`, `Owner`, and `Purpose`.
 The user may redact the content of those three columns, as the simple heuristics may not get it right
 out of the box.
 
