@@ -72,12 +72,11 @@ fn read_intermediate_from_excel(input_path: &Path) -> Result<DataFrame, Box<dyn 
                             .str()?
                             .into_iter()
                             .map(|opt_s| {
-                                opt_s.and_then(|s| {
+                                opt_s.map(|s| {
                                     let n = s
                                         .parse::<f64>()
                                         .expect("Unable to parse time as numeric value");
-                                    let nanos = (n * NS_PER_DAY).round();
-                                    Some(nanos)
+                                    (n * NS_PER_DAY).round()
                                 })
                             })
                             .collect();
