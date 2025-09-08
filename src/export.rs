@@ -22,7 +22,6 @@ mod export_miti;
 mod posting;
 
 const EXCEL_EPOCH_OFFSET: i32 = 25569;
-const NS_PER_DAY: f64 = 86_400_000_000_000.0;
 
 /// Reads the intermediate files and exports all configured reports.
 pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Error>> {
@@ -62,29 +61,6 @@ fn read_intermediate_from_excel(input_path: &Path) -> Result<DataFrame, Box<dyn 
                 )
                 .cast(DataType::Date)
                 .alias("Date"),
-        )
-        .with_column(
-            col("Time")
-                .apply(
-                    |s| {
-                        let parsed: Float64Chunked = s
-                            .str()?
-                            .into_iter()
-                            .map(|opt_s| {
-                                opt_s.map(|s| {
-                                    let n = s
-                                        .parse::<f64>()
-                                        .expect("Unable to parse time as numeric value");
-                                    (n * NS_PER_DAY).round()
-                                })
-                            })
-                            .collect();
-                        Ok(Some(parsed.into_column()))
-                    },
-                    GetOutput::from_type(DataType::Float64),
-                )
-                .cast(DataType::Time)
-                .alias("Time"),
         )
         .with_column(
             col("Quantity")
