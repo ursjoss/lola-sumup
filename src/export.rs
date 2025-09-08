@@ -1,8 +1,7 @@
 use calamine::{Data, Reader, Xlsx, open_workbook};
 use polars::prelude::*;
+use polars_excel_writer::PolarsExcelWriter;
 use std::error::Error;
-use std::fs::File;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use crate::export::constraint::{
@@ -250,18 +249,16 @@ fn export_banana(month: &&str, ts: &&str, df_acc: &mut DataFrame) -> Result<(), 
     write_to_file(df_acc, &path_with_prefix("banana", month, ts))
 }
 
-/// Constructs a path for a CSV file from `prefix`, `month` and `ts` (timestamp).
+/// Constructs a path for an XLSX file from `prefix`, `month` and `ts` (timestamp).
 fn path_with_prefix(prefix: &str, month: &str, ts: &str) -> PathBuf {
-    PathBuf::from(format!("{prefix}_{month}_{ts}.csv"))
+    PathBuf::from(format!("{prefix}_{month}_{ts}.xlsx"))
 }
 
 /// Writes the dataframe `df` to the file system into path `path`.
 fn write_to_file(df: &mut DataFrame, path: &dyn AsRef<Path>) -> Result<(), Box<dyn Error>> {
-    let iowtr: Box<dyn Write> = Box::new(File::create(path)?);
-    CsvWriter::new(iowtr)
-        .include_header(true)
-        .with_separator(b';')
-        .finish(&mut df.clone())?;
+    let mut excel_writer = PolarsExcelWriter::new();
+    excel_writer.write_dataframe(df)?;
+    excel_writer.save(path)?;
     Ok(())
 }
 
