@@ -40,27 +40,7 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
 }
 
 fn read_intermediate_from_excel(input_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
-    let mut workbook: Xlsx<_> = open_workbook(input_path)?;
-    let range = workbook.worksheet_range("Sheet1")?;
-
-    let headers = range.headers().expect("No headers found in Sheet1");
-    let rows: Vec<Vec<Data>> = range.rows().map(|r| r.to_vec()).collect();
-
-    let data_rows = &rows[1..];
-    let n_cols = headers.len();
-    let mut columns: Vec<Vec<Data>> = vec![Vec::with_capacity(data_rows.len()); n_cols];
-    for row in data_rows {
-        for (i, cell) in row.iter().enumerate().take(n_cols) {
-            columns[i].push(cell.clone());
-        }
-    }
-    let mut columns_vec = Vec::with_capacity(n_cols);
-    for (i, col_cells) in columns.into_iter().enumerate() {
-        let col_strings: Vec<String> = col_cells.iter().map(|cell| cell.to_string()).collect();
-        let pl_header = PlSmallStr::from(headers[i].as_str());
-        columns_vec.push(Column::new(pl_header, col_strings));
-    }
-
+    let columns_vec = read_columns_from_excel(input_path)?;
     let df = DataFrame::new(columns_vec)?
         .lazy()
         .with_column(
@@ -173,6 +153,29 @@ fn read_intermediate_from_excel(input_path: &Path) -> Result<DataFrame, Box<dyn 
         .with_column(col("Purpose").str().strip_chars(lit(" ")))
         .collect()?;
     Ok(df)
+}
+
+fn read_columns_from_excel(input_path: &Path) -> Result<Vec<Column>, Box<dyn Error>> {
+    let mut workbook: Xlsx<_> = open_workbook(input_path)?;
+    let range = workbook.worksheet_range("Sheet1")?;
+    let headers = range.headers().expect("No headers found in Sheet1");
+    let rows: Vec<Vec<Data>> = range.rows().map(|r| r.to_vec()).collect();
+
+    let data_rows = &rows[1..];
+    let n_cols = headers.len();
+    let mut columns: Vec<Vec<Data>> = vec![Vec::with_capacity(data_rows.len()); n_cols];
+    for row in data_rows {
+        for (i, cell) in row.iter().enumerate().take(n_cols) {
+            columns[i].push(cell.clone());
+        }
+    }
+    let mut columns_vec = Vec::with_capacity(n_cols);
+    for (i, col_cells) in columns.into_iter().enumerate() {
+        let col_strings: Vec<String> = col_cells.iter().map(|cell| cell.to_string()).collect();
+        let pl_header = PlSmallStr::from(headers[i].as_str());
+        columns_vec.push(Column::new(pl_header, col_strings));
+    }
+    Ok(columns_vec)
 }
 
 /// returns three dataframes, one for details/miti, another for the accounting export and the third for banana.
