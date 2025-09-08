@@ -1,9 +1,11 @@
+use polars::prelude::*;
 use std::error::Error;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use polars::prelude::*;
+use calamine::{Data, HeaderRow, Reader, Xlsx, open_workbook};
+use std::io::BufWriter;
 
 use crate::export::constraint::{
     validate_owners, validate_payment_methods, validate_purposes, validate_topics,
@@ -24,40 +26,68 @@ mod posting;
 
 /// Reads the intermediate files and exports all configured reports.
 pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Error>> {
-    let parse_option = CsvParseOptions::default()
-        .with_separator(b';')
-        .with_try_parse_dates(false);
-    let date_format = StrptimeOptions {
-        format: Some("%d.%m.%y".into()),
-        strict: true,
-        exact: true,
-        ..Default::default()
-    };
-    let raw_df = CsvReadOptions::default()
-        .with_has_header(true)
-        .with_parse_options(parse_option)
-        .try_into_reader_with_file_path(Some(input_path.into()))?
-        .finish()?
-        .lazy()
-        .with_column(
-            col("Date")
-                .str()
-                .strptime(DataType::Date, date_format, Expr::default()),
-        )
-        .with_column(col("Payment Method").str().strip_chars(lit(" ")))
-        .with_column(col("Topic").str().strip_chars(lit(" ")))
-        .with_column(col("Owner").str().strip_chars(lit(" ")))
-        .with_column(col("Purpose").str().strip_chars(lit(" ")))
-        .collect()?;
+    let mut workbook: Xlsx<_> = open_workbook(input_path)?;
+    let range = workbook
+        .with_header_row(HeaderRow::Row(1))
+        .worksheet_range("Sheet1")?;
 
-    warn_on_zero_value_trx(&raw_df)?;
+    let max_column = range.get_size().1 - 1;
+    let output_path = input_path.with_extension("csv");
+    let mut csv_file = BufWriter::new(File::create(output_path).unwrap());
+    for rows in range.rows() {
+        for (col_number, cell_data) in rows.iter().enumerate() {
+            match *cell_data {
+                Data::Empty => Ok(()),
+                Data::Int(ref i) => write!(csv_file, "{i}"),
+                Data::Bool(ref b) => write!(csv_file, "{b}"),
+                Data::Error(ref e) => write!(csv_file, "{e:?}"),
+                Data::Float(ref f) => write!(csv_file, "{f}"),
+                Data::DateTime(ref d) => write!(csv_file, "{}", d.as_f64()),
+                Data::String(ref s) | Data::DateTimeIso(ref s) | Data::DurationIso(ref s) => {
+                    write!(csv_file, "{s}")
+                }
+            }?;
+            if col_number != max_column {
+                write!(csv_file, ";")?;
+            }
+        }
+        write!(csv_file, "\r\n")?;
+    }
+    Ok(())
+    //    let parse_option = CsvParseOptions::default()
+    //        .with_separator(b';')
+    //        .with_try_parse_dates(false);
+    //    let date_format = StrptimeOptions {
+    //        format: Some("%d.%m.%y".into()),
+    //        strict: true,
+    //        exact: true,
+    //        ..Default::default()
+    //    };
+    //    let raw_df = CsvReadOptions::default()
+    //    .with_has_header(true)
+    //    .with_parse_options(parse_option)
+    //    .try_into_reader_with_file_path(Some(input_path.into()))?
+    //    .finish()?
+    //    .lazy()
+    //    .with_column(
+    //        col("Date")
+    //            .str()
+    //            .strptime(DataType::Date, date_format, Expr::default()),
+    //    )
+    //    .with_column(col("Payment Method").str().strip_chars(lit(" ")))
+    //    .with_column(col("Topic").str().strip_chars(lit(" ")))
+    //    .with_column(col("Owner").str().strip_chars(lit(" ")))
+    //    .with_column(col("Purpose").str().strip_chars(lit(" ")))
+    //    .collect()?;
 
-    let (mut df_det, mut df_acc, mut df_banana) = crunch_data(raw_df, month)?;
+    //    warn_on_zero_value_trx(&raw_df)?;
 
-    export_details(&month, &ts, &mut df_det)?;
-    export_mittagstisch(&month, &ts, &mut df_det)?;
-    export_accounting(&month, &ts, &mut df_acc)?;
-    export_banana(&month, &ts, &mut df_banana)
+    //    let (mut df_det, mut df_acc, mut df_banana) = crunch_data(raw_df, month)?;
+
+    //    export_details(&month, &ts, &mut df_det)?;
+    //    export_mittagstisch(&month, &ts, &mut df_det)?;
+    //    export_accounting(&month, &ts, &mut df_acc)?;
+    //    export_banana(&month, &ts, &mut df_banana)
 }
 
 /// returns three dataframes, one for details/miti, another for the accounting export and the third for banana.

@@ -127,9 +127,9 @@ fn intermediate_file(month: &String, ts: &String) -> PathBuf {
     PathBuf::from(format!("intermediate_{month}_{ts}.xlsx"))
 }
 
-/// Derives the month from the intermediate filename (e.g. `intermediate_<yyyymm>.csv` -> `<yyyymm>`)
+/// Derives the month from the intermediate filename (e.g. `intermediate_<yyyymm>.xlsx` -> `<yyyymm>`)
 fn derive_month_from_intermediate(file: Option<&str>) -> Result<String, String> {
-    derive_month_from(file, "intermediate", "csv")
+    derive_month_from(file, "intermediate", "xlsx")
 }
 
 /// Derives the month from the account filename (e.g. `konten_<yyyymm>.xls` -> `<yyyymm>`)
