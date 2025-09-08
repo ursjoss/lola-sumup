@@ -1,11 +1,9 @@
+use calamine::{Data, Reader, Xlsx, open_workbook};
 use polars::prelude::*;
 use std::error::Error;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-
-use calamine::{Data, HeaderRow, Reader, Xlsx, open_workbook};
-use std::io::BufWriter;
 
 use crate::export::constraint::{
     validate_owners, validate_payment_methods, validate_purposes, validate_topics,
@@ -24,70 +22,153 @@ mod export_details;
 mod export_miti;
 mod posting;
 
+const EXCEL_EPOCH_OFFSET: i32 = 25569;
+const NS_PER_DAY: f64 = 86_400_000_000_000.0;
+
 /// Reads the intermediate files and exports all configured reports.
 pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Error>> {
     let mut workbook: Xlsx<_> = open_workbook(input_path)?;
-    let range = workbook
-        .with_header_row(HeaderRow::Row(1))
-        .worksheet_range("Sheet1")?;
+    let range = workbook.worksheet_range("Sheet1")?;
 
-    let max_column = range.get_size().1 - 1;
-    let output_path = input_path.with_extension("csv");
-    let mut csv_file = BufWriter::new(File::create(output_path).unwrap());
-    for rows in range.rows() {
-        for (col_number, cell_data) in rows.iter().enumerate() {
-            match *cell_data {
-                Data::Empty => Ok(()),
-                Data::Int(ref i) => write!(csv_file, "{i}"),
-                Data::Bool(ref b) => write!(csv_file, "{b}"),
-                Data::Error(ref e) => write!(csv_file, "{e:?}"),
-                Data::Float(ref f) => write!(csv_file, "{f}"),
-                Data::DateTime(ref d) => write!(csv_file, "{}", d.as_f64()),
-                Data::String(ref s) | Data::DateTimeIso(ref s) | Data::DurationIso(ref s) => {
-                    write!(csv_file, "{s}")
-                }
-            }?;
-            if col_number != max_column {
-                write!(csv_file, ";")?;
-            }
+    let headers = range.headers().expect("No headers found in Sheet1");
+    let rows: Vec<Vec<Data>> = range.rows().map(|r| r.to_vec()).collect();
+
+    let data_rows = &rows[1..];
+    let n_cols = headers.len();
+    let mut columns: Vec<Vec<Data>> = vec![Vec::with_capacity(data_rows.len()); n_cols];
+    for row in data_rows {
+        for (i, cell) in row.iter().enumerate().take(n_cols) {
+            columns[i].push(cell.clone());
         }
-        write!(csv_file, "\r\n")?;
     }
-    Ok(())
-    //    let parse_option = CsvParseOptions::default()
-    //        .with_separator(b';')
-    //        .with_try_parse_dates(false);
-    //    let date_format = StrptimeOptions {
-    //        format: Some("%d.%m.%y".into()),
-    //        strict: true,
-    //        exact: true,
-    //        ..Default::default()
-    //    };
-    //    let raw_df = CsvReadOptions::default()
-    //    .with_has_header(true)
-    //    .with_parse_options(parse_option)
-    //    .try_into_reader_with_file_path(Some(input_path.into()))?
-    //    .finish()?
-    //    .lazy()
-    //    .with_column(
-    //        col("Date")
-    //            .str()
-    //            .strptime(DataType::Date, date_format, Expr::default()),
-    //    )
-    //    .with_column(col("Payment Method").str().strip_chars(lit(" ")))
-    //    .with_column(col("Topic").str().strip_chars(lit(" ")))
-    //    .with_column(col("Owner").str().strip_chars(lit(" ")))
-    //    .with_column(col("Purpose").str().strip_chars(lit(" ")))
-    //    .collect()?;
+    let mut columns_vec = Vec::with_capacity(n_cols);
+    for (i, col_cells) in columns.into_iter().enumerate() {
+        let col_strings: Vec<String> = col_cells.iter().map(|cell| cell.to_string()).collect();
+        let pl_header = PlSmallStr::from(headers[i].as_str());
+        columns_vec.push(Column::new(pl_header, col_strings));
+    }
+    let ultra_raw_df = DataFrame::new(columns_vec)?;
 
-    //    warn_on_zero_value_trx(&raw_df)?;
+    println!("{ultra_raw_df:?}");
+    let raw_df = ultra_raw_df
+        .lazy()
+        .with_column(
+            col("Date")
+                .apply(
+                    |s| {
+                        let parsed: Int32Chunked = s
+                            .str()?
+                            .into_iter()
+                            .map(|opt_s| {
+                                opt_s
+                                    .and_then(|s| s.parse::<i32>().ok())
+                                    .map(|n| n - EXCEL_EPOCH_OFFSET)
+                            })
+                            .collect();
+                        Ok(Some(parsed.into_column()))
+                    },
+                    GetOutput::from_type(DataType::Int32),
+                )
+                .cast(DataType::Date)
+                .alias("Date"),
+        )
+        .with_column(
+            col("Time")
+                .apply(
+                    |s| {
+                        let parsed: Float64Chunked = s
+                            .str()?
+                            .into_iter()
+                            .map(|opt_s| {
+                                opt_s.and_then(|s| {
+                                    let n = s.parse::<f64>().ok().expect("foo");
+                                    let nanos = (n * NS_PER_DAY).round();
+                                    Some(nanos)
+                                })
+                            })
+                            .collect();
+                        Ok(Some(parsed.into_column()))
+                    },
+                    GetOutput::from_type(DataType::Float64),
+                )
+                .cast(DataType::Time)
+                .alias("Time"),
+        )
+        .with_column(
+            col("Quantity")
+                .map(
+                    |s| {
+                        let parsed: Int32Chunked = s
+                            .str()?
+                            .into_iter()
+                            .map(|opt_s| opt_s.and_then(|s| s.parse::<i32>().ok()))
+                            .collect();
+                        Ok(Some(parsed.into_column()))
+                    },
+                    GetOutput::from_type(DataType::Int32),
+                )
+                .alias("Quantity"),
+        )
+        .with_column(
+            col("Price (Gross)")
+                .map(
+                    |s| {
+                        let parsed: Float64Chunked = s
+                            .str()?
+                            .into_iter()
+                            .map(|opt_s| opt_s.and_then(|s| s.parse::<f64>().ok()))
+                            .collect();
+                        Ok(Some(parsed.into_column()))
+                    },
+                    GetOutput::from_type(DataType::Int32),
+                )
+                .alias("Price (Gross)"),
+        )
+        .with_column(
+            col("Price (Net)")
+                .map(
+                    |s| {
+                        let parsed: Float64Chunked = s
+                            .str()?
+                            .into_iter()
+                            .map(|opt_s| opt_s.and_then(|s| s.parse::<f64>().ok()))
+                            .collect();
+                        Ok(Some(parsed.into_column()))
+                    },
+                    GetOutput::from_type(DataType::Int32),
+                )
+                .alias("Price (Net)"),
+        )
+        .with_column(
+            col("Commission")
+                .map(
+                    |s| {
+                        let parsed: Float64Chunked = s
+                            .str()?
+                            .into_iter()
+                            .map(|opt_s| opt_s.and_then(|s| s.parse::<f64>().ok()))
+                            .collect();
+                        Ok(Some(parsed.into_column()))
+                    },
+                    GetOutput::from_type(DataType::Int32),
+                )
+                .alias("Commission"),
+        )
+        .with_column(col("Payment Method").str().strip_chars(lit(" ")))
+        .with_column(col("Topic").str().strip_chars(lit(" ")))
+        .with_column(col("Owner").str().strip_chars(lit(" ")))
+        .with_column(col("Purpose").str().strip_chars(lit(" ")))
+        .collect()?;
 
-    //    let (mut df_det, mut df_acc, mut df_banana) = crunch_data(raw_df, month)?;
+    println!("{raw_df:?}");
+    warn_on_zero_value_trx(&raw_df)?;
 
-    //    export_details(&month, &ts, &mut df_det)?;
-    //    export_mittagstisch(&month, &ts, &mut df_det)?;
-    //    export_accounting(&month, &ts, &mut df_acc)?;
-    //    export_banana(&month, &ts, &mut df_banana)
+    let (mut df_det, mut df_acc, mut df_banana) = crunch_data(raw_df, month)?;
+
+    export_details(&month, &ts, &mut df_det)?;
+    export_mittagstisch(&month, &ts, &mut df_det)?;
+    export_accounting(&month, &ts, &mut df_acc)?;
+    export_banana(&month, &ts, &mut df_banana)
 }
 
 /// returns three dataframes, one for details/miti, another for the accounting export and the third for banana.

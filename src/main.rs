@@ -213,19 +213,25 @@ mod tests {
     }
 
     #[rstest]
-    #[case(Some("intermediate_202303.csv"), "202303")]
-    #[case(Some("intermediate_202312_mod.csv"), "202312")]
+    #[case(Some("intermediate_202303.xlsx"), "202303")]
+    #[case(Some("intermediate_202312_mod.xlsx"), "202312")]
     #[case(None, "Unable to derive filename for intermediate file.")]
     #[case(
-        Some("intermediat_202303.csv"),
-        "Filename 'intermediat_202303.csv' should have at least 23 characters (intermediate_yyyymm.csv), but has only 22."
+        Some("intermediat_202303.xlsx"),
+        "Filename 'intermediat_202303.xlsx' should have at least 24 characters (intermediate_yyyymm.xlsx), but has only 23."
     )]
     #[case(
-        Some("abcdefghijkl_202303.csv"),
+        Some("abcdefghijkl_202303.xlsx"),
         "Filename must start with 'intermediate_'."
     )]
-    #[case(Some("intermediate_202303_.cs"), "Filename must have extension .csv.")]
-    #[case(Some("intermediate_202303aaaa"), "Filename must have extension .csv.")]
+    #[case(
+        Some("intermediate_202303_.xls"),
+        "Filename must have extension .xlsx."
+    )]
+    #[case(
+        Some("intermediate_202303aaaaa"),
+        "Filename must have extension .xlsx."
+    )]
     fn test_derive_month_from_intermediate(#[case] input: Option<&str>, #[case] expected: String) {
         let result = derive_month_from_intermediate(input);
         match result {
