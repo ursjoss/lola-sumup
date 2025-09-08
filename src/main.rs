@@ -44,7 +44,7 @@ enum Commands {
         #[arg(short, long)]
         transaction_report: PathBuf,
     },
-    /// Consumes the (potentially redacted) intermediate file and exports to different special purpose CSV files.
+    /// Consumes the (potentially redacted) intermediate file and exports to different special purpose Excel files.
     Export {
         /// the intermediate file to process
         intermediate_file: PathBuf,
