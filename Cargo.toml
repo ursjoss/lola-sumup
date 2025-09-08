@@ -11,7 +11,7 @@ license = "MIT"
 [dependencies]
 clap = { version = "4.5.46", features = ["derive"] }
 serde = { version = "1.0.219", features = ["derive"] }
-chrono= { version = "0.4.41", features = ["serde"] }
+chrono= { version = "0.4.42", features = ["serde"] }
 strum = { version = "0.27.2" }
 strum_macros = { version = "0.27.2" }
 quick-xml = { version = "0.38.3", features = ["serde"] }
