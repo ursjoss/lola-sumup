@@ -39,6 +39,7 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
     export_banana(&month, &ts, &mut df_banana)
 }
 
+#[allow(clippy::too_many_lines)]
 fn read_intermediate_from_excel(input_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
     let columns_vec = read_columns_from_excel(input_path)?;
     let df = DataFrame::new(columns_vec)?
@@ -155,6 +156,7 @@ fn read_intermediate_from_excel(input_path: &Path) -> Result<DataFrame, Box<dyn 
     Ok(df)
 }
 
+/// reads the columns of Sheet1 as Vec of Columns
 fn read_columns_from_excel(input_path: &Path) -> Result<Vec<Column>, Box<dyn Error>> {
     let mut workbook: Xlsx<_> = open_workbook(input_path)?;
     let range = workbook.worksheet_range("Sheet1")?;
