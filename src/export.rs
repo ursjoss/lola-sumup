@@ -27,6 +27,19 @@ const NS_PER_DAY: f64 = 86_400_000_000_000.0;
 
 /// Reads the intermediate files and exports all configured reports.
 pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Error>> {
+    let raw_df = read_intermediate_from_excel(input_path)?;
+    println!("{raw_df:?}");
+    warn_on_zero_value_trx(&raw_df)?;
+
+    let (mut df_det, mut df_acc, mut df_banana) = crunch_data(raw_df, month)?;
+
+    export_details(&month, &ts, &mut df_det)?;
+    export_mittagstisch(&month, &ts, &mut df_det)?;
+    export_accounting(&month, &ts, &mut df_acc)?;
+    export_banana(&month, &ts, &mut df_banana)
+}
+
+fn read_intermediate_from_excel(input_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
     let mut workbook: Xlsx<_> = open_workbook(input_path)?;
     let range = workbook.worksheet_range("Sheet1")?;
 
@@ -47,10 +60,8 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
         let pl_header = PlSmallStr::from(headers[i].as_str());
         columns_vec.push(Column::new(pl_header, col_strings));
     }
-    let ultra_raw_df = DataFrame::new(columns_vec)?;
 
-    println!("{ultra_raw_df:?}");
-    let raw_df = ultra_raw_df
+    let df = DataFrame::new(columns_vec)?
         .lazy()
         .with_column(
             col("Date")
@@ -161,16 +172,7 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
         .with_column(col("Owner").str().strip_chars(lit(" ")))
         .with_column(col("Purpose").str().strip_chars(lit(" ")))
         .collect()?;
-
-    println!("{raw_df:?}");
-    warn_on_zero_value_trx(&raw_df)?;
-
-    let (mut df_det, mut df_acc, mut df_banana) = crunch_data(raw_df, month)?;
-
-    export_details(&month, &ts, &mut df_det)?;
-    export_mittagstisch(&month, &ts, &mut df_det)?;
-    export_accounting(&month, &ts, &mut df_acc)?;
-    export_banana(&month, &ts, &mut df_banana)
+    Ok(df)
 }
 
 /// returns three dataframes, one for details/miti, another for the accounting export and the third for banana.
