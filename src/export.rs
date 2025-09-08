@@ -28,7 +28,7 @@ const NS_PER_DAY: f64 = 86_400_000_000_000.0;
 /// Reads the intermediate files and exports all configured reports.
 pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Error>> {
     let raw_df = read_intermediate_from_excel(input_path)?;
-    println!("{raw_df:?}");
+
     warn_on_zero_value_trx(&raw_df)?;
 
     let (mut df_det, mut df_acc, mut df_banana) = crunch_data(raw_df, month)?;
@@ -172,7 +172,10 @@ fn read_columns_from_excel(input_path: &Path) -> Result<Vec<Column>, Box<dyn Err
     }
     let mut columns_vec = Vec::with_capacity(n_cols);
     for (i, col_cells) in columns.into_iter().enumerate() {
-        let col_strings: Vec<String> = col_cells.iter().map(|cell| cell.to_string()).collect();
+        let col_strings: Vec<String> = col_cells
+            .iter()
+            .map(std::string::ToString::to_string)
+            .collect();
         let pl_header = PlSmallStr::from(headers[i].as_str());
         columns_vec.push(Column::new(pl_header, col_strings));
     }
