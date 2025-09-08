@@ -81,7 +81,9 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
                             .into_iter()
                             .map(|opt_s| {
                                 opt_s.and_then(|s| {
-                                    let n = s.parse::<f64>().ok().expect("foo");
+                                    let n = s
+                                        .parse::<f64>()
+                                        .expect("Unable to parse time as numeric value");
                                     let nanos = (n * NS_PER_DAY).round();
                                     Some(nanos)
                                 })
