@@ -160,7 +160,7 @@ fn read_columns_from_excel(input_path: &Path) -> Result<Vec<Column>, Box<dyn Err
     let mut workbook: Xlsx<_> = open_workbook(input_path)?;
     let range = workbook.worksheet_range("Sheet1")?;
     let headers = range.headers().expect("No headers found in Sheet1");
-    let rows: Vec<Vec<Data>> = range.rows().map(|r| r.to_vec()).collect();
+    let rows: Vec<Vec<Data>> = range.rows().map(<[calamine::Data]>::to_vec).collect();
 
     let data_rows = &rows[1..];
     let n_cols = headers.len();
