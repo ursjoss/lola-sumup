@@ -1366,6 +1366,7 @@ dependencies = [
  "pretty_assertions",
  "quick-xml 0.38.3",
  "rstest",
+ "rust_xlsxwriter",
  "serde",
  "strum",
  "strum_macros",

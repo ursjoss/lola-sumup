@@ -1,6 +1,7 @@
 use calamine::{Data, Reader, Xlsx, open_workbook};
 use polars::prelude::*;
 use polars_excel_writer::PolarsExcelWriter;
+use rust_xlsxwriter::Workbook;
 use std::error::Error;
 use std::path::{Path, PathBuf};
 
@@ -29,12 +30,12 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
 
     warn_on_zero_value_trx(&raw_df)?;
 
-    let (mut df_det, mut df_acc, mut df_banana) = crunch_data(raw_df, month)?;
+    let (df_det, df_acc, df_banana) = crunch_data(raw_df.clone(), month)?;
 
-    export_details(&month, &ts, &mut df_det)?;
-    export_mittagstisch(&month, &ts, &mut df_det)?;
-    export_accounting(&month, &ts, &mut df_acc)?;
-    export_banana(&month, &ts, &mut df_banana)
+    export_details(&month, &ts, &df_det, &raw_df)?;
+    export_mittagstisch(&month, &ts, &df_det, &raw_df)?;
+    export_accounting(&month, &ts, &df_acc, &raw_df)?;
+    export_banana(&month, &ts, &df_banana, &raw_df)
 }
 
 #[allow(clippy::too_many_lines)]
@@ -196,33 +197,42 @@ fn validate(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn export_details(month: &&str, ts: &&str, df: &mut DataFrame) -> Result<(), Box<dyn Error>> {
-    write_to_file(df, &path_with_prefix("details", month, ts))?;
+fn export_details(
+    month: &&str,
+    ts: &&str,
+    df: &DataFrame,
+    df_trx: &DataFrame,
+) -> Result<(), Box<dyn Error>> {
+    write_to_file(df, df_trx, "details", month, ts)?;
     Ok(())
 }
 
 fn export_mittagstisch(
     month: &&str,
     ts: &&str,
-    df_det: &mut DataFrame,
+    df_det: &DataFrame,
+    df_trx: &DataFrame,
 ) -> Result<(), Box<dyn Error>> {
-    write_to_file(
-        &mut gather_df_miti(df_det)?,
-        &path_with_prefix("mittagstisch", month, ts),
-    )?;
+    write_to_file(&gather_df_miti(df_det)?, df_trx, "mittagstisch", month, ts)?;
     Ok(())
 }
 
 fn export_accounting(
     month: &&str,
     ts: &&str,
-    df_acc: &mut DataFrame,
+    df_acc: &DataFrame,
+    df_trx: &DataFrame,
 ) -> Result<(), Box<dyn Error>> {
-    write_to_file(df_acc, &path_with_prefix("accounting", month, ts))
+    write_to_file(df_acc, df_trx, "accounting", month, ts)
 }
 
-fn export_banana(month: &&str, ts: &&str, df_acc: &mut DataFrame) -> Result<(), Box<dyn Error>> {
-    write_to_file(df_acc, &path_with_prefix("banana", month, ts))
+fn export_banana(
+    month: &&str,
+    ts: &&str,
+    df_acc: &DataFrame,
+    df_trx: &DataFrame,
+) -> Result<(), Box<dyn Error>> {
+    write_to_file(df_acc, df_trx, "banana", month, ts)
 }
 
 /// Constructs a path for an XLSX file from `prefix`, `month` and `ts` (timestamp).
@@ -231,10 +241,24 @@ fn path_with_prefix(prefix: &str, month: &str, ts: &str) -> PathBuf {
 }
 
 /// Writes the dataframe `df` to the file system into path `path`.
-fn write_to_file(df: &mut DataFrame, path: &dyn AsRef<Path>) -> Result<(), Box<dyn Error>> {
+fn write_to_file(
+    main_df: &DataFrame,
+    trx_df: &DataFrame,
+    prefix: &str,
+    month: &&str,
+    ts: &&str,
+) -> Result<(), Box<dyn Error>> {
+    let path = &path_with_prefix(prefix, month, ts);
     let mut excel_writer = PolarsExcelWriter::new();
-    excel_writer.write_dataframe(df)?;
-    excel_writer.save(path)?;
+
+    let mut workbook = Workbook::new();
+    let worksheet = workbook.add_worksheet().set_name(prefix)?;
+    excel_writer.write_dataframe_to_worksheet(main_df, worksheet, 0, 0)?;
+
+    let worksheet = workbook.add_worksheet().set_name("transaktionen")?;
+    excel_writer.write_dataframe_to_worksheet(trx_df, worksheet, 0, 0)?;
+
+    workbook.save(path)?;
     Ok(())
 }
 

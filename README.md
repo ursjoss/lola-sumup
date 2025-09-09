@@ -154,11 +154,14 @@ Options:
   -V, --version  Print version
 ```
 
-It produces four exports (with month and execution timestamp accordingly):
+It produces four exports in Excel format (with month and execution timestamp in the file name accordingly):
 - `accounting_202305_20230603142503.xlsx`
 - `banana_202305_20230603142503.xlsx`
 - `mittagstisch_202305_20230603142503.xlsx`
 - `details_202305_20230603142503.xlsx`
+
+Each of the exports contains a main worksheet with the export and in addition a second sheet "transactions"
+listing the underlying transactions from the intermediate file.
 
 ### The close step
 
