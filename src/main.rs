@@ -71,6 +71,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             sales_report,
             transaction_report,
             &intermediate_file(month, ts),
+            month,
         ),
         Commands::Export { intermediate_file } => {
             let file_name = intermediate_file.as_os_str().to_str();

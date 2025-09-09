@@ -27,7 +27,7 @@ const MS_PER_DAY: f64 = 86_400_000_000_000f64;
 
 /// Reads the intermediate files and exports all configured reports.
 pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Error>> {
-    let raw_df = read_intermediate_from_excel(input_path)?;
+    let raw_df = read_intermediate_from_excel(input_path, month)?;
 
     warn_on_zero_value_trx(&raw_df)?;
 
@@ -40,8 +40,11 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
 }
 
 #[allow(clippy::too_many_lines)]
-fn read_intermediate_from_excel(input_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
-    let columns_vec = read_columns_from_excel(input_path)?;
+fn read_intermediate_from_excel(
+    input_path: &Path,
+    month: &str,
+) -> Result<DataFrame, Box<dyn Error>> {
+    let columns_vec = read_columns_from_excel(input_path, month)?;
     let df = DataFrame::new(columns_vec)?
         .lazy()
         .with_column(
@@ -153,9 +156,9 @@ fn read_intermediate_from_excel(input_path: &Path) -> Result<DataFrame, Box<dyn 
 }
 
 /// reads the columns of Sheet1 as Vec of Columns
-fn read_columns_from_excel(input_path: &Path) -> Result<Vec<Column>, Box<dyn Error>> {
+fn read_columns_from_excel(input_path: &Path, month: &str) -> Result<Vec<Column>, Box<dyn Error>> {
     let mut workbook: Xlsx<_> = open_workbook(input_path)?;
-    let range = workbook.worksheet_range("Sheet1")?;
+    let range = workbook.worksheet_range(month)?;
     let headers = range.headers().expect("No headers found in Sheet1");
     let rows: Vec<Vec<Data>> = range.rows().map(<[calamine::Data]>::to_vec).collect();
 

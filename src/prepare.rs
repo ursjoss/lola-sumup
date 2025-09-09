@@ -19,6 +19,7 @@ pub fn prepare(
     sales_report: &Path,
     transaction_report: &Path,
     output_path: &Path,
+    month: &str,
 ) -> Result<(), Box<dyn Error>> {
     let df = process_input(sales_report, transaction_report)?.sort(
         ["Date", "Time", "Transaction ID", "Description"],
@@ -27,6 +28,7 @@ pub fn prepare(
             .with_maintain_order(true),
     )?;
     let mut excel_writer = PolarsExcelWriter::new();
+    excel_writer.set_worksheet_name(month)?;
     excel_writer.set_autofit(true);
     excel_writer.set_column_format("Date", "dd.mm.YYYY");
     excel_writer.set_dtype_float_format("#'##0.00");
