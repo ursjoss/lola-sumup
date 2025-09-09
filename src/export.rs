@@ -13,7 +13,7 @@ use crate::export::export_accounting::{gather_df_accounting, validate_acc_constr
 use crate::export::export_banana::gather_df_banana;
 use crate::export::export_details::collect_data;
 use crate::export::export_miti::gather_df_miti;
-use crate::prepare::warn_on_zero_value_trx;
+use crate::prepare::{Topic, warn_on_zero_value_trx};
 
 mod constraint;
 mod export_accounting;
@@ -213,7 +213,13 @@ fn export_mittagstisch(
     df_det: &DataFrame,
     df_trx: &DataFrame,
 ) -> Result<(), Box<dyn Error>> {
-    write_to_file(&gather_df_miti(df_det)?, df_trx, "mittagstisch", month, ts)?;
+    let df_miti = gather_df_miti(df_det)?;
+    let df_miti_trx = df_trx
+        .clone()
+        .lazy()
+        .filter(col("Topic").eq(lit(Topic::MiTi.to_string())))
+        .collect()?;
+    write_to_file(&df_miti, &df_miti_trx, "mittagstisch", month, ts)?;
     Ok(())
 }
 
