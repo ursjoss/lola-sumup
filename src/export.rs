@@ -257,12 +257,16 @@ fn write_to_file(
     let path = &path_with_prefix(prefix, month, ts);
     let mut excel_writer = PolarsExcelWriter::new();
 
+    excel_writer.set_column_format("Date", "dd.mm.YYYY");
+    excel_writer.set_dtype_float_format("#'##0.00");
+
     let mut workbook = Workbook::new();
     let worksheet = workbook.add_worksheet().set_name(prefix)?;
     excel_writer.write_dataframe_to_worksheet(main_df, worksheet, 0, 0)?;
 
     let worksheet = workbook.add_worksheet().set_name("transaktionen")?;
     excel_writer.write_dataframe_to_worksheet(trx_df, worksheet, 0, 0)?;
+    excel_writer.set_column_format("Time", "HH:MM:SS");
 
     workbook.save(path)?;
     Ok(())
