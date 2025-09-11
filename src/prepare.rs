@@ -348,17 +348,17 @@ fn infer_topic(time_options: &StrptimeOptions) -> Expr {
     .when(
         col("Time")
             .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
-            .and(col("Time").lt(lit("14:15:00").str().to_time(time_options.clone())))
-            .and(col("is_weekend").eq(lit(false))),
+            .and(col("Time").lt(lit("18:00:00").str().to_time(time_options.clone())))
+            .and(col("is_weekend").eq(lit(true))),
     )
-    .then(lit(Topic::MiTi.to_string()))
+    .then(lit(Topic::Culture.to_string()))
     .when(
         col("Time")
             .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
             .and(col("Time").lt(lit("14:15:00").str().to_time(time_options.clone())))
-            .and(col("is_weekend").eq(lit(true))),
+            .and(col("is_weekend").eq(lit(false))),
     )
-    .then(lit(Topic::Cafe.to_string()))
+    .then(lit(Topic::MiTi.to_string()))
     .when(
         col("Time")
             .gt_eq(lit("14:15:00").str().to_time(time_options.clone()))
@@ -562,6 +562,7 @@ mod tests {
                 "X", "X",
                 "X", "X",
                 "X", "X",
+                "X", "X",
                 "X (PO)", "X (PO)", "X (PO) x" ,"X (PO)",
             rtd, rtd, rtd, rtd, rtd, rtd, rtd, rtd
             ],
@@ -569,6 +570,7 @@ mod tests {
                 "00:00:00", "05:59:59",
                 "06:00:00", "14:14:59",
                 "06:00:00", "14:14:59",
+                "14:15:00", "17:59:59",
                 "14:15:00", "17:59:59",
                 "18:00:00", "23:59:59",
                 "00:00:00", "05:59:59", "18:00:00", "23:59:59",
@@ -579,6 +581,7 @@ mod tests {
                 false, false,
                 true, true,
                 false, false,
+                true, true,
                 true, true,
                 false, false, true, true,
                 false, false, false, false, false, true, true, false
@@ -598,8 +601,9 @@ mod tests {
            "Topic" => [
                culture.clone(), culture.clone(),
                miti.clone(), miti,
-               cafe.clone(), cafe.clone(),
+               culture.clone(), culture.clone(),
                cafe.clone(), cafe,
+               culture.clone(), culture.clone(),
                culture.clone(), culture,
                paidout.clone(), paidout.clone(), paidout.clone(), paidout,
                pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg
