@@ -35,7 +35,8 @@ lola-sumup has been adapted in a non-backwards-compatible way.
 | Version | Sumup-exports    |
 |---------|------------------|
 | 0.1.0   | Up to April 2024 |
-| 0.2.0   | As of May 2024   |
+| 0.2.0   | As of May 2024  working with CSV files for interemediate and exports  |
+| 0.3.0   | As of September 2025  working with XLSX files for interemediate and exports  |
 
 ## CLI
 
