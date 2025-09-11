@@ -355,8 +355,7 @@ fn infer_topic(time_options: &StrptimeOptions) -> Expr {
     .when(
         col("Time")
             .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
-            .and(col("Time").lt(lit("14:15:00").str().to_time(time_options.clone())))
-            .and(col("is_weekend").eq(lit(false))),
+            .and(col("Time").lt(lit("14:15:00").str().to_time(time_options.clone()))),
     )
     .then(lit(Topic::MiTi.to_string()))
     .when(
