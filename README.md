@@ -90,8 +90,8 @@ If modified, ensure certain constraints are met, otherwise further processing wi
 The four columns that may be modified are:
 
 - `Topic`: The main topic of the transaction, one of
-  - `MiTi`: Items sold by Mittagstisch. Automatically assigned if the transaction occurred before 14:15 (except on week-ends)
-  - `Cafe`: Items sold by LoLa Café. Automatically assigned if the transaction occurred between 14:15 and 18:00 or before 18:00 on week-ends).
+  - `MiTi`: Items sold by Mittagstisch. Automatically assigned if the transaction occurred before 14:15 (except on week-ends) - or before change of shift if typed as "SCHICHTWECHSEL"
+  - `Cafe`: Items sold by LoLa Café. Automatically assigned if the transaction occurred between 14:15 (or after SCHICHTWECHSEL) and 18:00 or before 18:00 on week-ends).
   - `Verm`: Items sold by Renters of the rooms.
   - `SoFe`: Items sold in context of the summer party ("Sommer-Fest").
   - `Deposit`: Key deposit.
