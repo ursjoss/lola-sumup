@@ -1,6 +1,6 @@
 [package]
 name = "lola-sumup"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Urs Joss <urs.joss@gmx.ch>"]
 edition = "2024"
 description = "A cli program to create LoLa specific exports from monthly SumUp reports"
