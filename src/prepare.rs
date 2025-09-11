@@ -319,6 +319,18 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .otherwise(col("Steuersatz"))
                 .alias("Tax rate"),
         )
+        .with_column(
+            when(col("Beschreibung").eq(lit("SCHICHTWECHSEL")))
+                .then(lit(0.0))
+                .otherwise(col("Preis (brutto)"))
+                .alias("Preis (brutto)"),
+        )
+        .with_column(
+            when(col("Beschreibung").eq(lit("SCHICHTWECHSEL")))
+                .then(lit(0.0))
+                .otherwise(col("Preis (netto)"))
+                .alias("Preis (netto)"),
+        )
         .join(
             commission_df,
             [col("Transaktionsnummer")],
@@ -383,8 +395,8 @@ fn infer_payment_method() -> Expr {
 
 /// Infers the `Topic` from the time of sale:
 /// before 06:00 and after 18:00 -> `Culture` or `PaidOut` if description contains " (PO)" or if it is a week-end.
-/// between 06:00 and ChangeOfShift -> `MiTi`
-/// between ChangeOfShift and 18:00 -> `Cafe`
+/// between 06:00 and `ChangeOfShift` -> `MiTi`
+/// between `ChangeOfShift` and 18:00 -> `Cafe`
 /// If the description starts with "Recircle Tupper Depot", the topic will be `Packaging` regardless of time od day.
 fn infer_topic(time_options: &StrptimeOptions) -> Expr {
     when(
@@ -481,7 +493,8 @@ pub fn warn_on_zero_value_trx(df: &DataFrame) -> Result<(), Box<dyn Error>> {
         .filter(
             col("Description")
                 .neq(lit("Mittagstisch-Nachmittag"))
-                .and(col("Description").neq(lit("Nachmittag-Abend"))),
+                .and(col("Description").neq(lit("Nachmittag-Abend")))
+                .and(col("Description").neq(lit("SCHICHTWECHSEL"))),
         )
         .collect()?;
     if violating.shape().0 > 0 {
