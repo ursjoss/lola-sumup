@@ -1,14 +1,13 @@
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
-use std::fs::File;
-use std::io::Write;
 use std::path::Path;
 
 use polars::datatypes::DataType;
 use polars::frame::{DataFrame, UniqueKeepStrategy};
-use polars::io::{SerReader, SerWriter};
+use polars::io::SerReader;
 use polars::prelude::*;
 use polars::series::Series;
+use polars_excel_writer::PolarsExcelWriter;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
 
@@ -20,20 +19,22 @@ pub fn prepare(
     sales_report: &Path,
     transaction_report: &Path,
     output_path: &Path,
+    month: &str,
 ) -> Result<(), Box<dyn Error>> {
-    let mut df = process_input(sales_report, transaction_report)?.sort(
+    let df = process_input(sales_report, transaction_report)?.sort(
         ["Date", "Time", "Transaction ID", "Description"],
         SortMultipleOptions::new()
             .with_multithreaded(false)
             .with_maintain_order(true),
     )?;
-    let iowtr: Box<dyn Write> = Box::new(File::create(output_path)?);
-    CsvWriter::new(iowtr)
-        .with_separator(b';')
-        .include_header(true)
-        .with_date_format(Some("%d.%m.%y".into()))
-        .with_time_format(Some("%H:%M:%S".into()))
-        .finish(&mut df)?;
+    let mut excel_writer = PolarsExcelWriter::new();
+    excel_writer.set_worksheet_name(month)?;
+    excel_writer.set_autofit(true);
+    excel_writer.set_column_format("Date", "dd.mm.YYYY");
+    excel_writer.set_dtype_float_format("#'##0.00");
+    excel_writer.set_freeze_panes(1, 2);
+    excel_writer.write_dataframe(&df)?;
+    excel_writer.save(output_path)?;
     Ok(())
 }
 

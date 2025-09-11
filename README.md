@@ -15,7 +15,7 @@ Another subcommand is used to process the accounting information after the closi
 view on the monhtly accounts: `close`.
 
 The `prepare` subcommand parses two SumUp extracts with monthly data and creates an intermediate file,
-combining data from both reports, enriched with three columns `Topic`, `Owner`, and `Purpose`.
+an Excel file combining data from both reports, enriched with three columns `Topic`, `Owner`, and `Purpose`.
 The user may redact the content of those three columns, as the simple heuristics may not get it right
 out of the box.
 
@@ -35,7 +35,8 @@ lola-sumup has been adapted in a non-backwards-compatible way.
 | Version | Sumup-exports    |
 |---------|------------------|
 | 0.1.0   | Up to April 2024 |
-| 0.2.0   | As of May 2024   |
+| 0.2.0   | As of May 2024  working with CSV files for interemediate and exports  |
+| 0.3.0   | As of September 2025  working with XLSX files for interemediate and exports  |
 
 ## CLI
 
@@ -48,7 +49,7 @@ Usage: lola-sumup <COMMAND>
 
 Commands:
   prepare  Prepares an enriched intermediate file from the original `SumUp` sales report CSV and transaction report CSV
-  export   Consumes the (potentially redacted) intermediate file and exports to different special purpose CSV files
+  export   Consumes the (potentially redacted) intermediate file and exports to different special purpose Excel files
   close    Run the monthly closing process
   help     Print this message or the help of the given subcommand(s)
 
@@ -76,7 +77,7 @@ Options:
   -V, --version                                  Print version
 ```
 
-It produces a file named e.g. `intermediate_202305_20230603142215.csv`,
+It produces a file named e.g. `intermediate_202305_20230603142215.xlsx`,
 where `202305` is the processed month with the timestamp indicating when the process was executed
 (03. June 2023 14:22:15).
 
@@ -142,7 +143,7 @@ For all items (existing SumUp transactions and artificially added transactions),
 The `lola-sumup export` command:
 
 ```
-Consumes the (potentially redacted) intermediate file and exports to different special purpose CSV files
+Consumes the (potentially redacted) intermediate file and exports to different special purpose Excel files
 
 Usage: lola-sumup export <INTERMEDIATE_FILE>
 
@@ -154,11 +155,14 @@ Options:
   -V, --version  Print version
 ```
 
-It produces four exports (with month and execution timestamp accordingly):
-- `accounting_202305_20230603142503.csv`
-- `banana_202305_20230603142503.csv`
-- `mittagstisch_202305_20230603142503.csv`
-- `detailed_202305_20230603142503.csv`
+It produces four exports in Excel format (with month and execution timestamp in the file name accordingly):
+- `accounting_202305_20230603142503.xlsx`
+- `banana_202305_20230603142503.xlsx`
+- `mittagstisch_202305_20230603142503.xlsx`
+- `details_202305_20230603142503.xlsx`
+
+Each of the exports contains a main worksheet with the export and in addition a second sheet "transactions"
+listing the underlying transactions from the intermediate file.
 
 ### The close step
 
@@ -221,7 +225,7 @@ The columns of the resulting file are defined as follows:
 
 The purpose of the accounting export is to provide the relevant information on monthly level to the book-keeper.
 
-The columns of the resulting accounting.csv file are defined as follows:
+The columns of the resulting accounting.xlsx file are defined as follows:
 
 - `Date`: [`Date`]
 - `Payment SumUp`: Total Net Income plus tips paid via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]. Will be posted `10110/10920`, but based on Account Statement, not this report.
@@ -269,7 +273,7 @@ The purpose of the banana export is to provide a copy/paste template with the mo
 It is basically a different view on the monthly summary line of the accounting report (a pivot view).
 One can copy the cells and simply paste them into the ledger of the banana accounting software.
 
-The columns in the banana.csv spreadsheet are:
+The columns in the banana.xlsx spreadsheet are:
 
 - `Datum`: The last day of the month
 - `Beleg`: Empty placeholder column
@@ -281,13 +285,13 @@ The columns in the banana.csv spreadsheet are:
 - `Preis/Einheit`: Empty placeholder column
 - `Betrag CHF`: The posting amount
 
-### Detailed Report
+### Details Report
 
-The detailed export file collects all original and derived columns that are required to build the other reports or for deeper insights.
+The details export file collects all original and derived columns that are required to build the other reports or for deeper insights.
 It may seem overwhelming. It is not used as a regular export, but serves for debugging purposes, if one needs to understand how specific
 columns are calculated.
 
-The columns of the resulting detailed export file are defined as follows:
+The columns of the resulting details export file are defined as follows:
 
 - Generic Columns:
   - `Date`: Calendar Date

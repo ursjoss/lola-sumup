@@ -44,7 +44,7 @@ enum Commands {
         #[arg(short, long)]
         transaction_report: PathBuf,
     },
-    /// Consumes the (potentially redacted) intermediate file and exports to different special purpose CSV files.
+    /// Consumes the (potentially redacted) intermediate file and exports to different special purpose Excel files.
     Export {
         /// the intermediate file to process
         intermediate_file: PathBuf,
@@ -71,6 +71,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             sales_report,
             transaction_report,
             &intermediate_file(month, ts),
+            month,
         ),
         Commands::Export { intermediate_file } => {
             let file_name = intermediate_file.as_os_str().to_str();
@@ -120,16 +121,16 @@ fn month_in_range(input: &str) -> Result<String, String> {
     }
 }
 
-/// Provides path for the intermediate file (`intermediate_<yyyymm>_<yyyymmdd_HHMMSS>.csv`)
+/// Provides path for the intermediate file (`intermediate_<yyyymm>_<yyyymmdd_HHMMSS>.xlsx`)
 /// with `<yyyymm>` standing for the month being processed and
 /// `<yyyymmdd_HHMMSS>` representing the execution timestamp.
 fn intermediate_file(month: &String, ts: &String) -> PathBuf {
-    PathBuf::from(format!("intermediate_{month}_{ts}.csv"))
+    PathBuf::from(format!("intermediate_{month}_{ts}.xlsx"))
 }
 
-/// Derives the month from the intermediate filename (e.g. `intermediate_<yyyymm>.csv` -> `<yyyymm>`)
+/// Derives the month from the intermediate filename (e.g. `intermediate_<yyyymm>.xlsx` -> `<yyyymm>`)
 fn derive_month_from_intermediate(file: Option<&str>) -> Result<String, String> {
-    derive_month_from(file, "intermediate", "csv")
+    derive_month_from(file, "intermediate", "xlsx")
 }
 
 /// Derives the month from the account filename (e.g. `konten_<yyyymm>.xls` -> `<yyyymm>`)
@@ -213,19 +214,25 @@ mod tests {
     }
 
     #[rstest]
-    #[case(Some("intermediate_202303.csv"), "202303")]
-    #[case(Some("intermediate_202312_mod.csv"), "202312")]
+    #[case(Some("intermediate_202303.xlsx"), "202303")]
+    #[case(Some("intermediate_202312_mod.xlsx"), "202312")]
     #[case(None, "Unable to derive filename for intermediate file.")]
     #[case(
-        Some("intermediat_202303.csv"),
-        "Filename 'intermediat_202303.csv' should have at least 23 characters (intermediate_yyyymm.csv), but has only 22."
+        Some("intermediat_202303.xlsx"),
+        "Filename 'intermediat_202303.xlsx' should have at least 24 characters (intermediate_yyyymm.xlsx), but has only 23."
     )]
     #[case(
-        Some("abcdefghijkl_202303.csv"),
+        Some("abcdefghijkl_202303.xlsx"),
         "Filename must start with 'intermediate_'."
     )]
-    #[case(Some("intermediate_202303_.cs"), "Filename must have extension .csv.")]
-    #[case(Some("intermediate_202303aaaa"), "Filename must have extension .csv.")]
+    #[case(
+        Some("intermediate_202303_.xls"),
+        "Filename must have extension .xlsx."
+    )]
+    #[case(
+        Some("intermediate_202303aaaaa"),
+        "Filename must have extension .xlsx."
+    )]
     fn test_derive_month_from_intermediate(#[case] input: Option<&str>, #[case] expected: String) {
         let result = derive_month_from_intermediate(input);
         match result {

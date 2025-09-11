@@ -21,6 +21,12 @@ fn get_description(col: &Column) -> PolarsResult<Option<Column>> {
 /// Produces the accounting dataframe from the accounting [df] for import into banana
 pub fn gather_df_banana(df_acct: &DataFrame, month: &str) -> PolarsResult<DataFrame> {
     let last_of_month = get_last_of_month(month).expect("should be able to get last of month");
+    let date_format = StrptimeOptions {
+        format: Some("%d.%m.%Y".into()),
+        strict: false,
+        exact: true,
+        ..Default::default()
+    };
     df_acct
         .clone()
         .lazy()
@@ -31,8 +37,8 @@ pub fn gather_df_banana(df_acct: &DataFrame, month: &str) -> PolarsResult<DataFr
         .filter(col("KtSoll/KtHaben").str().contains(lit("/"), false))
         .with_column(
             when(col("KtSoll/KtHaben").eq(lit(Posting::PAYMENT_TO_MITI.alias)))
-                .then(lit(""))
-                .otherwise(lit(last_of_month))
+                .then(lit("").str().to_date(date_format.clone()))
+                .otherwise(lit(last_of_month).str().to_date(date_format))
                 .alias("Datum"),
         )
         .with_column(
