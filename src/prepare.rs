@@ -176,6 +176,43 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         ..Default::default()
     };
 
+    let change_of_shift_df = sr_df
+        .clone()
+        .lazy()
+        .filter(col("Beschreibung").eq(lit("SCHICHTWECHSEL")))
+        .with_column(
+            col("Datum")
+                .str()
+                .extract(lit(r".?(\d\d\.\d\d\.\d\d\d\d), "), 1)
+                .str()
+                .strptime(DataType::Date, raw_date_format.clone(), Expr::default())
+                .alias("Date"),
+        )
+        .with_column(
+            col("Date")
+                .dt()
+                .weekday()
+                .cast(DataType::Int64)
+                .is_in(
+                    lit(Series::from_vec("we".into(), vec![6, 7])).implode(),
+                    false,
+                )
+                .alias("is_weekend"),
+        )
+        .with_column(
+            (col("Datum").str().extract(lit(r".{10}, (\d\d:\d\d)"), 1) + lit(":00"))
+                .str()
+                .to_time(time_format.clone())
+                .alias("Time"),
+        )
+        .filter(
+            col("is_weekend")
+                .eq(lit(false))
+                .and(col("Time").gt(lit("12:00:00").str().to_time(time_format.clone())))
+                .and(col("Time").lt(lit("16:00:00").str().to_time(time_format.clone()))),
+        )
+        .select([col("Date"), col("Time").alias("ChangeOfShift")]);
+
     let commission_df = txr_df
         .clone()
         .lazy()
@@ -242,7 +279,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .str()
                 .extract(lit(r".?(\d\d\.\d\d\.\d\d\d\d), "), 1)
                 .str()
-                .strptime(DataType::Date, raw_date_format, Expr::default())
+                .strptime(DataType::Date, raw_date_format.clone(), Expr::default())
                 .alias("Date"),
         )
         .with_column(
@@ -282,13 +319,16 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .otherwise(col("Steuersatz"))
                 .alias("Tax rate"),
         )
-        .with_column(infer_payment_method().alias("Payment Method"))
-        .with_column(infer_type().alias("Type"))
-        .with_column(infer_topic(&time_format).alias("Topic"))
         .join(
             commission_df,
             [col("Transaktionsnummer")],
             [col("Transaktions-ID")],
+            JoinType::Left.into(),
+        )
+        .join(
+            change_of_shift_df,
+            [col("Date")],
+            [col("Date")],
             JoinType::Left.into(),
         )
         .with_column(
@@ -296,6 +336,14 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .round(4, RoundMode::HalfToEven)
                 .alias("Commission"),
         )
+        .with_column(
+            col("ChangeOfShift")
+                .fill_null(lit("14:15:00").str().to_time(time_format.clone()))
+                .alias("ChangeOfShift"),
+        )
+        .with_column(infer_payment_method().alias("Payment Method"))
+        .with_column(infer_type().alias("Type"))
+        .with_column(infer_topic(&time_format).alias("Topic"))
         .select([
             col("Konto").alias("Account"),
             col("Date"),
@@ -334,9 +382,9 @@ fn infer_payment_method() -> Expr {
 }
 
 /// Infers the `Topic` from the time of sale:
-/// before 06:00 and after 18:00 -> `Culture` or `PaidOut` if description contains " (PO)".
-/// between 06:00 and 14:15 -> `MiTi`
-/// between 14:15 and 18:00 -> `Cafe`
+/// before 06:00 and after 18:00 -> `Culture` or `PaidOut` if description contains " (PO)" or if it is a week-end.
+/// between 06:00 and ChangeOfShift -> `MiTi`
+/// between ChangeOfShift and 18:00 -> `Cafe`
 /// If the description starts with "Recircle Tupper Depot", the topic will be `Packaging` regardless of time od day.
 fn infer_topic(time_options: &StrptimeOptions) -> Expr {
     when(
@@ -355,13 +403,15 @@ fn infer_topic(time_options: &StrptimeOptions) -> Expr {
     .when(
         col("Time")
             .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
-            .and(col("Time").lt(lit("14:15:00").str().to_time(time_options.clone()))),
+            .and(col("Time").lt_eq(col("ChangeOfShift")))
+            .and(col("is_weekend").eq(lit(false))),
     )
     .then(lit(Topic::MiTi.to_string()))
     .when(
         col("Time")
-            .gt_eq(lit("14:15:00").str().to_time(time_options.clone()))
-            .and(col("Time").lt(lit("18:00:00").str().to_time(time_options.clone()))),
+            .gt(col("ChangeOfShift"))
+            .and(col("Time").lt(lit("18:00:00").str().to_time(time_options.clone())))
+            .and(col("is_weekend").eq(lit(false))),
     )
     .then(lit(Topic::Cafe.to_string()))
     .when(col("Beschreibung").str().contains(lit(" \\(PO\\)"), true))
@@ -562,23 +612,37 @@ mod tests {
                 "X", "X",
                 "X", "X",
                 "X", "X",
+                "X", "X",
                 "X (PO)", "X (PO)", "X (PO) x" ,"X (PO)",
-            rtd, rtd, rtd, rtd, rtd, rtd, rtd, rtd
+                rtd, rtd, rtd, rtd, rtd, rtd, rtd, rtd
             ],
             "Time" => [
                 "00:00:00", "05:59:59",
-                "06:00:00", "14:14:59",
-                "06:00:00", "14:14:59",
-                "14:15:00", "17:59:59",
-                "14:15:00", "17:59:59",
+                "06:00:00", "14:15:00",
+                "06:00:00", "14:15:00",
+                "14:15:01", "17:59:59",
+                "14:28:01", "14:30:00",
+                "14:15:01", "17:59:59",
                 "18:00:00", "23:59:59",
                 "00:00:00", "05:59:59", "18:00:00", "23:59:59",
-                "00:00:00", "05:59:59", "06:00:00", "14:14:59", "14:15:00", "17:59:59", "18:00:00", "23:59:59"
+                "00:00:00", "05:59:59", "06:00:00", "14:15:00", "14:15:01", "17:59:59", "18:00:00", "23:59:59"
+            ],
+            "ChangeOfShift" => [
+                "14:15:00", "14:15:00",
+                "14:15:00", "14:15:00",
+                "14:15:00", "14:15:00",
+                "14:15:00", "14:15:00",
+                "14:29:00", "14:30:00",
+                "14:15:00", "14:15:00",
+                "14:15:00", "14:15:00",
+                "14:15:00", "14:15:00", "14:15:00", "14:15:00",
+                "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00",
             ],
             "is_weekend" => [
                 false, false,
                 false, false,
                 true, true,
+                false, false,
                 false, false,
                 true, true,
                 true, true,
@@ -599,9 +663,10 @@ mod tests {
         df![
            "Topic" => [
                culture.clone(), culture.clone(),
-               miti.clone(), miti,
+               miti.clone(), miti.clone(),
                culture.clone(), culture.clone(),
                cafe.clone(), cafe,
+               miti.clone(), miti,
                culture.clone(), culture.clone(),
                culture.clone(), culture,
                paidout.clone(), paidout.clone(), paidout.clone(), paidout,
