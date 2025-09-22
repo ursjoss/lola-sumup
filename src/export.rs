@@ -60,9 +60,9 @@ fn read_intermediate_from_excel(
                                     .map(|n| n - EXCEL_EPOCH_OFFSET)
                             })
                             .collect();
-                        Ok(Some(parsed.into_column()))
+                        Ok(parsed.into_column())
                     },
-                    GetOutput::from_type(DataType::Int32),
+                    |_, field| Ok(Field::new(field.name().clone(), DataType::Int32)),
                 )
                 .cast(DataType::Date)
                 .alias("Date"),
@@ -80,9 +80,9 @@ fn read_intermediate_from_excel(
                                     .map(|f| f * MS_PER_DAY)
                             })
                             .collect();
-                        Ok(Some(parsed.into_column()))
+                        Ok(parsed.into_column())
                     },
-                    GetOutput::from_type(DataType::Float64),
+                    |_, field| Ok(Field::new(field.name().clone(), DataType::Float64)),
                 )
                 .cast(DataType::Time)
                 .alias("Time"),
@@ -96,9 +96,9 @@ fn read_intermediate_from_excel(
                             .into_iter()
                             .map(|opt_s| opt_s.and_then(|s| s.parse::<i32>().ok()))
                             .collect();
-                        Ok(Some(parsed.into_column()))
+                        Ok(parsed.into_column())
                     },
-                    GetOutput::from_type(DataType::Int32),
+                    |_, field| Ok(Field::new(field.name().clone(), DataType::Int32)),
                 )
                 .alias("Quantity"),
         )
@@ -111,9 +111,9 @@ fn read_intermediate_from_excel(
                             .into_iter()
                             .map(|opt_s| opt_s.and_then(|s| s.parse::<f64>().ok()))
                             .collect();
-                        Ok(Some(parsed.into_column()))
+                        Ok(parsed.into_column())
                     },
-                    GetOutput::from_type(DataType::Int32),
+                    |_, field| Ok(Field::new(field.name().clone(), DataType::Int32)),
                 )
                 .alias("Price (Gross)"),
         )
@@ -126,9 +126,9 @@ fn read_intermediate_from_excel(
                             .into_iter()
                             .map(|opt_s| opt_s.and_then(|s| s.parse::<f64>().ok()))
                             .collect();
-                        Ok(Some(parsed.into_column()))
+                        Ok(parsed.into_column())
                     },
-                    GetOutput::from_type(DataType::Int32),
+                    |_, field| Ok(Field::new(field.name().clone(), DataType::Int32)),
                 )
                 .alias("Price (Net)"),
         )
@@ -141,9 +141,9 @@ fn read_intermediate_from_excel(
                             .into_iter()
                             .map(|opt_s| opt_s.and_then(|s| s.parse::<f64>().ok()))
                             .collect();
-                        Ok(Some(parsed.into_column()))
+                        Ok(parsed.into_column())
                     },
-                    GetOutput::from_type(DataType::Int32),
+                    |_, field| Ok(Field::new(field.name().clone(), DataType::Int32)),
                 )
                 .alias("Commission"),
         )
