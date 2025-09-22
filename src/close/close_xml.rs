@@ -260,33 +260,33 @@ fn enrich_and_aggregate(
         .lazy()
         .with_column(
             col("Account")
-                .apply(
+                .map(
                     move |a| get_name_of_post(&a, &b1),
-                    GetOutput::from_type(DataType::String),
+                    |_, field| Ok(Field::new(field.name().clone(), DataType::String)),
                 )
                 .alias("Group"),
         )
         .with_column(
             col("Account")
-                .apply(
+                .map(
                     move |a| get_factor_of_post(&a, &b2),
-                    GetOutput::from_type(DataType::Int8),
+                    |_, field| Ok(Field::new(field.name().clone(), DataType::Int8)),
                 )
                 .alias("Factor"),
         )
         .with_column(
             col("Account")
-                .apply(
+                .map(
                     move |a| get_sort_of_post(&a, &b3),
-                    GetOutput::from_type(DataType::Int8),
+                    |_, field| Ok(Field::new(field.name().clone(), DataType::Int8)),
                 )
                 .alias("Sort"),
         )
         .with_column(
             col("Account")
-                .apply(
+                .map(
                     move |a| get_budget_of_post(&a, &b4, &year),
-                    GetOutput::from_type(DataType::Int64),
+                    |_, field| Ok(Field::new(field.name().clone(), DataType::Int64)),
                 )
                 .alias("Budget"),
         )
@@ -333,61 +333,51 @@ fn validate_all_accounts_are_in_budget(enriched: &DataFrame) -> Result<(), Box<d
 }
 
 /// Finds the descriptions of the budget post for given account
-fn get_name_of_post(col: &Column, budget: &Budget) -> PolarsResult<Option<Column>> {
+fn get_name_of_post(col: &Column, budget: &Budget) -> PolarsResult<Column> {
     let accounts = col.str()?;
-    Ok(Some(
-        accounts
-            .into_iter()
-            .map(|a| {
-                a.map(|a| budget.get_post_by_account(a).map(|p| p.name.to_string()))
-                    .or(None)?
-            })
-            .collect::<StringChunked>()
-            .into_column(),
-    ))
+    Ok(accounts
+        .into_iter()
+        .map(|a| {
+            a.map(|a| budget.get_post_by_account(a).map(|p| p.name.to_string()))
+                .or(None)?
+        })
+        .collect::<StringChunked>()
+        .into_column())
 }
 
 /// Finds the budget amount of the budget post for given account and year
-fn get_budget_of_post(col: &Column, budget: &Budget, year: &str) -> PolarsResult<Option<Column>> {
+fn get_budget_of_post(col: &Column, budget: &Budget, year: &str) -> PolarsResult<Column> {
     let accounts = col.str()?;
-    Ok(Some(
-        accounts
-            .into_iter()
-            .map(|a| a.map(|a| budget.get_buget_amount_by_account(a, year)))
-            .collect::<Float64Chunked>()
-            .into_column(),
-    ))
+    Ok(accounts
+        .into_iter()
+        .map(|a| a.map(|a| budget.get_buget_amount_by_account(a, year)))
+        .collect::<Float64Chunked>()
+        .into_column())
 }
 
 /// Finds the sort for the post for given account
-fn get_sort_of_post(col: &Column, budget: &Budget) -> PolarsResult<Option<Column>> {
+fn get_sort_of_post(col: &Column, budget: &Budget) -> PolarsResult<Column> {
     get_int_from_post(col, budget, |p| p.sort)
 }
 
 /// Finds the factor for the post for given account
-fn get_factor_of_post(col: &Column, budget: &Budget) -> PolarsResult<Option<Column>> {
+fn get_factor_of_post(col: &Column, budget: &Budget) -> PolarsResult<Column> {
     get_int_from_post(col, budget, |p| p.factor)
 }
 
-fn get_int_from_post<F>(
-    col: &Column,
-    budget: &Budget,
-    int_extractor: F,
-) -> PolarsResult<Option<Column>>
+fn get_int_from_post<F>(col: &Column, budget: &Budget, int_extractor: F) -> PolarsResult<Column>
 where
     F: Fn(&Post) -> i64 + Copy,
 {
     let accounts = col.str()?;
-    Ok(Some(
-        accounts
-            .into_iter()
-            .map(|a| {
-                a.map(|a| budget.get_post_by_account(a).map(int_extractor))
-                    .or(None)?
-            })
-            .collect::<Int64Chunked>()
-            .into_column(),
-    ))
+    Ok(accounts
+        .into_iter()
+        .map(|a| {
+            a.map(|a| budget.get_post_by_account(a).map(int_extractor))
+                .or(None)?
+        })
+        .collect::<Int64Chunked>()
+        .into_column())
 }
 
 /// The worksheets in the workbook

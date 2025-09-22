@@ -60,9 +60,9 @@ fn read_intermediate_from_excel(
                                     .map(|n| n - EXCEL_EPOCH_OFFSET)
                             })
                             .collect();
-                        Ok(Some(parsed.into_column()))
+                        Ok(parsed.into_column())
                     },
-                    GetOutput::from_type(DataType::Int32),
+                    |_, field| Ok(Field::new(field.name().clone(), DataType::Int32)),
                 )
                 .cast(DataType::Date)
                 .alias("Date"),
@@ -80,9 +80,9 @@ fn read_intermediate_from_excel(
                                     .map(|f| f * MS_PER_DAY)
                             })
                             .collect();
-                        Ok(Some(parsed.into_column()))
+                        Ok(parsed.into_column())
                     },
-                    GetOutput::from_type(DataType::Float64),
+                    |_, field| Ok(Field::new(field.name().clone(), DataType::Float64)),
                 )
                 .cast(DataType::Time)
                 .alias("Time"),
@@ -96,9 +96,9 @@ fn read_intermediate_from_excel(
                             .into_iter()
                             .map(|opt_s| opt_s.and_then(|s| s.parse::<i32>().ok()))
                             .collect();
-                        Ok(Some(parsed.into_column()))
+                        Ok(parsed.into_column())
                     },
-                    GetOutput::from_type(DataType::Int32),
+                    |_, field| Ok(Field::new(field.name().clone(), DataType::Int32)),
                 )
                 .alias("Quantity"),
         )
@@ -111,9 +111,9 @@ fn read_intermediate_from_excel(
                             .into_iter()
                             .map(|opt_s| opt_s.and_then(|s| s.parse::<f64>().ok()))
                             .collect();
-                        Ok(Some(parsed.into_column()))
+                        Ok(parsed.into_column())
                     },
-                    GetOutput::from_type(DataType::Int32),
+                    |_, field| Ok(Field::new(field.name().clone(), DataType::Int32)),
                 )
                 .alias("Price (Gross)"),
         )
@@ -126,9 +126,9 @@ fn read_intermediate_from_excel(
                             .into_iter()
                             .map(|opt_s| opt_s.and_then(|s| s.parse::<f64>().ok()))
                             .collect();
-                        Ok(Some(parsed.into_column()))
+                        Ok(parsed.into_column())
                     },
-                    GetOutput::from_type(DataType::Int32),
+                    |_, field| Ok(Field::new(field.name().clone(), DataType::Int32)),
                 )
                 .alias("Price (Net)"),
         )
@@ -141,9 +141,9 @@ fn read_intermediate_from_excel(
                             .into_iter()
                             .map(|opt_s| opt_s.and_then(|s| s.parse::<f64>().ok()))
                             .collect();
-                        Ok(Some(parsed.into_column()))
+                        Ok(parsed.into_column())
                     },
-                    GetOutput::from_type(DataType::Int32),
+                    |_, field| Ok(Field::new(field.name().clone(), DataType::Int32)),
                 )
                 .alias("Commission"),
         )
@@ -151,6 +151,7 @@ fn read_intermediate_from_excel(
         .with_column(col("Topic").str().strip_chars(lit(" ")))
         .with_column(col("Owner").str().strip_chars(lit(" ")))
         .with_column(col("Purpose").str().strip_chars(lit(" ")))
+        .sort(["Date"], SortMultipleOptions::new().with_nulls_last(true))
         .collect()?;
     Ok(df)
 }
@@ -191,11 +192,13 @@ fn crunch_data(
 
     let mut df_det = collect_data(raw_df)?;
     df_det.extend(&df_det.clone().lazy().sum().collect()?)?;
+    let df_det_extended =
+        df_det.sort(["Date"], SortMultipleOptions::new().with_nulls_last(true))?;
 
-    let df_acc = gather_df_accounting(&df_det)?;
+    let df_acc = gather_df_accounting(&df_det_extended)?;
     validate_acc_constraint(&df_acc.clone())?;
     let df_banana = gather_df_banana(&df_acc.clone(), month)?;
-    Ok((df_det, df_acc, df_banana))
+    Ok((df_det_extended, df_acc, df_banana))
 }
 
 fn validate(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
