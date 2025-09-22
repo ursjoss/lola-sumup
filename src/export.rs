@@ -151,6 +151,7 @@ fn read_intermediate_from_excel(
         .with_column(col("Topic").str().strip_chars(lit(" ")))
         .with_column(col("Owner").str().strip_chars(lit(" ")))
         .with_column(col("Purpose").str().strip_chars(lit(" ")))
+        .sort(["Date"], SortMultipleOptions::new().with_nulls_last(true))
         .collect()?;
     Ok(df)
 }
@@ -191,11 +192,13 @@ fn crunch_data(
 
     let mut df_det = collect_data(raw_df)?;
     df_det.extend(&df_det.clone().lazy().sum().collect()?)?;
+    let df_det_extended =
+        df_det.sort(["Date"], SortMultipleOptions::new().with_nulls_last(true))?;
 
-    let df_acc = gather_df_accounting(&df_det)?;
+    let df_acc = gather_df_accounting(&df_det_extended)?;
     validate_acc_constraint(&df_acc.clone())?;
     let df_banana = gather_df_banana(&df_acc.clone(), month)?;
-    Ok((df_det, df_acc, df_banana))
+    Ok((df_det_extended, df_acc, df_banana))
 }
 
 fn validate(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {

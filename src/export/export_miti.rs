@@ -73,6 +73,7 @@ pub fn gather_df_miti(df_det: &DataFrame) -> PolarsResult<DataFrame> {
             col("Sponsored Reductions").alias("Gesponsort"),
             col("Debt to MiTi").alias("Überweisung"),
         ])
+        .sort(["Datum"], SortMultipleOptions::new().with_nulls_last(true))
         .collect()
 }
 
