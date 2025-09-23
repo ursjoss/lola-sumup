@@ -67,6 +67,7 @@ pub fn gather_df_accounting(df_det: &DataFrame) -> PolarsResult<DataFrame> {
             col(Posting::INCOME_LOLA_MITI.column_name).alias(Posting::INCOME_LOLA_MITI.alias),
             col(Posting::PAYMENT_TO_MITI.column_name).alias(Posting::PAYMENT_TO_MITI.alias),
         ])
+        .sort(["Date"], SortMultipleOptions::new().with_nulls_last(true))
         .collect()
 }
 

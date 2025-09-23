@@ -4,18 +4,16 @@ use std::error::Error;
 use super::posting::Posting;
 
 /// Finds the descriptions for the different posting types
-fn get_description(col: &Column) -> PolarsResult<Option<Column>> {
+fn get_description(col: &Column) -> PolarsResult<Column> {
     let accounts = col.str()?;
-    Ok(Some(
-        accounts
-            .into_iter()
-            .map(|a| {
-                a.map(|a| Posting::from_alias(a).map(|p| format!("SU {}", p.description)))
-                    .or(None)?
-            })
-            .collect::<StringChunked>()
-            .into_column(),
-    ))
+    Ok(accounts
+        .into_iter()
+        .map(|a| {
+            a.map(|a| Posting::from_alias(a).map(|p| format!("SU {}", p.description)))
+                .or(None)?
+        })
+        .collect::<StringChunked>()
+        .into_column())
 }
 
 /// Produces the accounting dataframe from the accounting [df] for import into banana
@@ -43,9 +41,9 @@ pub fn gather_df_banana(df_acct: &DataFrame, month: &str) -> PolarsResult<DataFr
         )
         .with_column(
             col("KtSoll/KtHaben")
-                .apply(
+                .map(
                     |kti| get_description(&kti),
-                    GetOutput::from_type(DataType::String),
+                    |_, field| Ok(Field::new(field.name().clone(), DataType::String)),
                 )
                 .alias("Beschreibung"),
         )
