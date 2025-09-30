@@ -2158,9 +2158,9 @@ dependencies = [
 
 [[package]]
 name = "polars_excel_writer"
-version = "0.20.0"
+version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6c9514ce1b5026e9ea2f237560c2693e4465afce05c2e0320646138427f2572"
+checksum = "33b4ac61425d61acb82932ee3f0125f67bc2ab6695a5503f29fca92b4402d3fe"
 dependencies = [
  "chrono",
  "polars",
