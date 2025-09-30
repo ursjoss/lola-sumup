@@ -1,5 +1,6 @@
 use chrono::NaiveDate;
 use polars::prelude::*;
+use quick_xml::escape::unescape;
 use quick_xml::events::Event;
 use quick_xml::reader::Reader;
 use serde::Deserialize;
@@ -44,17 +45,21 @@ fn read_xml(input_path: &Path) -> Result<DataFrame, Box<dyn Error>> {
             Ok(Event::Start(ref e)) => match e.name().as_ref() {
                 b"Worksheet" => {
                     for attr in e.attributes().flatten() {
-                        if attr.key.as_ref() == b"ss:Name"
-                            && attr.unescape_value()? == Sheet::Journal.name()
-                        {
-                            in_sheet = true;
+                        if attr.key.as_ref() == b"ss:Name" {
+                            let raw_value = str::from_utf8(attr.value.as_ref())?;
+                            let unescaped_value = unescape(raw_value)?;
+                            if unescaped_value == Sheet::Journal.name() {
+                                in_sheet = true;
+                            }
                         }
                     }
                 }
                 b"Cell" => {
                     for attr in e.attributes().flatten() {
                         if attr.key.as_ref() == b"ss:Index" {
-                            index = Some(attr.unescape_value()?.parse::<u32>()?);
+                            let raw_value = str::from_utf8(attr.value.as_ref())?;
+                            let unescaped_value = unescape(raw_value)?;
+                            index = Some(unescaped_value.parse::<u32>()?);
                             in_cell = in_sheet;
                         }
                     }
