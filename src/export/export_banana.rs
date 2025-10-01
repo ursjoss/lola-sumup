@@ -1,7 +1,7 @@
-use super::posting::Posting;
-use crate::prepare::{PaymentMethod, Topic};
 use polars::prelude::*;
 use std::error::Error;
+
+use super::posting::Posting;
 
 /// Finds the descriptions for the different posting types
 fn get_description(col: &Column) -> PolarsResult<Column> {
@@ -17,11 +17,7 @@ fn get_description(col: &Column) -> PolarsResult<Column> {
 }
 
 /// Produces the accounting dataframe from the accounting [df] for import into banana
-pub fn gather_df_banana(
-    df_acct: &DataFrame,
-    raw_df: &DataFrame,
-    month: &str,
-) -> PolarsResult<DataFrame> {
+pub fn gather_df_banana(df_acct: &DataFrame, month: &str) -> PolarsResult<DataFrame> {
     let last_of_month = get_last_of_month(month).expect("should be able to get last of month");
     let date_format = StrptimeOptions {
         format: Some("%d.%m.%Y".into()),
@@ -29,7 +25,7 @@ pub fn gather_df_banana(
         exact: true,
         ..Default::default()
     };
-    let monthly_totals = df_acct
+    df_acct
         .clone()
         .lazy()
         .filter(col("Date").is_null())
@@ -71,35 +67,7 @@ pub fn gather_df_banana(
             lit("").alias("Preis/Einheit"),
             col("Betrag CHF"),
         ])
-        .filter(col("KtHaben").neq(lit("32000")));
-
-    let rental_postings = raw_df
-        .clone()
-        .lazy()
-        .filter(col("Topic").eq(lit(Topic::Rental.to_string())))
-        .with_column(
-            when(col("Payment Method").eq(lit(PaymentMethod::Cash.to_string())))
-                .then(lit("10000"))
-                .otherwise(lit("92100"))
-                .alias("KtSoll"),
-        )
-        .select([
-            col("Date").alias("Datum"),
-            lit("").alias("Beleg"),
-            lit("").alias("Rechnung"),
-            col("Description").alias("Beschreibung"),
-            col("KtSoll"),
-            lit("32000").alias("KtHaben"),
-            lit("").alias("Anzahl"),
-            lit("").alias("Einheit"),
-            lit("").alias("Preis/Einheit"),
-            col("Price (Net)").alias("Betrag CHF"),
-        ]);
-    let combined = monthly_totals
-        .collect()?
-        .vstack(&rental_postings.collect()?);
-    println!("{combined:?}");
-    combined
+        .collect()
 }
 
 fn get_last_of_month(month: &str) -> Result<String, Box<dyn Error>> {
