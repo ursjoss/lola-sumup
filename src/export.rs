@@ -31,7 +31,7 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
 
     warn_on_zero_value_trx(&raw_df)?;
 
-    let (df_det, df_acc, df_banana) = crunch_data(raw_df.clone(), month)?;
+    let (df_det, df_acc, df_banana) = crunch_data(&raw_df.clone(), month)?;
 
     export_details(&month, &ts, &df_det, &raw_df)?;
     export_mittagstisch(&month, &ts, &df_det, &raw_df)?;
@@ -185,19 +185,19 @@ fn read_columns_from_excel(input_path: &Path, month: &str) -> Result<Vec<Column>
 
 /// returns three dataframes, one for details/miti, another for the accounting export and the third for banana.
 fn crunch_data(
-    raw_df: DataFrame,
+    raw_df: &DataFrame,
     month: &str,
 ) -> Result<(DataFrame, DataFrame, DataFrame), Box<dyn Error>> {
-    validate(&raw_df)?;
+    validate(raw_df)?;
 
-    let mut df_det = collect_data(raw_df)?;
+    let mut df_det = collect_data(raw_df.clone())?;
     df_det.extend(&df_det.clone().lazy().sum().collect()?)?;
     let df_det_extended =
         df_det.sort(["Date"], SortMultipleOptions::new().with_nulls_last(true))?;
 
     let df_acc = gather_df_accounting(&df_det_extended)?;
     validate_acc_constraint(&df_acc.clone())?;
-    let df_banana = gather_df_banana(&df_acc.clone(), month)?;
+    let df_banana = gather_df_banana(&df_acc.clone(), raw_df, month)?;
     Ok((df_det_extended, df_acc, df_banana))
 }
 
@@ -292,7 +292,9 @@ fn write_to_file(
     let mut workbook = Workbook::new();
     let worksheet = workbook.add_worksheet().set_name(prefix)?;
     excel_writer.set_freeze_panes(1, 1);
+    println!("debug1");
     excel_writer.write_dataframe_to_worksheet(main_df, worksheet, 0, 0)?;
+    println!("debug2");
 
     let worksheet = workbook.add_worksheet().set_name("transaktionen")?;
     excel_writer.set_freeze_panes(1, 3);
