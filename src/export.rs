@@ -31,12 +31,13 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
 
     warn_on_zero_value_trx(&raw_df)?;
 
-    let (df_det, df_acc, df_banana) = crunch_data(raw_df.clone(), month)?;
+    let (df_det, df_acc, df_banana_summary, df_banana_details) =
+        crunch_data(raw_df.clone(), month)?;
 
     export_details(&month, &ts, &df_det, &raw_df)?;
     export_mittagstisch(&month, &ts, &df_det, &raw_df)?;
     export_accounting(&month, &ts, &df_acc, &raw_df)?;
-    export_banana(&month, &ts, &df_banana, &raw_df)
+    export_banana(&month, &ts, &df_banana_summary, &df_banana_details, &raw_df)
 }
 
 #[allow(clippy::too_many_lines)]
@@ -183,11 +184,15 @@ fn read_columns_from_excel(input_path: &Path, month: &str) -> Result<Vec<Column>
     Ok(columns_vec)
 }
 
-/// returns three dataframes, one for details/miti, another for the accounting export and the third for banana.
+/// returns four dataframes:
+/// - details/miti
+/// - accounting export
+/// - banana summary
+/// - banana details
 fn crunch_data(
     raw_df: DataFrame,
     month: &str,
-) -> Result<(DataFrame, DataFrame, DataFrame), Box<dyn Error>> {
+) -> Result<(DataFrame, DataFrame, DataFrame, DataFrame), Box<dyn Error>> {
     validate(&raw_df)?;
 
     let mut df_det = collect_data(raw_df)?;
@@ -197,8 +202,14 @@ fn crunch_data(
 
     let df_acc = gather_df_accounting(&df_det_extended)?;
     validate_acc_constraint(&df_acc.clone())?;
-    let df_banana = gather_df_banana(&df_acc.clone(), month)?;
-    Ok((df_det_extended, df_acc, df_banana))
+    let df_banana_summary = gather_df_banana(&df_acc.clone(), month)?;
+    let df_banana_details = df_banana_summary.clone(); // TODO implement properly
+    Ok((
+        df_det_extended,
+        df_acc,
+        df_banana_summary,
+        df_banana_details,
+    ))
 }
 
 fn validate(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
@@ -262,10 +273,11 @@ fn export_accounting(
 fn export_banana(
     month: &&str,
     ts: &&str,
-    df_acc: &DataFrame,
+    df_banana_summary: &DataFrame,
+    _df_banana_details: &DataFrame, // TODO use
     df_trx: &DataFrame,
 ) -> Result<(), Box<dyn Error>> {
-    write_to_file(df_acc, df_trx, "banana", month, ts)
+    write_to_file(df_banana_summary, df_trx, "banana", month, ts)
 }
 
 /// Constructs a path for an XLSX file from `prefix`, `month` and `ts` (timestamp).
@@ -315,7 +327,7 @@ mod tests {
 
     #[rstest]
     fn can_crunch_data_without_panic(intermediate_df_02: DataFrame) {
-        let (df1, df2, df3) = crunch_data(intermediate_df_02, "202412").expect("should crunch");
+        let (df1, df2, df3, _) = crunch_data(intermediate_df_02, "202412").expect("should crunch");
 
         assert_ne!(df1.shape().0, 0, "df1 does not contain records");
         assert_ne!(df2.shape().0, 0, "df2 does not contain records");
@@ -325,7 +337,7 @@ mod tests {
     #[rstest]
     fn can_calculate_summary_row(intermediate_df_04: DataFrame, details_df_04: DataFrame) {
         configure_the_environment();
-        let (df1, _, _) = crunch_data(intermediate_df_04, "202412").expect("should crunch");
+        let (df1, _, _, _) = crunch_data(intermediate_df_04, "202412").expect("should crunch");
         assert_eq!(
             df1.shape().0,
             4,
