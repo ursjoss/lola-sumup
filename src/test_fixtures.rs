@@ -108,10 +108,9 @@ pub fn intermediate_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> Dat
 /// Sample record 02 matching the structure of the intermediate csv file
 #[fixture]
 pub fn intermediate_df_02(sample_date: NaiveDate) -> DataFrame {
-    let date = sample_date.format("%d.%m.%y").to_string();
     df!(
         "Account" => &["a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@B.ch", "a@B.ch", "a@B.ch", "a@B.ch", "a@B.ch", "a@B.ch", "a@B.ch"],
-        "Date" => &[date.clone(), date.clone(), date.clone(), date.clone(), date.clone(), date.clone(), date.clone(), date.clone(), date.clone(), date.clone(), date.clone(), date],
+        "Date" => &[sample_date, sample_date, sample_date, sample_date, sample_date, sample_date, sample_date, sample_date, sample_date, sample_date, sample_date, sample_date],
         "Time" => &["12:32:00", "12:33:00", "12:34:00", "12:35:00", "12:36:00", "12:37:00", "12:40:00", "13:50:00", "13:51:00", "13:52:00", "13:53:00", "13:54:00"],
         "Type" => &["Sales", "Sales", "Sales", "Sales", "Sales", "Sales", "Sales", "Sales", "Sales", "Sales", "Sales", "Sales"],
         "Transaction ID" => &["TEGUCXAGDE", "TEGUCXAGDF", "TEGUCXAGDG", "TEGUCXAGDH", "TEGUCXAGDI", "TEGUCXAGDJ", "EGUCXAGDK", "EGUCXAGDI", "EGUCXAGDJ", "EGUCXAGDK", "EGUCXAGDL", "EGUCXAGDM"],
@@ -134,9 +133,8 @@ pub fn intermediate_df_02(sample_date: NaiveDate) -> DataFrame {
 /// details
 #[fixture]
 pub fn details_df_02(sample_date: NaiveDate) -> DataFrame {
-    let date = sample_date.format("%d.%m.%y").to_string();
     df!(
-        "Date" => &[date],
+        "Date" => &[sample_date],
         "MiTi_Cash" => &[Some(16.5)],
         "MiTi_Card" => &[Some(36.0)],
         "MiTi Total" => &[52.5],
@@ -217,9 +215,8 @@ pub fn details_df_02(sample_date: NaiveDate) -> DataFrame {
 /// miti
 #[fixture]
 pub fn details_df_03(sample_date: NaiveDate) -> DataFrame {
-    let date = sample_date.format("%d.%m.%Y").to_string();
     df!(
-        "Date" => &[date],
+        "Date" => &[sample_date],
         "MiTi_Cash" => &[123.0],
         "MiTi_Card" => &[191.0],
         "MiTi Total" => &[314.0],
@@ -294,9 +291,8 @@ pub fn details_df_03(sample_date: NaiveDate) -> DataFrame {
 /// Sample record 03 matching the accounting dataframe created from details_df_03
 #[fixture]
 pub fn accounting_df_03(sample_date: NaiveDate) -> DataFrame {
-    let date = sample_date.format("%d.%m.%Y").to_string();
     df!(
-        "Date" => &[date],
+        "Date" => &[sample_date],
         "Payment SumUp" => &[1413.76],
         "Total Cash Debit" => &[462.0],
         "Total Card Debit" => &[1162.0],
@@ -330,9 +326,8 @@ pub fn accounting_df_03(sample_date: NaiveDate) -> DataFrame {
 /// Sample record 03 matching the miti dataframe created from details_df_03
 #[fixture]
 pub fn miti_df_03(sample_date: NaiveDate) -> DataFrame {
-    let date = sample_date.format("%d.%m.%Y").to_string();
     df!(
-        "Datum" => &[date],
+        "Datum" => &[sample_date],
         "Hauptgang" => &[14],
         "Reduziert" => &[1],
         "Kind" => &[1],
@@ -373,17 +368,19 @@ pub fn sample_date3() -> NaiveDate {
 }
 
 #[fixture]
+pub fn sample_date_lom() -> NaiveDate {
+    NaiveDate::parse_from_str("31.3.2023", "%d.%m.%Y").expect("valid date")
+}
+
+#[fixture]
 pub fn intermediate_df_04(
     sample_date: NaiveDate,
     sample_date2: NaiveDate,
     sample_date3: NaiveDate,
 ) -> DataFrame {
-    let date = sample_date.format("%d.%m.%y").to_string();
-    let date2 = sample_date2.format("%d.%m.%y").to_string();
-    let date3 = sample_date3.format("%d.%m.%y").to_string();
     df!(
         "Account" => &["a@b.ch", "a@b.ch", "a@b.ch"],
-        "Date" => &[date, date2, date3],
+        "Date" => &[sample_date, sample_date2, sample_date3],
         "Time" => &["21:00:00", "13:47:00", "12:30:00"],
         "Type" => &["Sales", "Sales", "Sales"],
         "Transaction ID" => &["TEGUCXAGDE", "TEGUCXAGDE", "TEGUCXAGDE"],
@@ -408,11 +405,8 @@ pub fn details_df_04(
     sample_date2: NaiveDate,
     sample_date3: NaiveDate,
 ) -> DataFrame {
-    let date = sample_date.format("%d.%m.%y").to_string();
-    let date2 = sample_date2.format("%d.%m.%y").to_string();
-    let date3 = sample_date3.format("%d.%m.%y").to_string();
     df!(
-        "Date" => &[Some(date), Some(date2), Some(date3), None],
+        "Date" => &[Some(sample_date), Some(sample_date2), Some(sample_date3), None],
         "MiTi_Cash" => &[None::<f64>, None::<f64>, Some(11.0), Some(11.0)],
         "MiTi_Card" => &[None::<f64>, Some(20.0), None::<f64>, Some(20.0)],
         "MiTi Total" =>&[Some(0.0), Some(20.0), Some(11.0), Some(31.0)],
@@ -520,6 +514,184 @@ pub fn aggregated_df_01_202507() -> DataFrame {
        "Remaining" => [1069.99, 68.99, -560.01],
     )
     .expect("valid journal dataframe 01")
+}
+
+//end region
+
+// region:06 banana detils
+
+#[fixture]
+pub fn intermediate_df_06(
+    sample_date: NaiveDate,
+    sample_date2: NaiveDate,
+    sample_time: NaiveTime,
+) -> DataFrame {
+    df!(
+        "Account" => &["a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch", "a@b.ch"],
+        "Date" => &[sample_date, sample_date, sample_date, sample_date2, sample_date2],
+        "Time" => &[sample_time, sample_time, sample_time, sample_time, sample_time],
+        "Type" => &["Sales", "Sales", "Sales", "Sales", "Sales"],
+        "Transaction ID" => &["T1", "T2", "T3", "T4", "T5"],
+        "Payment Method" => &["Cash", "Card", "Cash", "Cash", "Card"],
+        "Quantity" => &[1_i64, 1_i64, 1_i64, 1_i64, 1_i64],
+        "Description" => &["Hauptgang Vegi Standard", "Rental A", "Rental B", "Rental C", "Rental D"],
+        "Currency" => &["CHF", "CHF", "CHF", "CHF", "CHF"],
+        "Price (Gross)" => &[13.0, 400.0, 600.0, 100.0, 200.0],
+        "Price (Net)" => &[13.0, 400.0, 600.0, 100.0, 200.0],
+        "Commission" => &[0.0, 6.0, 0.0, 0.0, 3.0],
+        "Topic" => &["MiTi", "Rental", "Rental", "Rental", "Rental"],
+        "Owner" => &["MiTi", "", "", "", ""],
+        "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption"],
+        "Comment" => &[AnyValue::Null, AnyValue::Null, AnyValue::Null, AnyValue::Null, AnyValue::Null],
+    )
+    .expect("valid intermediate dataframe 06")
+}
+
+#[fixture]
+pub fn details_df_06(sample_date: NaiveDate, sample_date2: NaiveDate) -> DataFrame {
+    df!(
+        "Date" => &[Some(sample_date), Some(sample_date2)],
+        "MiTi_Cash" => &[Some(13.0), None::<f64>],
+        "MiTi_Card" => &[None::<f64>, None::<f64>],
+        "MiTi Total" => &[13.0, 0.0],
+        "Cafe_Cash" => &[None::<f64>, None::<f64>],
+        "Cafe_Card" => &[None::<f64>, None::<f64>],
+        "Cafe Total" => &[0.0, 0.0],
+        "Verm_Cash" => &[None::<f64>, None::<f64>],
+        "Verm_Card" => &[None::<f64>, None::<f64>],
+        "Verm Total" => &[0.0, 0.0],
+        "SoFe_Cash" => &[None::<f64>, None::<f64>],
+        "SoFe_Card" => &[None::<f64>, None::<f64>],
+        "SoFe Total" => &[0.0, 0.0],
+        "Deposit_Cash" => &[None::<f64>, None::<f64>],
+        "Deposit_Card" => &[None::<f64>, None::<f64>],
+        "Deposit Total" => &[0.0, 0.0],
+        "Packaging_Cash" => &[None::<f64>, None::<f64>],
+        "Packaging_Card" => &[None::<f64>, None::<f64>],
+        "Packaging Total" => &[0.0, 0.0],
+        "Rental_Cash" => &[600.0, 100.0],
+        "Rental_Card" => &[400.0, 200.0],
+        "Rental Total" => &[1000.0, 300.0],
+        "Culture_Cash" => &[None::<f64>, None::<f64>],
+        "Culture_Card" => &[None::<f64>, None::<f64>],
+        "Culture Total" => &[0.0, 0.0],
+        "PaidOut_Cash" => &[None::<f64>, None::<f64>],
+        "PaidOut_Card" => &[None::<f64>, None::<f64>],
+        "PaidOut Total" => &[0.0, 0.0],
+        "Gross Cash" => &[Some(613.0), Some(100.0)],
+        "Tips_Cash" => &[None::<f64>, None::<f64>],
+        "SumUp Cash" => &[Some(613.0), Some(100.0)],
+        "Gross Card" => &[Some(400.0), Some(200.0)],
+        "Tips_Card" => &[None::<f64>, None::<f64>],
+        "SumUp Card" => &[Some(400.0), Some(200.0)],
+        "Gross Total" => &[Some(1013.0), Some(300.0)],
+        "Tips Total" => &[0.0, 0.0],
+        "SumUp Total" => &[Some(1013.0), Some(300.0)],
+        "Gross Card MiTi" => &[0.0, 0.0],
+        "MiTi_Commission" => &[Some(0.0), None::<f64>],
+        "Net Card MiTi" => &[0.0, 0.0],
+        "Gross Card LoLa" => &[400.0, 200.0],
+        "LoLa_Commission" => &[Some(6.0), Some(3.0)],
+        "LoLa_Commission_MiTi" => &[None::<f64>, None::<f64>],
+        "Net Card LoLa" => &[(Some(394.0)), Some(197.0)],
+        "Gross Card Total" => &[Some(400.0), Some(200.0)],
+        "Total Commission" => &[Some(6.0), Some(3.0)],
+        "Net Card Total" => &[Some(394.0), Some(197.0)],
+        "Net Payment SumUp MiTi" => &[0.0, 0.0],
+        "MiTi_Tips_Cash" => &[None::<f64>, None::<f64>],
+        "MiTi_Tips_Card" => &[None::<f64>, None::<f64>],
+        "MiTi_Tips" => &[None::<f64>, None::<f64>],
+        "Cafe_Tips" => &[None::<f64>, None::<f64>],
+        "Verm_Tips" => &[None::<f64>, None::<f64>],
+        "Gross MiTi (MiTi)" => &[Some(13.0), None::<f64>],
+        "Gross MiTi (LoLa)" => &[None::<f64>, None::<f64>],
+        "Gross MiTi (MiTi) Card" => &[None::<f64>, None::<f64>],
+        "Net MiTi (MiTi) Card" => &[0.0, 0.0],
+        "Net MiTi (LoLa)" => &[0.0, 0.0],
+        "Contribution MiTi" => &[0.0, 0.0],
+        "Net MiTi (LoLA) - Share LoLa" => &[0.0, 0.0],
+        "Sponsored Reductions" => &[0.0, 0.0],
+        "Debt to MiTi" => &[0.0, 0.0],
+        "Income LoLa MiTi" => &[0.0, 0.0],
+        "MealCount_Regular" => &[Some(1_i64), None::<i64>],
+        "MealCount_Reduced" => &[None::<i64>, None::<i64>],
+        "MealCount_Children" => &[None::<i64>, None::<i64>],
+        "MealCount_Praktikum" => &[None::<i64>, None::<i64>],
+        "Total Praktikum" => &[None::<i64>, None::<i64>],
+    )
+    .expect("valid details dataframe 02")
+}
+
+#[fixture]
+pub fn accounting_df_06(sample_date: NaiveDate, sample_date2: NaiveDate) -> DataFrame {
+    df!(
+        "Date" => &[sample_date, sample_date2],
+        "Payment SumUp" => &[394.0, 197.0],
+        "Total Cash Debit" => &[600.0, 100.0],
+        "Total Card Debit" => &[400.0, 200.0],
+        "10000/23050" => &[None::<f64>, None::<f64>],
+        "10000/30200" => &[None::<f64>, None::<f64>],
+        "10000/30700" => &[None::<f64>, None::<f64>],
+        "10000/30810" => &[None::<f64>, None::<f64>],
+        "10000/31000" => &[600.0, 100.0],
+        "10000/32000" => &[None::<f64>, None::<f64>],
+        "10000/46000" => &[None::<f64>, None::<f64>],
+        "10920/10000" => &[None::<f64>, None::<f64>],
+        "10920/23050" => &[None::<f64>, None::<f64>],
+        "10920/30200" => &[None::<f64>, None::<f64>],
+        "10920/30700" => &[None::<f64>, None::<f64>],
+        "10920/30810" => &[None::<f64>, None::<f64>],
+        "10920/31000" => &[400.0, 200.0],
+        "10920/32000" => &[None::<f64>, None::<f64>],
+        "10920/46000" => &[None::<f64>, None::<f64>],
+        "10920/20051" => &[0.0, 0.0],
+        "10920/10910" => &[0.0, 0.0],
+        "68450/10920" => &[6.0, 3.0],
+        "59991/20051" => &[0.0, 0.0],
+        "59991/20120" => &[None::<f64>, None::<f64>],
+        "20051/10930" => &[0.0, 0.0],
+        "20051/30500" => &[0.0, 0.0],
+        "10930/10100" => &[0.0, 0.0],
+    )
+    .expect("Valid accounting df 06")
+}
+
+#[fixture]
+pub fn banana_df_06(sample_date_lom: NaiveDate) -> DataFrame {
+    df!(
+    "Datum" => &[sample_date_lom, sample_date_lom, sample_date_lom],
+    "Beleg" => &["", "", ""],
+    "Rechnung" => &["", "", ""],
+    "Beschreibung" => &["SU Vermietungen bar", "SU Vermietungen Karte", "SU Kartenkommission"],
+    "KtSoll" => &["10000", "10920", "68450"],
+    "KtHaben" => &["31000", "31000", "10920"],
+    "Anzahl" => &["", "", ""],
+    "Einheit" => &["", "", ""],
+    "Preis/Einheit" => &["", "", ""],
+    "Betrag CHF" => &[700.0, 600.0, 9.0],
+    )
+    .expect("Valid banana df 06")
+}
+
+#[fixture]
+pub fn banana_df_ext_06(
+    sample_date: NaiveDate,
+    sample_date2: NaiveDate,
+    sample_date_lom: NaiveDate,
+) -> DataFrame {
+    df!(
+        "Datum" => &[sample_date, sample_date, sample_date2, sample_date2, sample_date_lom],
+        "Beleg" => &["", "", "", "", ""],
+        "Rechnung" => &["", "", "", "", ""],
+        "Beschreibung" => &["Rental A", "Rental B", "Rental C", "Rental D", "SU Kartenkommission"],
+        "KtSoll" => &["10920", "10000", "10000", "10920", "68450"],
+        "KtHaben" => &["31000", "31000", "31000", "31000", "10920"],
+        "Anzahl" => &["", "", "", "", ""],
+        "Einheit" => &["", "", "", "", ""],
+        "Preis/Einheit" => &["", "", "", "", ""],
+        "Betrag CHF" => &[400.0, 600.0, 100.0, 200.0, 9.0],
+    )
+    .expect("Valid banana df ext 06")
 }
 
 //end region

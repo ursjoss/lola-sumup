@@ -623,6 +623,12 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("MealCount_Praktikum"),
             col("Total Praktikum"),
         ])
+        .sort(
+            ["Date"],
+            SortMultipleOptions::new()
+                .with_multithreaded(false)
+                .with_maintain_order(true),
+        )
         .collect()
 }
 
@@ -868,7 +874,9 @@ impl FilterExpressionProvider for MitiMealType {
 mod tests {
     use rstest::rstest;
 
-    use crate::test_fixtures::{details_df_02, intermediate_df_02};
+    use crate::test_fixtures::{
+        details_df_02, details_df_06, intermediate_df_02, intermediate_df_06,
+    };
     use crate::test_utils::assert_dataframe;
 
     use super::*;
@@ -971,9 +979,15 @@ mod tests {
     }
 
     #[rstest]
-    fn test_collect_data(intermediate_df_02: DataFrame, details_df_02: DataFrame) {
+    fn test_collect_data_02(intermediate_df_02: DataFrame, details_df_02: DataFrame) {
         let out = collect_data(intermediate_df_02).expect("should be able to collect the data");
         assert_dataframe(&out, &details_df_02);
+    }
+
+    #[rstest]
+    fn test_collect_data_06(intermediate_df_06: DataFrame, details_df_06: DataFrame) {
+        let out = collect_data(intermediate_df_06).expect("should be able to collect the data");
+        assert_dataframe(&out, &details_df_06);
     }
 
     #[rstest]
