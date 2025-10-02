@@ -18,13 +18,13 @@ fn get_description(col: &Column) -> PolarsResult<Column> {
 
 /// Produces the accounting dataframe from the accounting [df] for import into banana
 pub fn gather_df_banana(df_acct: &DataFrame, month: &str) -> PolarsResult<DataFrame> {
+    let last_of_month = get_last_of_month(month).expect("should be able to get last of month");
     let date_format = StrptimeOptions {
         format: Some("%d.%m.%Y".into()),
         strict: false,
         exact: true,
         ..Default::default()
     };
-    let last_of_month = get_last_of_month(month).expect("should be able to get last of month");
     df_acct
         .clone()
         .lazy()
