@@ -88,9 +88,10 @@ fn get_last_of_month(month: &str) -> Result<String, Box<dyn Error>> {
 
 #[cfg(test)]
 mod tests {
-    use rstest::rstest;
-
     use super::*;
+    use crate::test_fixtures::{accounting_df_06, banana_df_06};
+    use crate::test_utils::assert_dataframe;
+    use rstest::rstest;
 
     #[rstest]
     #[case("202411", "30.11.2024")]
@@ -99,5 +100,26 @@ mod tests {
     fn test_get_last_of_moth(#[case] month: &str, #[case] expected: &str) {
         let lom = get_last_of_month(month).expect("should be able to get last of month");
         assert_eq!(lom, expected);
+    }
+
+    #[rstest]
+    fn test_gather_df_banana06(accounting_df_06: DataFrame, banana_df_06: DataFrame) {
+        let mut acct_df = accounting_df_06.clone();
+        acct_df
+            .extend(
+                &accounting_df_06
+                    .clone()
+                    .lazy()
+                    .sum()
+                    .collect()
+                    .expect("Should be able to sum accounting_df_06"),
+            )
+            .expect("Should be able to extend accounting_df_06");
+        let acct_df_ext = acct_df
+            .sort(["Date"], SortMultipleOptions::new().with_nulls_last(true))
+            .expect("Should be able to sort extended accounting_df_06");
+        let out =
+            gather_df_banana(&acct_df_ext, "202303").expect("should be able to collect banana_df");
+        assert_dataframe(&out, &banana_df_06);
     }
 }

@@ -134,16 +134,23 @@ mod tests {
     use chrono::NaiveDate;
     use rstest::rstest;
 
-    use crate::test_fixtures::{accounting_df_03, details_df_03};
+    use crate::test_fixtures::{accounting_df_03, accounting_df_06, details_df_03, details_df_06};
     use crate::test_utils::assert_dataframe;
 
     use super::*;
 
     #[rstest]
-    fn test_gather_df_accounting(details_df_03: DataFrame, accounting_df_03: DataFrame) {
+    fn test_gather_df_accounting03(details_df_03: DataFrame, accounting_df_03: DataFrame) {
         let out =
             gather_df_accounting(&details_df_03).expect("should be able to collect accounting_df");
         assert_dataframe(&out, &accounting_df_03);
+    }
+
+    #[rstest]
+    fn test_gather_df_accounting06(details_df_06: DataFrame, accounting_df_06: DataFrame) {
+        let out =
+            gather_df_accounting(&details_df_06).expect("should be able to collect accounting_df");
+        assert_dataframe(&out, &accounting_df_06);
     }
 
     #[rstest]
