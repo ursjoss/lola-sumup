@@ -1,7 +1,8 @@
-use super::posting::Posting;
 use crate::prepare::{PaymentMethod, Topic};
 use polars::prelude::*;
 use std::error::Error;
+
+use super::posting::Posting;
 
 /// Finds the descriptions for the different posting types
 fn get_description(col: &Column) -> PolarsResult<Column> {
