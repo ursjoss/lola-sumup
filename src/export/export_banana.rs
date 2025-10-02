@@ -29,6 +29,7 @@ pub fn gather_df_banana(df_acct: &DataFrame, month: &str) -> PolarsResult<DataFr
         .clone()
         .lazy()
         .filter(col("Date").is_null())
+        .with_column(lit(0.0).alias("Date"))
         .collect()?
         .transpose(Some("KtSoll/KtHaben"), None)?
         .lazy()
