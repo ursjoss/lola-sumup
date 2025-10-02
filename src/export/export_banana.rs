@@ -1,7 +1,7 @@
+use super::posting::Posting;
+use crate::prepare::{PaymentMethod, Topic};
 use polars::prelude::*;
 use std::error::Error;
-
-use super::posting::Posting;
 
 /// Finds the descriptions for the different posting types
 fn get_description(col: &Column) -> PolarsResult<Column> {
@@ -18,13 +18,13 @@ fn get_description(col: &Column) -> PolarsResult<Column> {
 
 /// Produces the accounting dataframe from the accounting [df] for import into banana
 pub fn gather_df_banana(df_acct: &DataFrame, month: &str) -> PolarsResult<DataFrame> {
-    let last_of_month = get_last_of_month(month).expect("should be able to get last of month");
     let date_format = StrptimeOptions {
         format: Some("%d.%m.%Y".into()),
         strict: false,
         exact: true,
         ..Default::default()
     };
+    let last_of_month = get_last_of_month(month).expect("should be able to get last of month");
     df_acct
         .clone()
         .lazy()
@@ -85,6 +85,34 @@ fn get_last_of_month(month: &str) -> Result<String, Box<dyn Error>> {
         })
         .num_days();
     Ok(format!("{last_of_month}.{month:02}.{year}"))
+}
+
+/// Gathers the detail transactions that need to be reported individually in the banana export
+/// - Rental postings to be posted into 31000
+pub fn gather_df_banana_details(raw_df: &DataFrame) -> PolarsResult<DataFrame> {
+    raw_df
+        .clone()
+        .lazy()
+        .filter(col("Topic").eq(lit(Topic::Rental.to_string())))
+        .with_column(
+            when(col("Payment Method").eq(lit(PaymentMethod::Card.to_string())))
+                .then(lit("10920"))
+                .otherwise(lit("10000"))
+                .alias("KtSoll"),
+        )
+        .select([
+            col("Date").alias("Datum"),
+            lit("").alias("Beleg"),
+            lit("").alias("Rechnung"),
+            col("Description").alias("Beschreibung"),
+            col("KtSoll"),
+            lit("31000").alias("KtHaben"),
+            lit("").alias("Anzahl"),
+            lit("").alias("Einheit"),
+            lit("").alias("Preis/Einheit"),
+            col("Price (Net)").alias("Betrag CHF"),
+        ])
+        .collect()
 }
 
 #[cfg(test)]

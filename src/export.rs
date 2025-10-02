@@ -2,6 +2,7 @@ use calamine::{Data, Reader, Xlsx, open_workbook};
 use polars::prelude::*;
 use polars_excel_writer::PolarsExcelWriter;
 use rust_xlsxwriter::Workbook;
+use std::collections::HashSet;
 use std::error::Error;
 use std::path::{Path, PathBuf};
 
@@ -10,7 +11,7 @@ use crate::export::constraint::{
     validation_topic_owner,
 };
 use crate::export::export_accounting::{gather_df_accounting, validate_acc_constraint};
-use crate::export::export_banana::gather_df_banana;
+use crate::export::export_banana::{gather_df_banana, gather_df_banana_details};
 use crate::export::export_details::collect_data;
 use crate::export::export_miti::gather_df_miti;
 use crate::prepare::{Topic, warn_on_zero_value_trx};
@@ -31,13 +32,12 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
 
     warn_on_zero_value_trx(&raw_df)?;
 
-    let (df_det, df_acc, df_banana_summary, df_banana_details) =
-        crunch_data(raw_df.clone(), month)?;
+    let (df_det, df_acc, df_banana) = crunch_data(&raw_df.clone(), month)?;
 
     export_details(&month, &ts, &df_det, &raw_df)?;
     export_mittagstisch(&month, &ts, &df_det, &raw_df)?;
     export_accounting(&month, &ts, &df_acc, &raw_df)?;
-    export_banana(&month, &ts, &df_banana_summary, &df_banana_details, &raw_df)
+    export_banana(&month, &ts, &df_banana, &raw_df)
 }
 
 #[allow(clippy::too_many_lines)]
@@ -184,18 +184,17 @@ fn read_columns_from_excel(input_path: &Path, month: &str) -> Result<Vec<Column>
     Ok(columns_vec)
 }
 
-/// returns four dataframes:
+/// Returns for the raw intermediate dataframe `raw_df` and `month` returns three dataframes:
 /// - details/miti
 /// - accounting export
-/// - banana summary
-/// - banana details
+/// - banana (filterd and enriched in regards of trx that need individual reporting instead of summary)
 fn crunch_data(
-    raw_df: DataFrame,
+    raw_df: &DataFrame,
     month: &str,
-) -> Result<(DataFrame, DataFrame, DataFrame, DataFrame), Box<dyn Error>> {
-    validate(&raw_df)?;
+) -> Result<(DataFrame, DataFrame, DataFrame), Box<dyn Error>> {
+    validate(raw_df)?;
 
-    let mut df_det = collect_data(raw_df)?;
+    let mut df_det = collect_data(raw_df.clone())?;
     df_det.extend(&df_det.clone().lazy().sum().collect()?)?;
     let df_det_extended =
         df_det.sort(["Date"], SortMultipleOptions::new().with_nulls_last(true))?;
@@ -203,13 +202,9 @@ fn crunch_data(
     let df_acc = gather_df_accounting(&df_det_extended)?;
     validate_acc_constraint(&df_acc.clone())?;
     let df_banana_summary = gather_df_banana(&df_acc.clone(), month)?;
-    let df_banana_details = df_banana_summary.clone(); // TODO implement properly
-    Ok((
-        df_det_extended,
-        df_acc,
-        df_banana_summary,
-        df_banana_details,
-    ))
+    let df_banana_details = gather_df_banana_details(raw_df)?;
+    let df_banana = filter_and_enrich_banana(&df_banana_summary, &df_banana_details)?;
+    Ok((df_det_extended, df_acc, df_banana))
 }
 
 fn validate(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
@@ -270,14 +265,52 @@ fn export_accounting(
     write_to_file(df_acc, df_trx, "accounting", month, ts)
 }
 
+/// filters out the summary records for accounts that need individual trx
+/// instead of monthly summaries and enriches it with the individual rows
+fn filter_and_enrich_banana(
+    df_banana_summary: &DataFrame,
+    df_banana_details: &DataFrame,
+) -> PolarsResult<DataFrame> {
+    if df_banana_details.shape().0 == 0 {
+        df_banana_summary.sort(["Datum"], SortMultipleOptions::new().with_nulls_last(true))
+    } else {
+        let unwanted_accounts_df = df_banana_details
+            .clone()
+            .lazy()
+            .select([col("KtHaben")])
+            .unique(None, UniqueKeepStrategy::First)
+            .collect()?;
+        let unwanted_accounts: HashSet<&str> = unwanted_accounts_df
+            .column("KtHaben")?
+            .str()?
+            .into_iter()
+            .flatten()
+            .collect::<Vec<&str>>()
+            .into_iter()
+            .collect();
+        let mask_vals: Vec<bool> = df_banana_summary
+            .column("KtHaben")?
+            .str()?
+            .into_iter()
+            .map(|opt| match opt {
+                Some(v) => !unwanted_accounts.contains(v),
+                None => false,
+            })
+            .collect();
+        let mask = BooleanChunked::from_slice("mask".into(), &mask_vals);
+        let df_banana_filtered = df_banana_summary.clone().filter(&mask)?;
+        let df_banana_enriched = df_banana_filtered.vstack(df_banana_details)?;
+        df_banana_enriched.sort(["Datum"], SortMultipleOptions::new().with_nulls_last(true))
+    }
+}
+
 fn export_banana(
     month: &&str,
     ts: &&str,
-    df_banana_summary: &DataFrame,
-    _df_banana_details: &DataFrame, // TODO use
+    df_banana: &DataFrame,
     df_trx: &DataFrame,
 ) -> Result<(), Box<dyn Error>> {
-    write_to_file(df_banana_summary, df_trx, "banana", month, ts)
+    write_to_file(df_banana, df_trx, "banana", month, ts)
 }
 
 /// Constructs a path for an XLSX file from `prefix`, `month` and `ts` (timestamp).
@@ -304,6 +337,7 @@ fn write_to_file(
     let mut workbook = Workbook::new();
     let worksheet = workbook.add_worksheet().set_name(prefix)?;
     excel_writer.set_freeze_panes(1, 1);
+
     excel_writer.write_dataframe_to_worksheet(main_df, worksheet, 0, 0)?;
 
     let worksheet = workbook.add_worksheet().set_name("transaktionen")?;
@@ -317,17 +351,21 @@ fn write_to_file(
 
 #[cfg(test)]
 mod tests {
-    use crate::configure_the_environment;
+    use crate::{configure_the_environment, test_utils::assert_dataframe};
     use pretty_assertions::assert_ne;
     use rstest::rstest;
 
-    use crate::test_fixtures::{details_df_04, intermediate_df_02, intermediate_df_04};
+    use crate::test_fixtures::{
+        accounting_df_06, banana_df_ext_06, details_df_04, intermediate_df_02, intermediate_df_04,
+        intermediate_df_06,
+    };
 
     use super::*;
 
     #[rstest]
     fn can_crunch_data_without_panic(intermediate_df_02: DataFrame) {
-        let (df1, df2, df3, _) = crunch_data(intermediate_df_02, "202412").expect("should crunch");
+        println!("{intermediate_df_02:?}");
+        let (df1, df2, df3) = crunch_data(&intermediate_df_02, "202412").expect("should crunch");
 
         assert_ne!(df1.shape().0, 0, "df1 does not contain records");
         assert_ne!(df2.shape().0, 0, "df2 does not contain records");
@@ -337,7 +375,7 @@ mod tests {
     #[rstest]
     fn can_calculate_summary_row(intermediate_df_04: DataFrame, details_df_04: DataFrame) {
         configure_the_environment();
-        let (df1, _, _, _) = crunch_data(intermediate_df_04, "202412").expect("should crunch");
+        let (df1, _, _) = crunch_data(&intermediate_df_04, "202412").expect("should crunch");
         assert_eq!(
             df1.shape().0,
             4,
@@ -347,5 +385,34 @@ mod tests {
             df1, details_df_04,
             "unexpected summary for intermediate_df_04"
         );
+    }
+
+    #[rstest]
+    fn can_calculate_banana(
+        intermediate_df_06: DataFrame,
+        accounting_df_06: DataFrame,
+        banana_df_ext_06: DataFrame,
+    ) {
+        let mut acct_df = accounting_df_06.clone();
+        acct_df
+            .extend(
+                &accounting_df_06
+                    .clone()
+                    .lazy()
+                    .sum()
+                    .collect()
+                    .expect("Should be able to sum accounting_df_06"),
+            )
+            .expect("Should be able to extend accounting_df_06");
+        let acct_df_ext = acct_df
+            .sort(["Date"], SortMultipleOptions::new().with_nulls_last(true))
+            .expect("Should be able to sort extended accounting_df_06");
+        let df_banana_summary =
+            gather_df_banana(&acct_df_ext, "202303").expect("Unable to get banana df");
+        let df_banana_details =
+            gather_df_banana_details(&intermediate_df_06).expect("Unable to get banana df details");
+        let out = filter_and_enrich_banana(&df_banana_summary, &df_banana_details)
+            .expect("Unable to get filtered and enriched df");
+        assert_dataframe(&out, &banana_df_ext_06);
     }
 }
