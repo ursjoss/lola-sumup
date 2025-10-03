@@ -54,7 +54,8 @@ fn process_input(
         .with_column(
             when(
                 col("Beschreibung")
-                    .eq(lit("Mittagstisch-Nachmittag"))
+                    .eq(lit("Schichtwechsel"))
+                    .or(col("Beschreibung").eq(lit("Mittagstisch-Nachmittag")))
                     .or(col("Beschreibung").eq(lit("Nachmittag-Abend"))),
             )
             .then(0.0)
@@ -64,7 +65,8 @@ fn process_input(
         .with_column(
             when(
                 col("Beschreibung")
-                    .eq(lit("Mittagstisch-Nachmittag"))
+                    .eq(lit("Schichtwechsel"))
+                    .or(col("Beschreibung").eq(lit("Mittagstisch-Nachmittag")))
                     .or(col("Beschreibung").eq(lit("Nachmittag-Abend"))),
             )
             .then(0.0)
