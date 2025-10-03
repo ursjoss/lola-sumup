@@ -54,7 +54,8 @@ fn process_input(
         .with_column(
             when(
                 col("Beschreibung")
-                    .eq(lit("Mittagstisch-Nachmittag"))
+                    .eq(lit("Schichtwechsel"))
+                    .or(col("Beschreibung").eq(lit("Mittagstisch-Nachmittag")))
                     .or(col("Beschreibung").eq(lit("Nachmittag-Abend"))),
             )
             .then(0.0)
@@ -64,7 +65,8 @@ fn process_input(
         .with_column(
             when(
                 col("Beschreibung")
-                    .eq(lit("Mittagstisch-Nachmittag"))
+                    .eq(lit("Schichtwechsel"))
+                    .or(col("Beschreibung").eq(lit("Mittagstisch-Nachmittag")))
                     .or(col("Beschreibung").eq(lit("Nachmittag-Abend"))),
             )
             .then(0.0)
@@ -397,7 +399,8 @@ fn infer_payment_method() -> Expr {
 /// before 06:00 and after 18:00 -> `Culture` or `PaidOut` if description contains " (PO)" or if it is a week-end.
 /// between 06:00 and `ChangeOfShift` -> `MiTi`
 /// between `ChangeOfShift` and 18:00 -> `Cafe`
-/// If the description starts with "Recircle Tupper Depot", the topic will be `Packaging` regardless of time od day.
+/// If the description starts with "Recircle Tupper Depot", the topic will be `Packaging` regardless of time or day.
+/// If the description is "Miete", the topic will be `Rental` regardless of time or day
 fn infer_topic(time_options: &StrptimeOptions) -> Expr {
     when(
         col("Beschreibung")
@@ -405,6 +408,8 @@ fn infer_topic(time_options: &StrptimeOptions) -> Expr {
             .starts_with(lit("Recircle Tupper Depot")),
     )
     .then(lit(Topic::Packaging.to_string()))
+    .when(col("Beschreibung").eq(lit("Miete")))
+    .then(lit(Topic::Rental.to_string()))
     .when(
         col("Time")
             .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
@@ -627,7 +632,8 @@ mod tests {
                 "X", "X",
                 "X", "X",
                 "X (PO)", "X (PO)", "X (PO) x" ,"X (PO)",
-                rtd, rtd, rtd, rtd, rtd, rtd, rtd, rtd
+                rtd, rtd, rtd, rtd, rtd, rtd, rtd, rtd,
+                "Miete", "Miete",
             ],
             "Time" => [
                 "00:00:00", "05:59:59",
@@ -638,7 +644,8 @@ mod tests {
                 "14:15:01", "17:59:59",
                 "18:00:00", "23:59:59",
                 "00:00:00", "05:59:59", "18:00:00", "23:59:59",
-                "00:00:00", "05:59:59", "06:00:00", "14:15:00", "14:15:01", "17:59:59", "18:00:00", "23:59:59"
+                "00:00:00", "05:59:59", "06:00:00", "14:15:00", "14:15:01", "17:59:59", "18:00:00", "23:59:59",
+                "00:00:00", "12.00.00",
             ],
             "ChangeOfShift" => [
                 "14:15:00", "14:15:00",
@@ -650,6 +657,7 @@ mod tests {
                 "14:15:00", "14:15:00",
                 "14:15:00", "14:15:00", "14:15:00", "14:15:00",
                 "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00",
+                "14:15:00", "14:15:00",
             ],
             "is_weekend" => [
                 false, false,
@@ -660,7 +668,8 @@ mod tests {
                 true, true,
                 true, true,
                 false, false, true, true,
-                false, false, false, false, false, true, true, false
+                false, false, false, false, false, true, true, false,
+                false, true,
             ],
         ]
         .unwrap()
@@ -673,6 +682,7 @@ mod tests {
         let cafe = Topic::Cafe.to_string();
         let paidout = Topic::PaidOut.to_string();
         let pkg = Topic::Packaging.to_string();
+        let rental = Topic::Rental.to_string();
         df![
            "Topic" => [
                culture.clone(), culture.clone(),
@@ -683,7 +693,8 @@ mod tests {
                culture.clone(), culture.clone(),
                culture.clone(), culture,
                paidout.clone(), paidout.clone(), paidout.clone(), paidout,
-               pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg
+               pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg,
+               rental.clone(), rental,
            ]
        ].unwrap()
     }
