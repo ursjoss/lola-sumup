@@ -54,7 +54,7 @@ fn process_input(
         .with_column(
             when(
                 col("Beschreibung")
-                    .eq(lit("Schichtwechsel"))
+                    .eq(lit("SCHICHTWECHSEL"))
                     .or(col("Beschreibung").eq(lit("Mittagstisch-Nachmittag")))
                     .or(col("Beschreibung").eq(lit("Nachmittag-Abend"))),
             )
@@ -65,7 +65,7 @@ fn process_input(
         .with_column(
             when(
                 col("Beschreibung")
-                    .eq(lit("Schichtwechsel"))
+                    .eq(lit("SCHICHTWECHSEL"))
                     .or(col("Beschreibung").eq(lit("Mittagstisch-Nachmittag")))
                     .or(col("Beschreibung").eq(lit("Nachmittag-Abend"))),
             )
@@ -213,7 +213,9 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .and(col("Time").gt(lit("12:00:00").str().to_time(time_format.clone())))
                 .and(col("Time").lt(lit("16:00:00").str().to_time(time_format.clone()))),
         )
-        .select([col("Date"), col("Time").alias("ChangeOfShift")]);
+        .select([col("Date"), col("Time").alias("ChangeOfShift")])
+        .group_by([col("Date")])
+        .agg([col("ChangeOfShift").last().alias("ChangeOfShift")]);
 
     let commission_df = txr_df
         .clone()
@@ -574,8 +576,9 @@ mod tests {
     use rstest::*;
 
     use crate::test_fixtures::{
-        intermediate_df_01, sales_report_df_01, sales_report_df_02, transaction_report_df_01,
-        transaction_report_df_02,
+        intermediate_df_01, intermediate_df_07, sales_report_df_01, sales_report_df_02,
+        sales_report_df_07, transaction_report_df_01, transaction_report_df_02,
+        transaction_report_df_07,
     };
     use crate::test_utils::assert_dataframe;
 
@@ -617,6 +620,17 @@ mod tests {
         let out = combine_input_dfs(&sales_report_df_01, &transaction_report_df_01)
             .expect("should be able to combine input dfs");
         assert_dataframe(&out, &intermediate_df_01);
+    }
+
+    #[rstest]
+    fn test_combine_input_dfs_with_multiple_changes_of_shift(
+        sales_report_df_07: DataFrame,
+        transaction_report_df_07: DataFrame,
+        intermediate_df_07: DataFrame,
+    ) {
+        let out = combine_input_dfs(&sales_report_df_07, &transaction_report_df_07)
+            .expect("should be able to combine input dfs");
+        assert_dataframe(&out, &intermediate_df_07);
     }
 
     #[fixture]
