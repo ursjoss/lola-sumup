@@ -1,4 +1,4 @@
-use chrono::{NaiveDate, NaiveTime};
+use chrono::{Duration, NaiveDate, NaiveTime};
 use polars::df;
 use polars::frame::DataFrame;
 use polars::prelude::AnyValue;
@@ -12,6 +12,16 @@ pub fn sample_date() -> NaiveDate {
 #[fixture]
 pub fn sample_time() -> NaiveTime {
     NaiveTime::parse_from_str("12:32", "%H:%M").expect("valid time")
+}
+
+#[fixture]
+pub fn sample_time_minus_5(sample_time: NaiveTime) -> NaiveTime {
+    sample_time - Duration::minutes(5)
+}
+
+#[fixture]
+pub fn sample_time_plus_5(sample_time: NaiveTime) -> NaiveTime {
+    sample_time + Duration::minutes(5)
 }
 
 //region::01 - from raw files to intermediate
@@ -692,6 +702,81 @@ pub fn banana_df_ext_06(
         "Betrag CHF" => &[400.0, 600.0, 100.0, 200.0, 9.0],
     )
     .expect("Valid banana df ext 06")
+}
+
+//end region
+
+//region:07
+
+#[fixture]
+pub fn sales_report_df_07(
+    sample_date: NaiveDate,
+    sample_time: NaiveTime,
+    sample_time_minus_5: NaiveTime,
+    sample_time_plus_5: NaiveTime,
+) -> DataFrame {
+    let date = sample_date.format("%d.%m.%Y").to_string();
+    let time1 = sample_time_minus_5.format("%H:%M").to_string();
+    let time2 = sample_time.format("%H:%M").to_string();
+    let time3 = sample_time_plus_5.format("%H:%M").to_string();
+    df!(
+        "Datum" => &[format!("{date}, {time1}"), format!("{date}, {time2}"), format!("{date}, {time3}")],
+        "Typ" => &["Verkauf", "Verkauf", "Verkauf"],
+        "Transaktionsnummer" => &["T1", "T2", "T3"],
+        "Zahlungsmethode" => &["Bar", "MC", "Bar"],
+        "Menge" => &[1_i64, 1_i64, 1_i64],
+        "Beschreibung" => &["SCHICHTWECHSEL", "Kaffee", "SCHICHTWECHSEL"],
+        "Währung" => &["CHF", "CHF", "CHF"],
+        "Preis vor Rabatt" => &[0.01, 3.50, 0.01],
+        "Rabatt" => &[0.0, 0.0, 0.0],
+        "Preis (brutto)" => &[0.01, 3.50, 0.01],
+        "Preis (netto)" => &[0.01, 3.50, 0.01],
+        "Steuer" => &[0.0, 0.0, 0.0],
+        "Steuersatz" => &["", "", ""],
+        "Konto" => &["a@b.ch", "a@b.ch", "a@b.ch"],
+    )
+    .expect("valid dataframe sales report data frame 01")
+}
+
+#[fixture]
+pub fn transaction_report_df_07() -> DataFrame {
+    df!(
+        "Transaktions-ID" => &["T1", "T2", "T3"],
+        "Zahlungsart" => &["Umsatz", "Umsatz", "Umsatz"],
+        "Status" => &["Erfolgreich", "Erfolgreich", "Erfolgreich"],
+        "Betrag inkl. MwSt." => &[0.01, 3.5, 0.01],
+        "Trinkgeldbetrag" => &[0.0, 0.0, 0.0],
+        "Gebühr" => &[0.0, 0.05, 0.0],
+    )
+    .expect("valid dataframe transaction report data frame 07")
+}
+
+#[fixture]
+pub fn intermediate_df_07(
+    sample_date: NaiveDate,
+    sample_time: NaiveTime,
+    sample_time_minus_5: NaiveTime,
+    sample_time_plus_5: NaiveTime,
+) -> DataFrame {
+    df!(
+        "Account" => &["a@b.ch", "a@b.ch", "a@b.ch"],
+        "Date" => &[sample_date, sample_date, sample_date],
+        "Time" => &[sample_time_minus_5, sample_time, sample_time_plus_5],
+        "Type" => &["Sales", "Sales", "Sales"],
+        "Transaction ID" => &["T1", "T2", "T3"],
+        "Payment Method" => &["Cash", "Card", "Cash"],
+        "Quantity" => &[1_i64, 1_i64, 1_i64 ],
+        "Description" => &["SCHICHTWECHSEL", "Kaffee", "SCHICHTWECHSEL"],
+        "Currency" => &["CHF", "CHF", "CHF"],
+        "Price (Gross)" => &[0.0, 3.5, 0.0],
+        "Price (Net)" => &[0.0, 3.5, 0.0],
+        "Commission" => &[0.0, 0.05, 0.0],
+        "Topic" => &["MiTi", "MiTi", "MiTi"],
+        "Owner" => &["LoLa", "LoLa", "LoLa"],
+        "Purpose" => &["Consumption", "Consumption", "Consumption"],
+        "Comment" => &[AnyValue::Null, AnyValue::Null, AnyValue::Null],
+    )
+    .expect("valid intermediate dataframe 07")
 }
 
 //end region
