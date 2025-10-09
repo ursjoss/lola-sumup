@@ -26,7 +26,6 @@ pub fn close(
             "xls" => {
                 let df = do_closing_xml(accounts_file, budget, &month)?;
                 write_closing_to_file(&df, "closing", &month, ts)?;
-                println!("{df:?}");
                 Ok(())
             }
             _ => Err(Box::from(format!(
@@ -40,9 +39,10 @@ pub fn close(
 
 /// Creates a dataframe with dummy postings to extend the actual postings from the ledger
 /// The purpose is to have at least one real or dummy posting per post.
-fn as_dataframe(accounts: Vec<String>) -> PolarsResult<DataFrame> {
+fn as_dataframe(accounts: Vec<String>, month: &str) -> PolarsResult<DataFrame> {
     let length = accounts.len();
-    let dates = vec!["2025-01-01"; length];
+    let year: String = month.chars().take(4).collect();
+    let dates = vec![format!("{year}-01-01"); length];
     let descriptions = vec!["Dummy post"; length];
     let amounts = vec![0.0; length];
     df!(

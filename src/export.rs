@@ -1,4 +1,5 @@
 use calamine::{Data, Reader, Xlsx, open_workbook};
+use chrono::NaiveDate;
 use polars::prelude::*;
 use polars_excel_writer::PolarsExcelWriter;
 use rust_xlsxwriter::Workbook;
@@ -347,6 +348,17 @@ fn write_to_file(
 
     workbook.save(path)?;
     Ok(())
+}
+
+/// return the last of the month from provided `month`
+pub fn get_last_of_month_nd(month: &str) -> Result<NaiveDate, Box<dyn Error>> {
+    let y = month.chars().take(4).collect::<String>().parse()?;
+    let m = month.chars().skip(4).collect::<String>().parse()?;
+    let (ny, nm) = if m == 12 { (y + 1, m) } else { (y, m + 1) };
+    let lom = NaiveDate::from_ymd_opt(ny, nm, 1)
+        .ok_or("should be able to create next_day")
+        .map(|nd| nd - chrono::Duration::days(1))?;
+    Ok(lom)
 }
 
 #[cfg(test)]

@@ -12,6 +12,7 @@ use std::io::BufReader;
 use std::path::Path;
 
 use crate::close::as_dataframe;
+use crate::export::get_last_of_month_nd;
 
 /// read account information from xml file with ending .xls
 pub fn do_closing_xml(
@@ -20,7 +21,7 @@ pub fn do_closing_xml(
     month: &str,
 ) -> Result<DataFrame, Box<dyn Error>> {
     let journal = read_xml(input_path)?;
-    let dummy_accounts = as_dataframe(budget.get_first_account_per_post())?;
+    let dummy_accounts = as_dataframe(budget.get_first_account_per_post(), month)?;
     let extended = journal.vstack(&dummy_accounts)?;
     let aggregated = aggregate_balances(&extended, budget, month)?;
     Ok(aggregated)
@@ -257,6 +258,10 @@ fn enrich_and_aggregate(
     month: &str,
 ) -> Result<DataFrame, Box<dyn Error>> {
     let year = month.chars().take(4).collect::<String>();
+    let budget_alias = format!("Budget {year}");
+    let lom = get_last_of_month_nd(month)?;
+    let lom_formatted = lom.format("%-d.%-m.%y");
+    let month_alias = format!("1.1.-{lom_formatted}");
     let budget = Arc::new(budget);
     let b1 = budget.clone();
     let b2 = budget.clone();
@@ -292,7 +297,7 @@ fn enrich_and_aggregate(
         .with_column(
             col("Account")
                 .map(
-                    move |a| get_budget_of_post(&a, &b4, &year),
+                    move |a| get_budget_of_post(&a, &b4, &year.clone()),
                     |_, field| Ok(Field::new(field.name().clone(), DataType::Int64)),
                 )
                 .alias("Budget"),
@@ -323,9 +328,9 @@ fn enrich_and_aggregate(
         .sort(["Sort"], SortMultipleOptions::default())
         .select([
             col("Group"),
-            col("Budget"),
-            col("Net"),
-            ((col("Budget") - col("Net")) * col("Factor")).alias("Remaining"),
+            col("Budget").alias(budget_alias),
+            col("Net").alias(month_alias),
+            ((col("Budget") - col("Net")) * col("Factor")).alias("Verbleibend"),
         ])
         .collect()?;
     Ok(aggregated)
