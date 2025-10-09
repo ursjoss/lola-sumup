@@ -16,11 +16,9 @@ pub fn do_closing_xml(
     input_path: &Path,
     budget: Budget,
     month: &str,
-    _ts: &str,
 ) -> Result<DataFrame, Box<dyn Error>> {
     let journal = read_xml(input_path)?;
     let aggregated = aggregate_balances(&journal, budget, month)?;
-    println!("{aggregated:?}");
     Ok(aggregated)
 }
 
@@ -528,8 +526,7 @@ mod tests {
 
         let data = "samples/konten_202412_20250128132200.xls".to_string();
         let data_file = &PathBuf::from(data);
-        let ts = "20250120072900";
-        let _result = do_closing_xml(data_file, budget, "202410", ts)
+        let _result = do_closing_xml(data_file, budget, "202410")
             .expect("Unable to process sample data file.");
     }
 

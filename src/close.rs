@@ -1,7 +1,11 @@
 use crate::close::close_xml::do_closing_xml;
 use crate::close::close_xml::read_budget_config;
 use crate::derive_month_from_accounts;
+use crate::export::path_with_prefix;
 
+use polars::prelude::*;
+use polars_excel_writer::PolarsExcelWriter;
+use rust_xlsxwriter::Workbook;
 use std::error::Error;
 use std::path::Path;
 
@@ -19,7 +23,9 @@ pub fn close(
         let budget = read_budget_config(budget_config_file)?;
         match extension {
             "xls" => {
-                let _ = do_closing_xml(accounts_file, budget, &month, ts);
+                let df = do_closing_xml(accounts_file, budget, &month)?;
+                write_closing_to_file(&df, "closing", &month, ts)?;
+                println!("{df:?}");
                 Ok(())
             }
             _ => Err(Box::from(format!(
@@ -29,4 +35,26 @@ pub fn close(
     } else {
         Err("No valid file extension found".into())
     }
+}
+
+fn write_closing_to_file(
+    df: &DataFrame,
+    prefix: &str,
+    month: &str,
+    ts: &str,
+) -> Result<(), Box<dyn Error>> {
+    let path = &path_with_prefix(prefix, month, ts);
+    let mut excel_writer = PolarsExcelWriter::new();
+
+    excel_writer.set_autofit(true);
+    excel_writer.set_dtype_float_format("#'##0.00");
+
+    let mut workbook = Workbook::new();
+    let worksheet = workbook.add_worksheet().set_name(prefix)?;
+    excel_writer.set_freeze_panes(1, 1);
+
+    excel_writer.write_dataframe_to_worksheet(df, worksheet, 0, 0)?;
+
+    workbook.save(path)?;
+    Ok(())
 }
