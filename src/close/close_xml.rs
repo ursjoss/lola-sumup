@@ -353,7 +353,7 @@ fn get_budget_of_post(col: &Column, budget: &Budget, year: &str) -> PolarsResult
     let accounts = col.str()?;
     Ok(accounts
         .into_iter()
-        .map(|a| a.map(|a| budget.get_buget_amount_by_account(a, year)))
+        .map(|a| a.map(|a| budget.get_budget_amount_by_account(a, year)))
         .collect::<Float64Chunked>()
         .into_column())
 }
@@ -472,7 +472,7 @@ impl Budget {
     }
 
     /// get the amount for the given budget account and year
-    fn get_buget_amount_by_account(&self, account: &str, year: &str) -> f64 {
+    fn get_budget_amount_by_account(&self, account: &str, year: &str) -> f64 {
         let post_key_option = self.get_post_key_by_account(account);
         if let Some(post_key) = post_key_option {
             let x = self.years.get(year);
