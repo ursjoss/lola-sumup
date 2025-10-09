@@ -8,6 +8,7 @@ use polars_excel_writer::PolarsExcelWriter;
 use rust_xlsxwriter::Workbook;
 use std::error::Error;
 use std::path::Path;
+use std::vec;
 
 mod close_xml;
 
@@ -37,6 +38,22 @@ pub fn close(
     }
 }
 
+/// Creates a dataframe with dummy postings to extend the actual postings from the ledger
+/// The purpose is to have at least one real or dummy posting per post.
+fn as_dataframe(accounts: Vec<String>) -> PolarsResult<DataFrame> {
+    let length = accounts.len();
+    let dates = vec!["2025-01-01"; length];
+    let descriptions = vec!["Dummy post"; length];
+    let amounts = vec![0.0; length];
+    df!(
+        "Date" => dates,
+        "Description" => descriptions,
+        "Debit" => accounts.clone(),
+        "Credit" => accounts,
+        "Amount" => amounts,
+    )
+}
+
 fn write_closing_to_file(
     df: &DataFrame,
     prefix: &str,
@@ -46,8 +63,8 @@ fn write_closing_to_file(
     let path = &path_with_prefix(prefix, month, ts);
     let mut excel_writer = PolarsExcelWriter::new();
 
-    excel_writer.set_autofit(true);
     excel_writer.set_dtype_float_format("#'##0.00");
+    excel_writer.set_autofit(true);
 
     let mut workbook = Workbook::new();
     let worksheet = workbook.add_worksheet().set_name(prefix)?;

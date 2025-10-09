@@ -11,6 +11,8 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
+use crate::close::as_dataframe;
+
 /// read account information from xml file with ending .xls
 pub fn do_closing_xml(
     input_path: &Path,
@@ -18,7 +20,9 @@ pub fn do_closing_xml(
     month: &str,
 ) -> Result<DataFrame, Box<dyn Error>> {
     let journal = read_xml(input_path)?;
-    let aggregated = aggregate_balances(&journal, budget, month)?;
+    let dummy_accounts = as_dataframe(budget.get_first_account_per_post())?;
+    let extended = journal.vstack(&dummy_accounts)?;
+    let aggregated = aggregate_balances(&extended, budget, month)?;
     Ok(aggregated)
 }
 
@@ -301,6 +305,15 @@ fn enrich_and_aggregate(
 
     validate_all_accounts_are_in_budget(&enriched)?;
 
+    //    let x = budget
+    //        .join(
+    //            enriched.clone(),
+    //            [col("Group")],
+    //            [col("Account")],
+    //            JoinType::Left.into(),
+    //        )
+    //        .collect()?;
+
     let aggregated = enriched
         .clone()
         .lazy()
@@ -483,6 +496,15 @@ impl Budget {
             -0.0
         }
     }
+
+    /// returns the first account per post
+    fn get_first_account_per_post(&self) -> Vec<String> {
+        self.posts
+            .values()
+            .filter_map(|post| post.account_codes.first())
+            .cloned()
+            .collect()
+    }
 }
 
 pub fn read_budget_config(budget_config_file: &Path) -> Result<Budget, Box<dyn Error>> {
@@ -528,6 +550,13 @@ mod tests {
         let data_file = &PathBuf::from(data);
         let _result = do_closing_xml(data_file, budget, "202410")
             .expect("Unable to process sample data file.");
+    }
+
+    #[rstest]
+    fn can_get_dummy_posts() {
+        let budget = read_budget_from_samples();
+        let accounts = budget.get_first_account_per_post();
+        assert_ne!(accounts.len(), 0);
     }
 
     #[rstest]
