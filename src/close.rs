@@ -5,7 +5,7 @@ use crate::export::path_with_prefix;
 
 use polars::prelude::*;
 use polars_excel_writer::PolarsExcelWriter;
-use rust_xlsxwriter::Workbook;
+use rust_xlsxwriter::{Color, Format, FormatAlign, Workbook};
 use std::error::Error;
 use std::path::Path;
 use std::vec;
@@ -63,7 +63,6 @@ fn write_closing_to_file(
     let path = &path_with_prefix(prefix, month, ts);
     let mut excel_writer = PolarsExcelWriter::new();
 
-    excel_writer.set_dtype_float_format("#'##0.00");
     excel_writer.set_autofit(true);
 
     let mut workbook = Workbook::new();
@@ -71,6 +70,45 @@ fn write_closing_to_file(
     excel_writer.set_freeze_panes(1, 1);
 
     excel_writer.write_dataframe_to_worksheet(df, worksheet, 0, 0)?;
+
+    let last_row = u32::try_from(df.shape().0)? + 2;
+    //    let last_col = u16::try_from(df.shape().1)?;
+
+    // Budget groups and posts
+    let col = 0;
+    let format = Format::new().set_background_color(Color::RGB(0x00B2_B2B2));
+    worksheet.set_range_format(0, col, last_row, col, &format)?;
+    let format = format.clone().set_bold();
+    worksheet.write_with_format(0, col, "", &format)?;
+    worksheet.write_with_format(last_row, col, "Rein-Gew./-Verlust", &format)?;
+
+    // Budget
+    let col = 1;
+    let format = Format::new()
+        .set_background_color(Color::RGB(0x00b4_c7dc))
+        .set_num_format("#'##0.00");
+    worksheet.set_range_format(0, col, last_row, col, &format)?;
+    let format = format.clone().set_bold().set_align(FormatAlign::Right);
+    worksheet.set_range_format(0, col, 0, col, &format)?;
+
+    // Months
+    let first_col = 2;
+    let last_col = 2;
+    let format = Format::new()
+        .set_background_color(Color::RGB(0x00ff_ffd7))
+        .set_num_format("#'##0.00");
+    worksheet.set_range_format(0, first_col, last_row, last_col, &format)?;
+    let format = format.clone().set_bold().set_align(FormatAlign::Right);
+    worksheet.set_range_format(0, first_col, 0, last_col, &format)?;
+
+    // Verbleibend
+    let col = 3;
+    let format = Format::new()
+        .set_background_color(Color::RGB(0x00af_d095))
+        .set_num_format("#'##0.00");
+    worksheet.set_range_format(0, col, last_row, col, &format)?;
+    let format = format.clone().set_bold().set_align(FormatAlign::Right);
+    worksheet.set_range_format(0, col, 0, col, &format)?;
 
     workbook.save(path)?;
     Ok(())
