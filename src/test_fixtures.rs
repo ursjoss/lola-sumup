@@ -508,9 +508,9 @@ pub fn journal_df_01() -> DataFrame {
 pub fn aggregated_df_01_202505() -> DataFrame {
     df!(
        "Group" => ["Ertrag Restauration", "Spenden"],
-       "Budget" => [30.01, 360.01],
-       "Net" => [1200.0, -200.0],
-       "Remaining" => [1169.99, -560.01],
+       "Budget 2025" => [30.01, 360.01],
+       "1.1.-31.5.25" => [1200.0, -200.0],
+       "Verbleibend" => [1169.99, -560.01],
     )
     .expect("valid journal dataframe 01")
 }
@@ -519,9 +519,9 @@ pub fn aggregated_df_01_202505() -> DataFrame {
 pub fn aggregated_df_01_202507() -> DataFrame {
     df!(
        "Group" => ["Ertrag Restauration", "Ertrag Vermietungen", "Spenden"],
-       "Budget" => [30.01, 31.01, 360.01],
-       "Net" => [1100.0, 100.0, -200.0],
-       "Remaining" => [1069.99, 68.99, -560.01],
+       "Budget 2025" => [30.01, 31.01, 360.01],
+       "1.1.-31.7.25" => [1100.0, 100.0, -200.0],
+       "Verbleibend" => [1069.99, 68.99, -560.01],
     )
     .expect("valid journal dataframe 01")
 }

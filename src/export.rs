@@ -1,4 +1,5 @@
 use calamine::{Data, Reader, Xlsx, open_workbook};
+use chrono::NaiveDate;
 use polars::prelude::*;
 use polars_excel_writer::PolarsExcelWriter;
 use rust_xlsxwriter::Workbook;
@@ -34,10 +35,10 @@ pub fn export(input_path: &Path, month: &str, ts: &str) -> Result<(), Box<dyn Er
 
     let (df_det, df_acc, df_banana) = crunch_data(&raw_df.clone(), month)?;
 
-    export_details(&month, &ts, &df_det, &raw_df)?;
-    export_mittagstisch(&month, &ts, &df_det, &raw_df)?;
-    export_accounting(&month, &ts, &df_acc, &raw_df)?;
-    export_banana(&month, &ts, &df_banana, &raw_df)
+    export_details(month, ts, &df_det, &raw_df)?;
+    export_mittagstisch(month, ts, &df_det, &raw_df)?;
+    export_accounting(month, ts, &df_acc, &raw_df)?;
+    export_banana(month, ts, &df_banana, &raw_df)
 }
 
 #[allow(clippy::too_many_lines)]
@@ -231,8 +232,8 @@ fn validate(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
 }
 
 fn export_details(
-    month: &&str,
-    ts: &&str,
+    month: &str,
+    ts: &str,
     df: &DataFrame,
     df_trx: &DataFrame,
 ) -> Result<(), Box<dyn Error>> {
@@ -241,8 +242,8 @@ fn export_details(
 }
 
 fn export_mittagstisch(
-    month: &&str,
-    ts: &&str,
+    month: &str,
+    ts: &str,
     df_det: &DataFrame,
     df_trx: &DataFrame,
 ) -> Result<(), Box<dyn Error>> {
@@ -257,8 +258,8 @@ fn export_mittagstisch(
 }
 
 fn export_accounting(
-    month: &&str,
-    ts: &&str,
+    month: &str,
+    ts: &str,
     df_acc: &DataFrame,
     df_trx: &DataFrame,
 ) -> Result<(), Box<dyn Error>> {
@@ -305,8 +306,8 @@ fn filter_and_enrich_banana(
 }
 
 fn export_banana(
-    month: &&str,
-    ts: &&str,
+    month: &str,
+    ts: &str,
     df_banana: &DataFrame,
     df_trx: &DataFrame,
 ) -> Result<(), Box<dyn Error>> {
@@ -314,7 +315,7 @@ fn export_banana(
 }
 
 /// Constructs a path for an XLSX file from `prefix`, `month` and `ts` (timestamp).
-fn path_with_prefix(prefix: &str, month: &str, ts: &str) -> PathBuf {
+pub fn path_with_prefix(prefix: &str, month: &str, ts: &str) -> PathBuf {
     PathBuf::from(format!("{prefix}_{month}_{ts}.xlsx"))
 }
 
@@ -323,8 +324,8 @@ fn write_to_file(
     main_df: &DataFrame,
     trx_df: &DataFrame,
     prefix: &str,
-    month: &&str,
-    ts: &&str,
+    month: &str,
+    ts: &str,
 ) -> Result<(), Box<dyn Error>> {
     let path = &path_with_prefix(prefix, month, ts);
     let mut excel_writer = PolarsExcelWriter::new();
@@ -347,6 +348,17 @@ fn write_to_file(
 
     workbook.save(path)?;
     Ok(())
+}
+
+/// return the last of the month from provided `month`
+pub fn get_last_of_month_nd(month: &str) -> Result<NaiveDate, Box<dyn Error>> {
+    let y = month.chars().take(4).collect::<String>().parse()?;
+    let m = month.chars().skip(4).collect::<String>().parse()?;
+    let (ny, nm) = if m == 12 { (y + 1, m) } else { (y, m + 1) };
+    let lom = NaiveDate::from_ymd_opt(ny, nm, 1)
+        .ok_or("should be able to create next_day")
+        .map(|nd| nd - chrono::Duration::days(1))?;
+    Ok(lom)
 }
 
 #[cfg(test)]

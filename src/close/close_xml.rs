@@ -11,16 +11,19 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
+use crate::close::as_dataframe;
+use crate::export::get_last_of_month_nd;
+
 /// read account information from xml file with ending .xls
 pub fn do_closing_xml(
     input_path: &Path,
     budget: Budget,
     month: &str,
-    _ts: &str,
 ) -> Result<DataFrame, Box<dyn Error>> {
     let journal = read_xml(input_path)?;
-    let aggregated = aggregate_balances(&journal, budget, month)?;
-    println!("{aggregated:?}");
+    let dummy_accounts = as_dataframe(budget.get_first_account_per_post(), month)?;
+    let extended = journal.vstack(&dummy_accounts)?;
+    let aggregated = aggregate_balances(&extended, budget, month)?;
     Ok(aggregated)
 }
 
@@ -255,6 +258,10 @@ fn enrich_and_aggregate(
     month: &str,
 ) -> Result<DataFrame, Box<dyn Error>> {
     let year = month.chars().take(4).collect::<String>();
+    let budget_alias = format!("Budget {year}");
+    let lom = get_last_of_month_nd(month)?;
+    let lom_formatted = lom.format("%-d.%-m.%y");
+    let month_alias = format!("1.1.-{lom_formatted}");
     let budget = Arc::new(budget);
     let b1 = budget.clone();
     let b2 = budget.clone();
@@ -290,7 +297,7 @@ fn enrich_and_aggregate(
         .with_column(
             col("Account")
                 .map(
-                    move |a| get_budget_of_post(&a, &b4, &year),
+                    move |a| get_budget_of_post(&a, &b4, &year.clone()),
                     |_, field| Ok(Field::new(field.name().clone(), DataType::Int64)),
                 )
                 .alias("Budget"),
@@ -303,6 +310,15 @@ fn enrich_and_aggregate(
 
     validate_all_accounts_are_in_budget(&enriched)?;
 
+    //    let x = budget
+    //        .join(
+    //            enriched.clone(),
+    //            [col("Group")],
+    //            [col("Account")],
+    //            JoinType::Left.into(),
+    //        )
+    //        .collect()?;
+
     let aggregated = enriched
         .clone()
         .lazy()
@@ -312,9 +328,9 @@ fn enrich_and_aggregate(
         .sort(["Sort"], SortMultipleOptions::default())
         .select([
             col("Group"),
-            col("Budget"),
-            col("Net"),
-            ((col("Budget") - col("Net")) * col("Factor")).alias("Remaining"),
+            col("Budget").alias(budget_alias),
+            col("Net").alias(month_alias),
+            ((col("Budget") - col("Net")) * col("Factor")).alias("Verbleibend"),
         ])
         .collect()?;
     Ok(aggregated)
@@ -355,7 +371,7 @@ fn get_budget_of_post(col: &Column, budget: &Budget, year: &str) -> PolarsResult
     let accounts = col.str()?;
     Ok(accounts
         .into_iter()
-        .map(|a| a.map(|a| budget.get_buget_amount_by_account(a, year)))
+        .map(|a| a.map(|a| budget.get_budget_amount_by_account(a, year)))
         .collect::<Float64Chunked>()
         .into_column())
 }
@@ -474,7 +490,7 @@ impl Budget {
     }
 
     /// get the amount for the given budget account and year
-    fn get_buget_amount_by_account(&self, account: &str, year: &str) -> f64 {
+    fn get_budget_amount_by_account(&self, account: &str, year: &str) -> f64 {
         let post_key_option = self.get_post_key_by_account(account);
         if let Some(post_key) = post_key_option {
             let x = self.years.get(year);
@@ -484,6 +500,15 @@ impl Budget {
         } else {
             -0.0
         }
+    }
+
+    /// returns the first account per post
+    fn get_first_account_per_post(&self) -> Vec<String> {
+        self.posts
+            .values()
+            .filter_map(|post| post.account_codes.first())
+            .cloned()
+            .collect()
     }
 }
 
@@ -528,9 +553,15 @@ mod tests {
 
         let data = "samples/konten_202412_20250128132200.xls".to_string();
         let data_file = &PathBuf::from(data);
-        let ts = "20250120072900";
-        let _result = do_closing_xml(data_file, budget, "202410", ts)
+        let _result = do_closing_xml(data_file, budget, "202410")
             .expect("Unable to process sample data file.");
+    }
+
+    #[rstest]
+    fn can_get_dummy_posts() {
+        let budget = read_budget_from_samples();
+        let accounts = budget.get_first_account_per_post();
+        assert_ne!(accounts.len(), 0);
     }
 
     #[rstest]

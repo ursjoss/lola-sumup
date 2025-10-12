@@ -1,3 +1,4 @@
+use crate::export::get_last_of_month_nd;
 use crate::prepare::{PaymentMethod, Topic};
 use polars::prelude::*;
 use std::error::Error;
@@ -73,19 +74,8 @@ pub fn gather_df_banana(df_acct: &DataFrame, month: &str) -> PolarsResult<DataFr
 }
 
 fn get_last_of_month(month: &str) -> Result<String, Box<dyn Error>> {
-    let year = month.get(0..4).unwrap();
-    let year = year.parse::<i32>()?;
-    let month = month.get(4..6).unwrap();
-    let month = month.parse::<u32>()?;
-    let last_of_month = -chrono::NaiveDate::from_ymd_opt(year, month, 1)
-        .ok_or("Invalid month 1")?
-        .signed_duration_since(if month < 12 {
-            chrono::NaiveDate::from_ymd_opt(year, month + 1, 1).ok_or("Invalid month 2")?
-        } else {
-            chrono::NaiveDate::from_ymd_opt(year + 1, 1, 1).ok_or("Invalid month 3")?
-        })
-        .num_days();
-    Ok(format!("{last_of_month}.{month:02}.{year}"))
+    let lom = get_last_of_month_nd(month)?;
+    Ok(lom.format("%d.%m.%Y").to_string())
 }
 
 /// Gathers the detail transactions that need to be reported individually in the banana export
