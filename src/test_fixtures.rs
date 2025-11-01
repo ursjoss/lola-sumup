@@ -77,7 +77,7 @@ pub fn transaction_report_df_02() -> DataFrame {
 fn transaction_report_with_trx_id(trx_id: &str) -> DataFrame {
     df!(
         "Transaktions-ID" => &[trx_id],
-        "Zahlungsart" => &["Umsatz"],
+        "Transaktionsart" => &["Umsatz"],
         "Status" => &["Erfolgreich"],
         "Betrag inkl. MwSt." => &[17.0],
         "Trinkgeldbetrag" => &[1.0],
@@ -742,7 +742,7 @@ pub fn sales_report_df_07(
 pub fn transaction_report_df_07() -> DataFrame {
     df!(
         "Transaktions-ID" => &["T1", "T2", "T3"],
-        "Zahlungsart" => &["Umsatz", "Umsatz", "Umsatz"],
+        "Transaktionsart" => &["Umsatz", "Umsatz", "Umsatz"],
         "Status" => &["Erfolgreich", "Erfolgreich", "Erfolgreich"],
         "Betrag inkl. MwSt." => &[0.01, 3.5, 0.01],
         "Trinkgeldbetrag" => &[0.0, 0.0, 0.0],
