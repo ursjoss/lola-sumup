@@ -221,7 +221,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .clone()
         .lazy()
         .filter(
-            col("Zahlungsart")
+            col("Transaktionsart")
                 .eq(lit("Umsatz"))
                 .and(col("Status").eq(lit("Erfolgreich"))),
         )
@@ -235,7 +235,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .clone()
         .lazy()
         .filter(
-            col("Zahlungsart")
+            col("Transaktionsart")
                 .eq(lit("Umsatz"))
                 .and(col("Status").eq(lit("Erfolgreich")))
                 .and(col("Trinkgeldbetrag").fill_null(0.0).gt(0.0)),
