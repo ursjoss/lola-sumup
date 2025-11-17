@@ -578,7 +578,7 @@ mod tests {
         journal_df_01: DataFrame,
         aggregated_df_01_202505: DataFrame,
     ) {
-        test_aggregate_balances_by("202505", journal_df_01, aggregated_df_01_202505);
+        test_aggregate_balances_by("202505", &journal_df_01, &aggregated_df_01_202505);
     }
 
     #[rstest]
@@ -586,12 +586,12 @@ mod tests {
         journal_df_01: DataFrame,
         aggregated_df_01_202507: DataFrame,
     ) {
-        test_aggregate_balances_by("202507", journal_df_01, aggregated_df_01_202507);
+        test_aggregate_balances_by("202507", &journal_df_01, &aggregated_df_01_202507);
     }
 
-    fn test_aggregate_balances_by(month: &str, journal: DataFrame, expected: DataFrame) {
+    fn test_aggregate_balances_by(month: &str, journal: &DataFrame, expected: &DataFrame) {
         let budget = read_budget_from_samples();
-        let actual = aggregate_balances(&journal, budget, month).expect("can aggregate balances");
-        assert_dataframe(&actual, &expected);
+        let actual = aggregate_balances(journal, budget, month).expect("can aggregate balances");
+        assert_dataframe(&actual, expected);
     }
 }
