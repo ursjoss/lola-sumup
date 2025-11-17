@@ -21,7 +21,7 @@ calamine = { version = "0.31.0", features = ["chrono"] }
 rust_xlsxwriter = { version = "0.90.2", features = ["polars"] }
 
 [dependencies.polars]
-version = "0.51.0"
+version = "0.52.0"
 features = [
     "abs",
     "concat_str",
