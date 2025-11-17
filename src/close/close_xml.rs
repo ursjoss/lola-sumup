@@ -359,7 +359,7 @@ fn get_name_of_post(col: &Column, budget: &Budget) -> PolarsResult<Column> {
     Ok(accounts
         .into_iter()
         .map(|a| {
-            a.map(|a| budget.get_post_by_account(a).map(|p| p.name.to_string()))
+            a.map(|a| budget.get_post_by_account(a).map(|p| p.name.clone()))
                 .or(None)?
         })
         .collect::<StringChunked>()
@@ -486,7 +486,7 @@ impl Budget {
         self.posts
             .iter()
             .find(|(_, p)| p.account_codes.contains(&account.to_string()))
-            .map(|(k, _)| k.to_string())
+            .map(|(k, _)| k.clone())
     }
 
     /// get the amount for the given budget account and year

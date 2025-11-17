@@ -327,6 +327,10 @@ fn write_to_file(
     month: &str,
     ts: &str,
 ) -> Result<(), Box<dyn Error>> {
+    // work around https://github.com/jmcnamara/polars_excel_writer/issues/26
+    let mut trx_df = trx_df.clone();
+    trx_df.rechunk_mut();
+
     let path = &path_with_prefix(prefix, month, ts);
     let mut excel_writer = PolarsExcelWriter::new();
 
@@ -343,7 +347,7 @@ fn write_to_file(
 
     let worksheet = workbook.add_worksheet().set_name("transaktionen")?;
     excel_writer.set_freeze_panes(1, 3);
-    excel_writer.write_dataframe_to_worksheet(trx_df, worksheet, 0, 0)?;
+    excel_writer.write_dataframe_to_worksheet(&trx_df, worksheet, 0, 0)?;
     excel_writer.set_column_format("Time", "HH:MM:SS");
 
     workbook.save(path)?;

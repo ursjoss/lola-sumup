@@ -15,7 +15,7 @@ test:
 # Run the static code analysis
 lint:
 	cargo fmt -- --check
-	cargo clippy
+	cargo clippy --all-targets
 
 # Build the documentation
 doc *args:

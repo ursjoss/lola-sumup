@@ -87,7 +87,7 @@ fn transaction_report_with_trx_id(trx_id: &str) -> DataFrame {
 }
 
 /// Sample record 01 matching the structure of the intermediate csv file,
-/// It is the result of processing sales_report_df_01 and transaction_report_df_01
+/// It is the result of processing `sales_report_df_01` and `transaction_report_df_01`
 #[fixture]
 pub fn intermediate_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> DataFrame {
     df!(
@@ -298,7 +298,7 @@ pub fn details_df_03(sample_date: NaiveDate) -> DataFrame {
     .expect("valid details dataframe 02")
 }
 
-/// Sample record 03 matching the accounting dataframe created from details_df_03
+/// Sample record 03 matching the accounting dataframe created from `details_df_03`
 #[fixture]
 pub fn accounting_df_03(sample_date: NaiveDate) -> DataFrame {
     df!(
@@ -333,7 +333,7 @@ pub fn accounting_df_03(sample_date: NaiveDate) -> DataFrame {
     .expect("Valid accounting df 03")
 }
 
-/// Sample record 03 matching the miti dataframe created from details_df_03
+/// Sample record 03 matching the miti dataframe created from `details_df_03`
 #[fixture]
 pub fn miti_df_03(sample_date: NaiveDate) -> DataFrame {
     df!(
