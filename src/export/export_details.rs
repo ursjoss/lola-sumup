@@ -553,6 +553,11 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             .round(2, RoundMode::HalfToEven)
             .alias("Debt to MiTi"),
         )
+        .with_column(
+            (col("Net Card Total") + col("Tips_Card").fill_null(0.0))
+                .round(2, RoundMode::HalfToEven)
+                .alias("PaidOut Sumup"),
+        )
         .select([
             col("Date"),
             col("MiTi_Cash"),
@@ -617,6 +622,7 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Sponsored Reductions"),
             col("Debt to MiTi"),
             col("Income LoLa MiTi"),
+            col("PaidOut Sumup"),
             col("MealCount_Regular"),
             col("MealCount_Reduced"),
             col("MealCount_Children"),
