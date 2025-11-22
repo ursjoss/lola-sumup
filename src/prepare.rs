@@ -402,7 +402,8 @@ fn infer_payment_method() -> Expr {
 /// between 06:00 and `ChangeOfShift` -> `MiTi`
 /// between `ChangeOfShift` and 18:00 -> `Cafe`
 /// If the description starts with "Recircle Tupper Depot", the topic will be `Packaging` regardless of time or day.
-/// If the description is "Miete", the topic will be `Rental` regardless of time or day
+/// If the description is "Miete", the topic will be `Rental` regardless of time or day.
+/// If the description starts with "Kerze", the topic will be Culture regardless of time or day.
 fn infer_topic(time_options: &StrptimeOptions) -> Expr {
     when(
         col("Beschreibung")
@@ -410,6 +411,8 @@ fn infer_topic(time_options: &StrptimeOptions) -> Expr {
             .starts_with(lit("Recircle Tupper Depot")),
     )
     .then(lit(Topic::Packaging.to_string()))
+    .when(col("Beschreibung").str().starts_with(lit("Kerze")))
+    .then(lit(Topic::Culture.to_string()))
     .when(col("Beschreibung").eq(lit("Miete")))
     .then(lit(Topic::Rental.to_string()))
     .when(
@@ -648,6 +651,7 @@ mod tests {
                 "X (PO)", "X (PO)", "X (PO) x" ,"X (PO)",
                 rtd, rtd, rtd, rtd, rtd, rtd, rtd, rtd,
                 "Miete", "Miete",
+                "Kerze 4", "Kerze 2", "Kerze klein",
             ],
             "Time" => [
                 "00:00:00", "05:59:59",
@@ -659,7 +663,8 @@ mod tests {
                 "18:00:00", "23:59:59",
                 "00:00:00", "05:59:59", "18:00:00", "23:59:59",
                 "00:00:00", "05:59:59", "06:00:00", "14:15:00", "14:15:01", "17:59:59", "18:00:00", "23:59:59",
-                "00:00:00", "12.00.00",
+                "00:00:00", "12:00:00",
+                "09:00:00", "14:00:00", "18:00:00",
             ],
             "ChangeOfShift" => [
                 "14:15:00", "14:15:00",
@@ -672,6 +677,7 @@ mod tests {
                 "14:15:00", "14:15:00", "14:15:00", "14:15:00",
                 "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00",
                 "14:15:00", "14:15:00",
+                "14:15:00", "14:15:00", "14:15:00",
             ],
             "is_weekend" => [
                 false, false,
@@ -684,6 +690,7 @@ mod tests {
                 false, false, true, true,
                 false, false, false, false, false, true, true, false,
                 false, true,
+                false, true, false,
             ],
         ]
         .unwrap()
@@ -705,10 +712,11 @@ mod tests {
                cafe.clone(), cafe,
                miti.clone(), miti,
                culture.clone(), culture.clone(),
-               culture.clone(), culture,
+               culture.clone(), culture.clone(),
                paidout.clone(), paidout.clone(), paidout.clone(), paidout,
                pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg,
                rental.clone(), rental,
+               culture.clone(), culture.clone(), culture.clone(),
            ]
        ].unwrap()
     }
