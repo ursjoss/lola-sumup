@@ -633,7 +633,7 @@ pub fn details_df_06(sample_date: NaiveDate, sample_date2: NaiveDate) -> DataFra
         "MealCount_Praktikum" => &[None::<i64>, None::<i64>],
         "Total Praktikum" => &[None::<i64>, None::<i64>],
     )
-    .expect("valid details dataframe 02")
+    .expect("valid details dataframe 06")
 }
 
 #[fixture]
