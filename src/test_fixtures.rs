@@ -531,7 +531,7 @@ pub fn aggregated_df_01_202507() -> DataFrame {
 
 //end region
 
-// region:06 banana detils
+// region:06 banana details
 
 #[fixture]
 pub fn intermediate_df_06(
