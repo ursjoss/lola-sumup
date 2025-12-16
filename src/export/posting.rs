@@ -40,10 +40,20 @@ impl Posting {
         alias: "10000/46000",
         description: "Recircle bar",
     };
+    pub const PAIDOUT_CASH: Posting = Posting {
+        column_name: "PaidOut_Cash",
+        alias: "10000/20121",
+        description: "Kooperation bar",
+    };
     pub const PAIDOUT_CARD: Posting = Posting {
         column_name: "PaidOut_Card",
-        alias: "10920/10000",
-        description: "Auszahlung Kooperationen Kartenzahlungen",
+        alias: "10920/20121",
+        description: "Kooperation Karte",
+    };
+    pub const PAIDOUT_TOTAL: Posting = Posting {
+        column_name: "PaidOut Total",
+        alias: "20121/10000",
+        description: "Kooperation Ausbezahlt",
     };
     pub const DEPOSIT_CARD: Posting = Posting {
         column_name: "Deposit_Card",
@@ -120,7 +130,7 @@ impl Posting {
         alias: "10930/10100",
         description: "Überweisung an MiTi",
     };
-    const ALL: [Posting; 23] = [
+    const ALL: [Posting; 25] = [
         Posting::DEPOSIT_CASH,
         Posting::CAFE_CASH,
         Posting::VERM_CASH,
@@ -128,7 +138,9 @@ impl Posting {
         Posting::RENTAL_CASH,
         Posting::CULTURE_CASH,
         Posting::PACKAGING_CASH,
+        Posting::PAIDOUT_CASH,
         Posting::PAIDOUT_CARD,
+        Posting::PAIDOUT_TOTAL,
         Posting::DEPOSIT_CARD,
         Posting::CAFE_CARD,
         Posting::VERM_CARD,

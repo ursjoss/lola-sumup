@@ -109,7 +109,7 @@ pub fn gather_df_banana_details(raw_df: &DataFrame) -> PolarsResult<DataFrame> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_fixtures::{accounting_df_06, banana_df_06};
+    use crate::test_fixtures::{accounting_df_06, accounting_df_08, banana_df_06, banana_df_08};
     use crate::test_utils::assert_dataframe;
     use rstest::rstest;
 
@@ -141,5 +141,26 @@ mod tests {
         let out =
             gather_df_banana(&acct_df_ext, "202303").expect("should be able to collect banana_df");
         assert_dataframe(&out, &banana_df_06);
+    }
+
+    #[rstest]
+    fn test_gather_df_banana08(accounting_df_08: DataFrame, banana_df_08: DataFrame) {
+        let mut acct_df = accounting_df_08.clone();
+        acct_df
+            .extend(
+                &accounting_df_08
+                    .clone()
+                    .lazy()
+                    .sum()
+                    .collect()
+                    .expect("Should be able to sum accounting_df_08"),
+            )
+            .expect("Should be able to extend accounting_df_08");
+        let acct_df_ext = acct_df
+            .sort(["Date"], SortMultipleOptions::new().with_nulls_last(true))
+            .expect("Should be able to sort extended accounting_df_08");
+        let out =
+            gather_df_banana(&acct_df_ext, "202303").expect("should be able to collect banana_df");
+        assert_dataframe(&out, &banana_df_08);
     }
 }

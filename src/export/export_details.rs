@@ -881,7 +881,8 @@ mod tests {
     use rstest::rstest;
 
     use crate::test_fixtures::{
-        details_df_02, details_df_06, intermediate_df_02, intermediate_df_06,
+        details_df_02, details_df_06, details_df_08, intermediate_df_02, intermediate_df_06,
+        intermediate_df_08,
     };
     use crate::test_utils::assert_dataframe;
 
@@ -994,6 +995,12 @@ mod tests {
     fn test_collect_data_06(intermediate_df_06: DataFrame, details_df_06: DataFrame) {
         let out = collect_data(intermediate_df_06).expect("should be able to collect the data");
         assert_dataframe(&out, &details_df_06);
+    }
+
+    #[rstest]
+    fn test_collect_data_08(intermediate_df_08: DataFrame, details_df_08: DataFrame) {
+        let out = collect_data(intermediate_df_08).expect("should be able to collect the data");
+        assert_dataframe(&out, &details_df_08);
     }
 
     #[rstest]
