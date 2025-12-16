@@ -93,7 +93,7 @@ fn validate_acc_constraint_10920(df_acc: &DataFrame) -> Result<(), Box<dyn Error
     validate_constraint(df_acc, net_expr, "10920")?
 }
 
-/// validates the transitory account 10920 nets to 0
+/// validates the transitory account 20051 nets to 0
 fn validate_acc_constraint_20051(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
     let net_expr = col(Posting::NET_CARD_TOTAL_MITI.alias)
         - col(Posting::DEBT_TO_MITI.alias)
