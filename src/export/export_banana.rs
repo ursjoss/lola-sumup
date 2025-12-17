@@ -81,7 +81,7 @@ fn get_last_of_month(month: &str) -> Result<String, Box<dyn Error>> {
 /// Gathers the detail transactions that need to be reported individually in the banana export
 /// - Rental postings to be posted into 31000
 pub fn gather_df_banana_details(raw_df: &DataFrame) -> PolarsResult<DataFrame> {
-    raw_df
+    let mut rentals = raw_df
         .clone()
         .lazy()
         .filter(col("Topic").eq(lit(Topic::Rental.to_string())))
@@ -103,7 +103,68 @@ pub fn gather_df_banana_details(raw_df: &DataFrame) -> PolarsResult<DataFrame> {
             lit("").alias("Preis/Einheit"),
             col("Price (Net)").alias("Betrag CHF"),
         ])
-        .collect()
+        .collect()?;
+    let paidout_collect = raw_df
+        .clone()
+        .lazy()
+        .filter(col("Topic").eq(lit(Topic::PaidOut.to_string())))
+        .group_by(["Date", "Payment Method"])
+        .agg([col("Price (Net)")
+            .sum()
+            .fill_null(0.0)
+            .alias("Betrag CHF")
+            .cast(DataType::Float64)])
+        .with_column(
+            when(col("Payment Method").eq(lit(PaymentMethod::Card.to_string())))
+                .then(lit("10920"))
+                .otherwise(lit("10000"))
+                .alias("KtSoll"),
+        )
+        .with_column(
+            when(col("Payment Method").eq(lit(PaymentMethod::Card.to_string())))
+                .then(lit("SU Kooperation Karte"))
+                .otherwise(lit("SU Kooperation bar"))
+                .alias("Beschreibung"),
+        )
+        .select([
+            col("Date").alias("Datum"),
+            lit("").alias("Beleg"),
+            lit("").alias("Rechnung"),
+            col("Beschreibung"),
+            col("KtSoll"),
+            lit("20121").alias("KtHaben"),
+            lit("").alias("Anzahl"),
+            lit("").alias("Einheit"),
+            lit("").alias("Preis/Einheit"),
+            col("Betrag CHF"),
+        ])
+        .collect()?;
+    let paidout = raw_df
+        .clone()
+        .lazy()
+        .filter(col("Topic").eq(lit(Topic::PaidOut.to_string())))
+        .group_by(["Date"])
+        .agg([col("Price (Net)")
+            .sum()
+            .fill_null(0.0)
+            .alias("Betrag CHF")
+            .cast(DataType::Float64)])
+        .select([
+            col("Date").alias("Datum"),
+            lit("").alias("Beleg"),
+            lit("").alias("Rechnung"),
+            lit("SU Kooperation Ausbezahlt").alias("Beschreibung"),
+            lit("20121").alias("KtSoll"),
+            lit("10000").alias("KtHaben"),
+            lit("").alias("Anzahl"),
+            lit("").alias("Einheit"),
+            lit("").alias("Preis/Einheit"),
+            col("Betrag CHF"),
+        ])
+        .collect()?;
+    rentals.extend(&paidout_collect)?;
+    rentals.extend(&paidout)?;
+    rentals.clone().lazy().collect()
 }
 
 #[cfg(test)]
