@@ -81,7 +81,7 @@ fn get_last_of_month(month: &str) -> Result<String, Box<dyn Error>> {
 /// Gathers the detail transactions that need to be reported individually in the banana export
 /// - Rental postings to be posted into 31000
 pub fn gather_df_banana_details(raw_df: &DataFrame) -> PolarsResult<DataFrame> {
-    raw_df
+    let mut rentals = raw_df
         .clone()
         .lazy()
         .filter(col("Topic").eq(lit(Topic::Rental.to_string())))
@@ -103,13 +103,74 @@ pub fn gather_df_banana_details(raw_df: &DataFrame) -> PolarsResult<DataFrame> {
             lit("").alias("Preis/Einheit"),
             col("Price (Net)").alias("Betrag CHF"),
         ])
-        .collect()
+        .collect()?;
+    let paidout_collect = raw_df
+        .clone()
+        .lazy()
+        .filter(col("Topic").eq(lit(Topic::PaidOut.to_string())))
+        .group_by(["Date", "Payment Method"])
+        .agg([col("Price (Net)")
+            .sum()
+            .fill_null(0.0)
+            .alias("Betrag CHF")
+            .cast(DataType::Float64)])
+        .with_column(
+            when(col("Payment Method").eq(lit(PaymentMethod::Card.to_string())))
+                .then(lit("10920"))
+                .otherwise(lit("10000"))
+                .alias("KtSoll"),
+        )
+        .with_column(
+            when(col("Payment Method").eq(lit(PaymentMethod::Card.to_string())))
+                .then(lit("SU Kooperation Karte"))
+                .otherwise(lit("SU Kooperation bar"))
+                .alias("Beschreibung"),
+        )
+        .select([
+            col("Date").alias("Datum"),
+            lit("").alias("Beleg"),
+            lit("").alias("Rechnung"),
+            col("Beschreibung"),
+            col("KtSoll"),
+            lit("20121").alias("KtHaben"),
+            lit("").alias("Anzahl"),
+            lit("").alias("Einheit"),
+            lit("").alias("Preis/Einheit"),
+            col("Betrag CHF"),
+        ])
+        .collect()?;
+    let paidout = raw_df
+        .clone()
+        .lazy()
+        .filter(col("Topic").eq(lit(Topic::PaidOut.to_string())))
+        .group_by(["Date"])
+        .agg([col("Price (Net)")
+            .sum()
+            .fill_null(0.0)
+            .alias("Betrag CHF")
+            .cast(DataType::Float64)])
+        .select([
+            col("Date").alias("Datum"),
+            lit("").alias("Beleg"),
+            lit("").alias("Rechnung"),
+            lit("SU Kooperation Ausbezahlt").alias("Beschreibung"),
+            lit("20121").alias("KtSoll"),
+            lit("10000").alias("KtHaben"),
+            lit("").alias("Anzahl"),
+            lit("").alias("Einheit"),
+            lit("").alias("Preis/Einheit"),
+            col("Betrag CHF"),
+        ])
+        .collect()?;
+    rentals.extend(&paidout_collect)?;
+    rentals.extend(&paidout)?;
+    rentals.clone().lazy().collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_fixtures::{accounting_df_06, banana_df_06};
+    use crate::test_fixtures::{accounting_df_06, accounting_df_08, banana_df_06, banana_df_08};
     use crate::test_utils::assert_dataframe;
     use rstest::rstest;
 
@@ -141,5 +202,26 @@ mod tests {
         let out =
             gather_df_banana(&acct_df_ext, "202303").expect("should be able to collect banana_df");
         assert_dataframe(&out, &banana_df_06);
+    }
+
+    #[rstest]
+    fn test_gather_df_banana08(accounting_df_08: DataFrame, banana_df_08: DataFrame) {
+        let mut acct_df = accounting_df_08.clone();
+        acct_df
+            .extend(
+                &accounting_df_08
+                    .clone()
+                    .lazy()
+                    .sum()
+                    .collect()
+                    .expect("Should be able to sum accounting_df_08"),
+            )
+            .expect("Should be able to extend accounting_df_08");
+        let acct_df_ext = acct_df
+            .sort(["Date"], SortMultipleOptions::new().with_nulls_last(true))
+            .expect("Should be able to sort extended accounting_df_08");
+        let out =
+            gather_df_banana(&acct_df_ext, "202303").expect("should be able to collect banana_df");
+        assert_dataframe(&out, &banana_df_08);
     }
 }
