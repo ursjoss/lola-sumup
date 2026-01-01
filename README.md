@@ -365,6 +365,7 @@ The columns of the resulting details export file are defined as follows:
   - `Sponsored Reductions`: Reductions sponsored by LoLa [2 * (`MealCount_Reduced` + `MealCount_Praktikum`)]
   - `Debt to MiTi`: Net amount LoLa needs to pay out to Mittagstisch [`Net Payment SumUp MiTi` - `Net MiTi (LoLA) - Share LoLa` + `Sponsored Reductions`]
   - `Income LoLa MiTi`: Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi`]
+  - `PaidOut Sumup`: Total PaidOut by Sumup [`Net Card Total` + `Tips_Card`]
 - Statistics relevant for Mittagstisch:
   - `MealCount_Regular`: Number of regular meals per day
   - `MealCount_Reduced`: Number of meals with reductions sponsored by LoLa per day
