@@ -160,10 +160,7 @@ impl Display for TopicOwnerConstraintViolationError {
                 write!(f, "Row with topic 'MiTi' must have an Owner! {df}")
             }
             TopicOwnerConstraintViolationError::LoLaWithOwner(df) => {
-                write!(
-                    f,
-                    "Row with LoLa topic ('Cafe' or 'Verm') must not have an Owner! {df}"
-                )
+                write!(f, "Row with pure LoLa topic must not have an Owner! {df}")
             }
         }
     }
@@ -207,11 +204,17 @@ mod tests {
     // MiTi must have an owner
     #[case(Topic::MiTi, Some("LoLa"), true, None)]
     #[case(Topic::MiTi, Some("MiTi"), true, None)]
-    // LoLa (Cafe/Verm) must have no owner
+    // Pure LoLa topics must not have no owner
     #[case(Topic::Cafe, Some(""), true, None)]
     #[case(Topic::Verm, Some(""), true, None)]
     #[case(Topic::Verm, None, true, None)]
-    // MiTi w/o or non-MiTi with owner should fail
+    #[case(Topic::SoFe, None, true, None)]
+    #[case(Topic::Deposit, None, true, None)]
+    #[case(Topic::Rental, None, true, None)]
+    #[case(Topic::Culture, None, true, None)]
+    #[case(Topic::PaidOut, None, true, None)]
+    #[case(Topic::Packaging, None, true, None)]
+    // MiTi w/o owner should fail
     #[case(
         Topic::MiTi,
         Some(""),
@@ -224,17 +227,54 @@ mod tests {
         false,
         Some("Row with topic 'MiTi' must have an Owner!")
     )]
+    // non-MiTi with owner should fail
     #[case(
         Topic::Cafe,
         Some("Cafe"),
         false,
-        Some("Row with LoLa topic ('Cafe' or 'Verm') must not have an Owner!")
+        Some("Row with pure LoLa topic must not have an Owner!")
     )]
     #[case(
         Topic::Verm,
         Some("MiTi"),
         false,
-        Some("Row with LoLa topic ('Cafe' or 'Verm') must not have an Owner!")
+        Some("Row with pure LoLa topic must not have an Owner!")
+    )]
+    #[case(
+        Topic::SoFe,
+        Some("LoLa"),
+        false,
+        Some("Row with pure LoLa topic must not have an Owner!")
+    )]
+    #[case(
+        Topic::Deposit,
+        Some("LoLa"),
+        false,
+        Some("Row with pure LoLa topic must not have an Owner!")
+    )]
+    #[case(
+        Topic::Rental,
+        Some("LoLa"),
+        false,
+        Some("Row with pure LoLa topic must not have an Owner!")
+    )]
+    #[case(
+        Topic::Culture,
+        Some("LoLa"),
+        false,
+        Some("Row with pure LoLa topic must not have an Owner!")
+    )]
+    #[case(
+        Topic::PaidOut,
+        Some("LoLa"),
+        false,
+        Some("Row with pure LoLa topic must not have an Owner!")
+    )]
+    #[case(
+        Topic::Packaging,
+        Some("LoLa"),
+        false,
+        Some("Row with pure LoLa topic must not have an Owner!")
     )]
     fn test_constraints(
         #[case] topic: Topic,
