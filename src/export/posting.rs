@@ -31,7 +31,7 @@ impl Posting {
         description: "Vermietungen bar",
     };
     pub const CULTURE_CASH: Posting = Posting {
-        column_name: "Culture_Cash",
+        column_name: "Culture (LoLa) Cash",
         alias: "10000/32000",
         description: "Kulturverkäufe bar",
     };
@@ -41,17 +41,17 @@ impl Posting {
         description: "Recircle bar",
     };
     pub const PAIDOUT_CASH: Posting = Posting {
-        column_name: "PaidOut_Cash",
+        column_name: "Culture (PaidOut) Cash",
         alias: "10000/20121",
         description: "Kooperation bar",
     };
     pub const PAIDOUT_CARD: Posting = Posting {
-        column_name: "PaidOut_Card",
+        column_name: "Culture (PaidOut) Card",
         alias: "10920/20121",
         description: "Kooperation Karte",
     };
     pub const PAIDOUT_TOTAL: Posting = Posting {
-        column_name: "PaidOut Total",
+        column_name: "Culture (PaidOut) Total",
         alias: "20121/10000",
         description: "Kooperation Ausbezahlt",
     };
@@ -81,7 +81,7 @@ impl Posting {
         description: "Vermietungen Karte",
     };
     pub const CULTURE_CARD: Posting = Posting {
-        column_name: "Culture_Card",
+        column_name: "Culture (LoLa) Card",
         alias: "10920/32000",
         description: "Kulturverkäufe Karte",
     };

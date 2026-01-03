@@ -74,19 +74,37 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         ldf.clone(),
     );
     let culture_cash = price_by_date_for(
-        owned_consumption_of(&Topic::Culture, &Owner::LoLa, &PaymentMethod::Cash),
+        consumption_of(&Topic::Culture, &PaymentMethod::Cash),
         ldf.clone(),
     );
     let culture_card = price_by_date_for(
-        owned_consumption_of(&Topic::Culture, &Owner::LoLa, &PaymentMethod::Card),
+        consumption_of(&Topic::Culture, &PaymentMethod::Card),
         ldf.clone(),
     );
-    let paid_out_cash = price_by_date_for(
-        owned_consumption_of(&Topic::Culture, &Owner::PaidOut, &PaymentMethod::Cash),
+    let culture_lola_cash = price_by_date_for(
+        owned_consumption_of(&Topic::Culture, &Owner::LoLa, &PaymentMethod::Cash, false),
         ldf.clone(),
     );
-    let paid_out_card = price_by_date_for(
-        owned_consumption_of(&Topic::Culture, &Owner::PaidOut, &PaymentMethod::Card),
+    let culture_lola_card = price_by_date_for(
+        owned_consumption_of(&Topic::Culture, &Owner::LoLa, &PaymentMethod::Card, false),
+        ldf.clone(),
+    );
+    let culture_paidout_cash = price_by_date_for(
+        owned_consumption_of(
+            &Topic::Culture,
+            &Owner::PaidOut,
+            &PaymentMethod::Cash,
+            false,
+        ),
+        ldf.clone(),
+    );
+    let culture_paidout_card = price_by_date_for(
+        owned_consumption_of(
+            &Topic::Culture,
+            &Owner::PaidOut,
+            &PaymentMethod::Card,
+            false,
+        ),
         ldf.clone(),
     );
     let cafe_tips = price_by_date_for(tips_of_topic(&Topic::Cafe), ldf.clone());
@@ -115,11 +133,11 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     let miti_miti = price_by_date_for(miti_by(&Owner::MiTi), ldf.clone());
     let miti_lola = price_by_date_for(miti_by(&Owner::LoLa), ldf.clone());
     let gross_miti_miti_card = price_by_date_for(
-        owned_consumption_of(&Topic::MiTi, &Owner::MiTi, &PaymentMethod::Card),
+        owned_consumption_of(&Topic::MiTi, &Owner::MiTi, &PaymentMethod::Card, true),
         ldf.clone(),
     );
     let net_miti_lola_cash = price_by_date_for(
-        owned_consumption_of(&Topic::MiTi, &Owner::LoLa, &PaymentMethod::Cash),
+        owned_consumption_of(&Topic::MiTi, &Owner::LoLa, &PaymentMethod::Cash, true),
         ldf.clone(),
     );
 
@@ -225,19 +243,31 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         [col("Date")],
         JoinType::Left.into(),
     );
-    let with_paid_out_cash = with_culture_card.join(
-        paid_out_cash,
+    let with_culture_lola_cash = with_culture_card.join(
+        culture_lola_cash,
         [col("Date")],
         [col("Date")],
         JoinType::Left.into(),
     );
-    let with_paid_out_card = with_paid_out_cash.join(
-        paid_out_card,
+    let with_culture_lola_card = with_culture_lola_cash.join(
+        culture_lola_card,
         [col("Date")],
         [col("Date")],
         JoinType::Left.into(),
     );
-    let with_cafe_tips = with_paid_out_card.join(
+    let with_culture_paidout_cash = with_culture_lola_card.join(
+        culture_paidout_cash,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_culture_paidout_card = with_culture_paidout_cash.join(
+        culture_paidout_card,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_cafe_tips = with_culture_paidout_card.join(
         cafe_tips,
         [col("Date")],
         [col("Date")],
@@ -418,16 +448,20 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .alias("Rental Total"),
         )
         .with_column(
-            (col("Gross Culture (LoLa) Cash").fill_null(0.0)
-                + col("Gross Culture (LoLa) Card").fill_null(0.0))
-            .round(2, RoundMode::HalfToEven)
-            .alias("Culture Total"),
+            (col("Culture_Cash").fill_null(0.0) + col("Culture_Card").fill_null(0.0))
+                .round(2, RoundMode::HalfToEven)
+                .alias("Culture Total"),
         )
         .with_column(
-            (col("Gross Culture (PaidOut) Cash").fill_null(0.0)
-                + col("Gross Culture (PaidOut) Card").fill_null(0.0))
+            (col("Culture (LoLa) Cash").fill_null(0.0) + col("Culture (LoLa) Card").fill_null(0.0))
+                .round(2, RoundMode::HalfToEven)
+                .alias("Culture (LoLa) Total"),
+        )
+        .with_column(
+            (col("Culture (PaidOut) Cash").fill_null(0.0)
+                + col("Culture (PaidOut) Card").fill_null(0.0))
             .round(2, RoundMode::HalfToEven)
-            .alias("PaidOut Total"),
+            .alias("Culture (PaidOut) Total"),
         )
         .with_column(
             (col("MiTi_Cash").fill_null(0.0)
@@ -437,8 +471,7 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 + col("Deposit_Cash").fill_null(0.0)
                 + col("Packaging_Cash").fill_null(0.0)
                 + col("Rental_Cash").fill_null(0.0)
-                + col("Gross Culture (LoLa) Cash").fill_null(0.0)
-                + col("Gross Culture (PaidOut) Cash").fill_null(0.0))
+                + col("Culture_Cash").fill_null(0.0))
             .round(2, RoundMode::HalfToEven)
             .alias("Gross Cash"),
         )
@@ -450,8 +483,7 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 + col("Deposit_Card").fill_null(0.0)
                 + col("Packaging_Card").fill_null(0.0)
                 + col("Rental_Card").fill_null(0.0)
-                + col("Gross Culture (LoLa) Card").fill_null(0.0)
-                + col("Gross Culture (PaidOut) Card").fill_null(0.0))
+                + col("Culture_Card").fill_null(0.0))
             .round(2, RoundMode::HalfToEven)
             .alias("Gross Card"),
         )
@@ -583,12 +615,15 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Rental_Cash"),
             col("Rental_Card"),
             col("Rental Total"),
-            col("Gross Culture (LoLa) Cash").alias("Culture_Cash"),
-            col("Gross Culture (LoLa) Card").alias("Culture_Card"),
+            col("Culture_Cash"),
+            col("Culture_Card"),
             col("Culture Total"),
-            col("Gross Culture (PaidOut) Cash").alias("PaidOut_Cash"),
-            col("Gross Culture (PaidOut) Card").alias("PaidOut_Card"),
-            col("PaidOut Total"),
+            col("Culture (LoLa) Cash"),
+            col("Culture (LoLa) Card"),
+            col("Culture (LoLa) Total"),
+            col("Culture (PaidOut) Cash"),
+            col("Culture (PaidOut) Card"),
+            col("Culture (PaidOut) Total"),
             col("Gross Cash"),
             col("Tips_Cash"),
             col("SumUp Cash"),
@@ -758,12 +793,17 @@ fn owned_consumption_of(
     topic: &Topic,
     owner: &Owner,
     payment_method: &PaymentMethod,
+    is_gross: bool,
 ) -> (Expr, String) {
     let expr = (col("Topic").eq(lit(topic.to_string())))
         .and(col("Owner").eq(lit(owner.to_string())))
         .and(col("Payment Method").eq(lit(payment_method.to_string())))
         .and(col("Purpose").neq(lit(Purpose::Tip.to_string())));
-    let alias = format!("Gross {topic} ({owner}) {payment_method}");
+    let alias = if is_gross {
+        format!("Gross {topic} ({owner}) {payment_method}")
+    } else {
+        format!("{topic} ({owner}) {payment_method}")
+    };
     (expr, alias)
 }
 
