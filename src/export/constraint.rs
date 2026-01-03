@@ -131,9 +131,17 @@ impl Error for FieldConstraintViolationError {}
 pub fn validation_topic_owner(raw_df: &DataFrame, columns: &[Expr]) -> Result<(), Box<dyn Error>> {
     topic_owner_constraint(
         raw_df,
-        TopicOwnerConstraintViolationError::MiTiWithoutOwner,
+        TopicOwnerConstraintViolationError::OwnerlessMiTi,
         col("Topic")
             .eq(lit(Topic::MiTi.to_string()))
+            .and(col("Owner").fill_null(lit("")).eq(lit(""))),
+        columns,
+    )?;
+    topic_owner_constraint(
+        raw_df,
+        TopicOwnerConstraintViolationError::OwnerlessCulture,
+        col("Topic")
+            .eq(lit(Topic::Culture.to_string()))
             .and(col("Owner").fill_null(lit("")).eq(lit(""))),
         columns,
     )?;
@@ -142,6 +150,7 @@ pub fn validation_topic_owner(raw_df: &DataFrame, columns: &[Expr]) -> Result<()
         TopicOwnerConstraintViolationError::LoLaWithOwner,
         col("Topic")
             .neq(lit(Topic::MiTi.to_string()))
+            .and(col("Topic").neq(lit(Topic::Culture.to_string())))
             .and(col("Owner").fill_null(lit("")).neq(lit(""))),
         columns,
     )?;
@@ -149,15 +158,19 @@ pub fn validation_topic_owner(raw_df: &DataFrame, columns: &[Expr]) -> Result<()
 }
 
 enum TopicOwnerConstraintViolationError {
-    MiTiWithoutOwner(DataFrame),
+    OwnerlessMiTi(DataFrame),
+    OwnerlessCulture(DataFrame),
     LoLaWithOwner(DataFrame),
 }
 
 impl Display for TopicOwnerConstraintViolationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            TopicOwnerConstraintViolationError::MiTiWithoutOwner(df) => {
+            TopicOwnerConstraintViolationError::OwnerlessMiTi(df) => {
                 write!(f, "Row with topic 'MiTi' must have an Owner! {df}")
+            }
+            TopicOwnerConstraintViolationError::OwnerlessCulture(df) => {
+                write!(f, "Row with topic 'Culture' must have an Owner! {df}")
             }
             TopicOwnerConstraintViolationError::LoLaWithOwner(df) => {
                 write!(f, "Row with pure LoLa topic must not have an Owner! {df}")
@@ -204,6 +217,9 @@ mod tests {
     // MiTi must have an owner
     #[case(Topic::MiTi, Some("LoLa"), true, None)]
     #[case(Topic::MiTi, Some("MiTi"), true, None)]
+    // Culture must have an owner
+    #[case(Topic::Culture, Some("LoLa"), true, None)]
+    #[case(Topic::Culture, Some("PaidOut"), true, None)]
     // Pure LoLa topics must not have no owner
     #[case(Topic::Cafe, Some(""), true, None)]
     #[case(Topic::Verm, Some(""), true, None)]
@@ -211,8 +227,6 @@ mod tests {
     #[case(Topic::SoFe, None, true, None)]
     #[case(Topic::Deposit, None, true, None)]
     #[case(Topic::Rental, None, true, None)]
-    #[case(Topic::Culture, None, true, None)]
-    #[case(Topic::PaidOut, None, true, None)]
     #[case(Topic::Packaging, None, true, None)]
     // MiTi w/o owner should fail
     #[case(
@@ -227,7 +241,20 @@ mod tests {
         false,
         Some("Row with topic 'MiTi' must have an Owner!")
     )]
-    // non-MiTi with owner should fail
+    // Culture w/o owner should fail
+    #[case(
+        Topic::Culture,
+        Some(""),
+        false,
+        Some("Row with topic 'Culture' must have an Owner!")
+    )]
+    #[case(
+        Topic::Culture,
+        None,
+        false,
+        Some("Row with topic 'Culture' must have an Owner!")
+    )]
+    // non-MiTi/Culture with owner should fail
     #[case(
         Topic::Cafe,
         Some("Cafe"),
@@ -254,18 +281,6 @@ mod tests {
     )]
     #[case(
         Topic::Rental,
-        Some("LoLa"),
-        false,
-        Some("Row with pure LoLa topic must not have an Owner!")
-    )]
-    #[case(
-        Topic::Culture,
-        Some("LoLa"),
-        false,
-        Some("Row with pure LoLa topic must not have an Owner!")
-    )]
-    #[case(
-        Topic::PaidOut,
         Some("LoLa"),
         false,
         Some("Row with pure LoLa topic must not have an Owner!")
@@ -355,7 +370,7 @@ mod tests {
     #[case("Deposit", true)]
     #[case("Rental", true)]
     #[case("Culture", true)]
-    #[case("PaidOut", true)]
+    #[case("PaidOut", false)]
     #[case("", false)]
     #[case("Vermiet", false)]
     #[case("xyz", false)]

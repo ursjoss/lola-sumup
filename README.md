@@ -37,6 +37,7 @@ lola-sumup has been adapted in a non-backwards-compatible way.
 | 0.1.0   | Up to April 2024 |
 | 0.2.0   | As of May 2024  working with CSV files for interemediate and exports  |
 | 0.3.0   | As of September 2025  working with XLSX files for interemediate and exports  |
+| 0.4.0   | As of December 2025  Switching from Topic Culture/PaidOut to Topic Culture with Owners LoLa/PaidOut |
 
 ## CLI
 
@@ -96,14 +97,13 @@ The four columns that may be modified are:
   - `SoFe`: Items sold in context of the summer party ("Sommer-Fest").
   - `Deposit`: Key deposit.
   - `Rental`: Rental fee.
-  - `Culture`: Items sold in context of cultural events.
-               Automatically assigned if the transaction occurred after 18:00 (or before 06:00) --
-               if the description does not contain " (PO)".
-  - `PaidOut`: Income paid out in cash to external party.
-               Automatically assigned if the transaction occurred after 18:00 (or before 06:00) and the description contains " (PO)".
+  - `Culture`: Items sold in context of cultural events (cooperations).
+               Automatically assigned if the transaction occurred after 18:00 (or before 06:00)
   - `Packaging`: Sold re-usable packaging for dishes.
-- `Owner`: Only relevant for Topic `MiTi`: `MiTi` (for menus produced and sold by Mittagstisch) or `LoLa` (LoLa beverages and food from LoLa, sold by Mittagstisch)
-- `Purpose`: `Consumption` or `Tip` (the former is also used for Topics `Deposit`, `Rental`, `Culture`, or `PaidOut`)
+- `Owner`: Only relevant for two topics - must be empty for all other topics:
+  - `MiTi`: `LoLa` (LoLa beverages and food from LoLa, sold by Mittagstisch) or `MiTi` (for menus produced and sold by Mittagstisch) 
+  - `Culture`: `LoLa` (LoLa beverages and food from LoLa, sold by cooperation partners) or `PaidOut` (for menus produced and sold by the partners) 
+- `Purpose`: `Consumption` or `Tip` (the former is also used for Topics `Deposit`, `Rental`, `Culture`, or `SoFe`)
 - `Comment`: Empty, can be manually filled to keep some context
 
 #### Adding artificial transactions for Cash payments that were not entered into SumUp
@@ -229,28 +229,28 @@ The columns of the resulting accounting.xlsx file are defined as follows:
 
 - `Date`: [`Date`]
 - `Payment SumUp`: Total Net Income plus tips paid via Card. Daily payment by SumUp (next business day) [`Net Card Total` + `Tips_Card`]. Will be posted `10110/10920`, but based on Account Statement, not this report.
-- `Total Cash Debit`: Total daily cash debit [`Gross Cash` - `MiTi_Cash` - `PaidOut Total`]
+- `Total Cash Debit`: Total daily cash debit [`Gross Cash` - `MiTi_Cash` - `Culture (PaidOut) Total`]
 - `Total Card Debit`: Total daily card debit [`Gross_Card_LoLa` + `Tips_Card` - `MiTi_Tips_Card`]
 - `10000/23050`: Total Cash Income Key Deposit [`Deposit_Cash`]
 - `10000/30200`: Total Cash Income Cafe [`Cafe_Cash`]
 - `10000/30700`: Total Cash Income Food Rentals [`Verm_Cash`] (LoLa Food sold by renters)
 - `10000/30810`: Total Cash Income summer party [`SoFe_Cash`] (LoLa Food sold during summer party)
 - `10000/31000`: Total Cash Income Rental Fee [`Rental_Cash`] (fees for renting the rooms)
-- `10000/32000`: Total Cash Income Cultural Payments [`Culture_Cash`]
+- `10000/32000`: Total Cash Income Cultural Payments [`Culture (LoLa) Cash`]
 - `10000/46000`: Total Cash Cost Reduction on Material Cost [`Packaging_Cash`]
-- `10000/20121`: Total Gross Payments Cash to external parties [`PaidOut_Cash`]
-- `10920/20121`: Total Gross Payments Card to external parties [`PaidOut_Card`]
-- `20121/10000`: Total Gross Payments Cash and Card paid out in cash to external parties [`PaidOut_Total`]
+- `10000/20121`: Total Gross Payments Cash to external parties [`Culture (PaidOut) Cash`]
+- `10920/20121`: Total Gross Payments Card to external parties [`Culture (PaidOut) Card`]
+- `20121/10000`: Total Gross Payments Cash and Card paid out in cash to external parties [`Culture (PaidOut) Total`]
 - `10920/23050`: Total Gross Payments Card Key Deposit [`Deposit_Card`]
 - `10920/30200`: Total Gross Payments Card Cafe [`Cafe_Card`]
 - `10920/30700`: Total Gross Payments Card Rentals [`Verm_Card`] (LoLa Food sold by renters)
 - `10920/30810`: Total Gross Payments Card summer party [`SoFe_Card`] (LoLa Food sold during summer party)
 - `10920/31000`: Total Gross Payments Card Rental Fee [`Rental_Card`] (fees for renting the rooms)
-- `10920/32000`: Total Gross Payments Card Cultural Payments [`Culture_Card`]
+- `10920/32000`: Total Gross Payments Card Cultural Payments [`Culture (PaidOut) Card`]
 - `10920/46000`: Total Gross Payments Card Reduction on Material Cost [`Packaging_Card`]
 - `10920/20051`: Net Card income + tips (card) Mittagstisch [`Net Card MiTi` + `MiTi_Tips_Card`]
 - `10920/10910`: Tips LoLa paid via Card [`Tips_Card` - `MiTi_Tips_Card`]
-- `68450/10920`: Commission for Café, Vermietung, summer party, Deposit, Rental, Cultural Payments, and `PaidOut`, i.e. w/o Mittagstisch [`Commission LoLa`]
+- `68450/10920`: Commission for Café, Vermietung, summer party, Deposit, Rental, Cultural Payments, i.e. w/o Mittagstisch [`Commission LoLa`]
 - `59991/20051`: LoLa sponsored reductions (`Sponsored Reductions`)
 - `59991/20120`: LoLa sponsored meals for stagaire (`Total Praktikum`)
 - `20051/10930`: Amount LoLa owes to Mittagstisch (`Debt to MiTi`)
@@ -320,17 +320,20 @@ The columns of the resulting details export file are defined as follows:
   - `Rental_Cash`: Gross Cash Rental Payment
   - `Rental_Card`: Gross Card Rental Payment
   - `Rental Total`: Total Gross Rental Payment [`Rental_Cash` + `Rental_Card`]
-  - `Culture_Cash`: Gross Cash Culture
-  - `Culture_Card`: Gross Card Culture
-  - `Culture Total`: Total Gross Culture [`Culture_Cash` + `Culture_Card`]
-  - `PaidOut_Cash`: Gross Cash PaidOut
-  - `PaidOut_Card`: Gross Card PaidOut
-  - `PaidOut Total`: Total Gross PaidOut [`PaidOut_Cash` + `PaidOut_Card`]
+  - `Culture_Cash`: Gross Cash Culture items (LoLa and PaidOut)
+  - `Culture_Card`: Gross Card Culture items (LoLa and PaidOut)
+  - `Culture Total`: Total Gross Culture items [`Culture_Cash` + `Culture_Card`]
+  - `Culture (LoLa) Cash`: Gross Cash Culture LoLa items
+  - `Culture (LoLa) Card`: Gross Card Culture LoLa items
+  - `Culture (LoLa) Total`: Gross Culture LoLa items [`Culture (LoLa) Cash` + `Culture (LoLa) Card`]
+  - `Culture (PaidOut) Cash`: Gross Cash Culture PaidOut (to cooperation partners) items
+  - `Culture (PaidOut) Card`: Gross Card Culture PaidOut (to cooperation partners) items
+  - `Culture (PaidOut) Total`: Gross Culture PaidOut (to cooperation partners) items [`Culture (PaidOut) Cash` + `Culture (PaidOut) Card`]
 - Gross values consumption, Tips and total reported values by payment method:
-  - `Gross Cash`: Total Gross Income Cash [`MiTi_Cash` + `Cafe_Cash` + `Verm_Cash` + `SoFe_Cash` + `Deposit_Cash` + `Packaging_Cash` + `Rental_Cash` + `Culture_Cash` + `PaidOut_Cash`]
+  - `Gross Cash`: Total Gross Income Cash [`MiTi_Cash` + `Cafe_Cash` + `Verm_Cash` + `SoFe_Cash` + `Deposit_Cash` + `Packaging_Cash` + `Rental_Cash` + `Culture_Cash`]
   - `Tips_Cash`: Tips Cash
   - `SumUp Cash`: Total Income Cash [`Gross Cash` + `Tips_Cash`]
-  - `Gross Card`: Gross Gross Income Card [`MiTi_Card` + `Cafe_Card` + `Verm_Card` + `SoFe_Card` + `Deposit_Card` + `Packaging_Card` + `Rental_Card` + `Culture_Card` + `PaidOut_Card`]
+  - `Gross Card`: Gross Gross Income Card [`MiTi_Card` + `Cafe_Card` + `Verm_Card` + `SoFe_Card` + `Deposit_Card` + `Packaging_Card` + `Rental_Card` + `Culture_Card`]
   - `Tips_Card`: Tips Card
   - `SumUp Card`: Total Gross Income Card [`Gross Card` + `Tips_Card`]
   - `Gross Total`: Gross Total Income [`Gross Cash` + `Gross Card`]
@@ -340,7 +343,7 @@ The columns of the resulting details export file are defined as follows:
   - `Gross Card MiTi`: Gross Card Income Mittagstisch [`MiTi_Card`] (including beverages LoLa)
   - `MiTi_Commission`: Card Commission for Mittagstisch (Menus and Tips, but not from LoLa beverages)
   - `Net Card MiTi`: Net Card Income Mittagstisch [`Gross Card MiTi` - `MiTi_Commission`] - commission on meals and tips are deducted, sales of beverages still included
-  - `Gross Card LoLa`: Gross Card Income LoLa (Café, Vermietungen, summer party, Deposit, Rental, Culture) [`Cafe_Card` + `Verm_Card` + `SoFe_Card` + `Deposit_Card` + `Rental_Card` + `Culture_Card` + `PaidOut_Card`]
+  - `Gross Card LoLa`: Gross Card Income LoLa (Café, Vermietungen, summer party, Deposit, Rental, Culture) [`Cafe_Card` + `Verm_Card` + `SoFe_Card` + `Deposit_Card` + `Rental_Card` + `Culture_Card`]
   - `LoLa_Commission`: Card Commission for LoLa (non-Mittagstisch related, but including commission for items sold by MiTi)
   - `LoLa_Commission_MiTi`: Card Commission for LoLa items sold by MiTi only, so not from Café or Rentals
   - `Net Card LoLa`: Net Card Income LoLa (Café and Vermietungen) [`Gross Card LoLa` - `LoLa_Commission`]

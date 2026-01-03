@@ -27,7 +27,7 @@ pub fn gather_df_accounting(df_det: &DataFrame) -> PolarsResult<DataFrame> {
         .with_column(
             (col("Gross Cash").fill_null(0.0)
                 - col("MiTi_Cash").fill_null(0.0)
-                - col("PaidOut Total").fill_null(0.0))
+                - col("Culture (PaidOut) Total").fill_null(0.0))
             .round(2, RoundMode::HalfToEven)
             .alias("Total Cash Debit"),
         )

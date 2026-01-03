@@ -436,19 +436,29 @@ fn infer_topic(time_options: &StrptimeOptions) -> Expr {
             .and(col("is_weekend").eq(lit(false))),
     )
     .then(lit(Topic::Cafe.to_string()))
-    .when(col("Beschreibung").str().contains(lit(" \\(PO\\)"), true))
-    .then(lit(Topic::PaidOut.to_string()))
     .otherwise(lit(Topic::Culture.to_string()))
 }
 
 /// Infers the `Owner` from `Topic` and `Beschreibung`:
-/// - if `Topic` is not `MiTi`, the `Owner` will be blank
+/// - if `Topic` is neither `MiTi` nor `Culture`, the `Owner` will be blank
+/// - for `Topic::Culture`, the Owner is `PaidOut` if the description ends with ' (PO)'
 /// - for `Topic::MiTi`, the Owner is `MiTi` if the description matches one of a hardcoded list of Strings.
-///   Otherwise the owner is `LoLa`.
+/// - Otherwise the owner is `LoLa` (for both `MiTi` and `Culture`)
 fn infer_owner() -> Expr {
-    when(col("Topic").neq(lit(Topic::MiTi.to_string())))
-        .then(lit(NULL))
-        .when(
+    when(
+        col("Topic")
+            .neq(lit(Topic::MiTi.to_string()))
+            .and(col("Topic").neq(lit(Topic::Culture.to_string()))),
+    )
+    .then(lit(NULL))
+    .when(
+        col("Topic")
+            .eq(lit(Topic::Culture.to_string()))
+            .and(col("Beschreibung").str().contains(lit(" \\(PO\\)"), true)),
+    )
+    .then(lit(Owner::PaidOut.to_string()))
+    .when(
+        col("Topic").eq(lit(Topic::MiTi.to_string())).and(
             col("Beschreibung")
                 .str()
                 .contains(lit("Hauptgang"), true)
@@ -477,9 +487,10 @@ fn infer_owner() -> Expr {
                     .strip_chars(lit(NULL))
                     .eq(lit(""))
                     .and(col("Preis (brutto)").gt_eq(5.0))),
-        )
-        .then(lit(Owner::MiTi.to_string()))
-        .otherwise(lit(Owner::LoLa.to_string()))
+        ),
+    )
+    .then(lit(Owner::MiTi.to_string()))
+    .otherwise(lit(Owner::LoLa.to_string()))
 }
 
 /// Infers the purpose based on the `Description`: Description "Trinkgeld" leads to `Tip`,
@@ -548,8 +559,6 @@ pub enum Topic {
     Rental,
     /// Cultural Payments
     Culture,
-    /// Paid out to external party in cash
-    PaidOut,
     /// Sold reusable packaging material - reduces the material costs.
     Packaging,
 }
@@ -567,10 +576,12 @@ pub enum Purpose {
 /// Sales by `LoLa` directly does not have an owner.
 #[derive(Debug, Deserialize, Serialize, PartialEq, EnumString, Display, EnumIter)]
 pub enum Owner {
-    /// `LoLa` as main owner of sales by Mittags-Tisch
+    /// `LoLa` as main owner of sales by Mittags-Tisch (Topic `MiTi`) or Cooperation partners (Topic Culture)
     LoLa,
     /// Mittags-Tisch as main owner of sales by Mittags-Tisch.
     MiTi,
+    /// Cooparation partner as main owner of their sales (-> `PaidOut`)
+    PaidOut,
 }
 
 #[cfg(test)]
@@ -701,7 +712,6 @@ mod tests {
         let culture = Topic::Culture.to_string();
         let miti = Topic::MiTi.to_string();
         let cafe = Topic::Cafe.to_string();
-        let paidout = Topic::PaidOut.to_string();
         let pkg = Topic::Packaging.to_string();
         let rental = Topic::Rental.to_string();
         df![
@@ -713,10 +723,10 @@ mod tests {
                miti.clone(), miti,
                culture.clone(), culture.clone(),
                culture.clone(), culture.clone(),
-               paidout.clone(), paidout.clone(), paidout.clone(), paidout,
+               culture.clone(), culture.clone(), culture.clone(), culture.clone(),
                pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg,
                rental.clone(), rental,
-               culture.clone(), culture.clone(), culture.clone(),
+               culture.clone(), culture.clone(), culture,
            ]
        ].unwrap()
     }

@@ -1,5 +1,5 @@
 use crate::export::get_last_of_month_nd;
-use crate::prepare::{PaymentMethod, Topic};
+use crate::prepare::{Owner, PaymentMethod, Topic};
 use polars::prelude::*;
 use std::error::Error;
 
@@ -107,7 +107,7 @@ pub fn gather_df_banana_details(raw_df: &DataFrame) -> PolarsResult<DataFrame> {
     let paidout_collect = raw_df
         .clone()
         .lazy()
-        .filter(col("Topic").eq(lit(Topic::PaidOut.to_string())))
+        .filter(col("Owner").eq(lit(Owner::PaidOut.to_string())))
         .group_by(["Date", "Payment Method"])
         .agg([col("Price (Net)")
             .sum()
@@ -142,7 +142,7 @@ pub fn gather_df_banana_details(raw_df: &DataFrame) -> PolarsResult<DataFrame> {
     let paidout = raw_df
         .clone()
         .lazy()
-        .filter(col("Topic").eq(lit(Topic::PaidOut.to_string())))
+        .filter(col("Owner").eq(lit(Owner::PaidOut.to_string())))
         .group_by(["Date"])
         .agg([col("Price (Net)")
             .sum()

@@ -81,12 +81,30 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         consumption_of(&Topic::Culture, &PaymentMethod::Card),
         ldf.clone(),
     );
-    let paid_out_cash = price_by_date_for(
-        consumption_of(&Topic::PaidOut, &PaymentMethod::Cash),
+    let culture_lola_cash = price_by_date_for(
+        owned_consumption_of(&Topic::Culture, &Owner::LoLa, &PaymentMethod::Cash, false),
         ldf.clone(),
     );
-    let paid_out_card = price_by_date_for(
-        consumption_of(&Topic::PaidOut, &PaymentMethod::Card),
+    let culture_lola_card = price_by_date_for(
+        owned_consumption_of(&Topic::Culture, &Owner::LoLa, &PaymentMethod::Card, false),
+        ldf.clone(),
+    );
+    let culture_paidout_cash = price_by_date_for(
+        owned_consumption_of(
+            &Topic::Culture,
+            &Owner::PaidOut,
+            &PaymentMethod::Cash,
+            false,
+        ),
+        ldf.clone(),
+    );
+    let culture_paidout_card = price_by_date_for(
+        owned_consumption_of(
+            &Topic::Culture,
+            &Owner::PaidOut,
+            &PaymentMethod::Card,
+            false,
+        ),
         ldf.clone(),
     );
     let cafe_tips = price_by_date_for(tips_of_topic(&Topic::Cafe), ldf.clone());
@@ -115,11 +133,11 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
     let miti_miti = price_by_date_for(miti_by(&Owner::MiTi), ldf.clone());
     let miti_lola = price_by_date_for(miti_by(&Owner::LoLa), ldf.clone());
     let gross_miti_miti_card = price_by_date_for(
-        owned_consumption_of(&Topic::MiTi, &Owner::MiTi, &PaymentMethod::Card),
+        owned_consumption_of(&Topic::MiTi, &Owner::MiTi, &PaymentMethod::Card, true),
         ldf.clone(),
     );
     let net_miti_lola_cash = price_by_date_for(
-        owned_consumption_of(&Topic::MiTi, &Owner::LoLa, &PaymentMethod::Cash),
+        owned_consumption_of(&Topic::MiTi, &Owner::LoLa, &PaymentMethod::Cash, true),
         ldf.clone(),
     );
 
@@ -225,19 +243,31 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
         [col("Date")],
         JoinType::Left.into(),
     );
-    let with_paid_out_cash = with_culture_card.join(
-        paid_out_cash,
+    let with_culture_lola_cash = with_culture_card.join(
+        culture_lola_cash,
         [col("Date")],
         [col("Date")],
         JoinType::Left.into(),
     );
-    let with_paid_out_card = with_paid_out_cash.join(
-        paid_out_card,
+    let with_culture_lola_card = with_culture_lola_cash.join(
+        culture_lola_card,
         [col("Date")],
         [col("Date")],
         JoinType::Left.into(),
     );
-    let with_cafe_tips = with_paid_out_card.join(
+    let with_culture_paidout_cash = with_culture_lola_card.join(
+        culture_paidout_cash,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_culture_paidout_card = with_culture_paidout_cash.join(
+        culture_paidout_card,
+        [col("Date")],
+        [col("Date")],
+        JoinType::Left.into(),
+    );
+    let with_cafe_tips = with_culture_paidout_card.join(
         cafe_tips,
         [col("Date")],
         [col("Date")],
@@ -423,9 +453,15 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 .alias("Culture Total"),
         )
         .with_column(
-            (col("PaidOut_Cash").fill_null(0.0) + col("PaidOut_Card").fill_null(0.0))
+            (col("Culture (LoLa) Cash").fill_null(0.0) + col("Culture (LoLa) Card").fill_null(0.0))
                 .round(2, RoundMode::HalfToEven)
-                .alias("PaidOut Total"),
+                .alias("Culture (LoLa) Total"),
+        )
+        .with_column(
+            (col("Culture (PaidOut) Cash").fill_null(0.0)
+                + col("Culture (PaidOut) Card").fill_null(0.0))
+            .round(2, RoundMode::HalfToEven)
+            .alias("Culture (PaidOut) Total"),
         )
         .with_column(
             (col("MiTi_Cash").fill_null(0.0)
@@ -435,8 +471,7 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 + col("Deposit_Cash").fill_null(0.0)
                 + col("Packaging_Cash").fill_null(0.0)
                 + col("Rental_Cash").fill_null(0.0)
-                + col("Culture_Cash").fill_null(0.0)
-                + col("PaidOut_Cash").fill_null(0.0))
+                + col("Culture_Cash").fill_null(0.0))
             .round(2, RoundMode::HalfToEven)
             .alias("Gross Cash"),
         )
@@ -448,8 +483,7 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
                 + col("Deposit_Card").fill_null(0.0)
                 + col("Packaging_Card").fill_null(0.0)
                 + col("Rental_Card").fill_null(0.0)
-                + col("Culture_Card").fill_null(0.0)
-                + col("PaidOut_Card").fill_null(0.0))
+                + col("Culture_Card").fill_null(0.0))
             .round(2, RoundMode::HalfToEven)
             .alias("Gross Card"),
         )
@@ -584,9 +618,12 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
             col("Culture_Cash"),
             col("Culture_Card"),
             col("Culture Total"),
-            col("PaidOut_Cash"),
-            col("PaidOut_Card"),
-            col("PaidOut Total"),
+            col("Culture (LoLa) Cash"),
+            col("Culture (LoLa) Card"),
+            col("Culture (LoLa) Total"),
+            col("Culture (PaidOut) Cash"),
+            col("Culture (PaidOut) Card"),
+            col("Culture (PaidOut) Total"),
             col("Gross Cash"),
             col("Tips_Cash"),
             col("SumUp Cash"),
@@ -710,15 +747,19 @@ fn tips_by_payment_method(payment_method: &PaymentMethod) -> (Expr, String) {
 
 /// Predicate and alias for commission by `Owner`
 /// For `Owner::MiTi`: topic and owner `MiTi`
+/// For `Owner::PaidOut`: topic `Culture`and owner `PaidOut`
 /// For `Owner::LoLa`: Union of commission from `LoLa` sales via Mittagstisch
-///                    as well as from non-Mittagstisch related sales
+///             as well as from non-Mittagstisch/non-Culture related sales
 fn commission_by(owner: &Owner, miti_only: Option<bool>) -> (Expr, String) {
     let expr = match owner {
         Owner::MiTi => (col("Topic").eq(lit(Topic::MiTi.to_string())))
             .and(col("Owner").eq(lit(Owner::MiTi.to_string()))),
+        Owner::PaidOut => (col("Topic").eq(lit(Topic::Culture.to_string())))
+            .and(col("Owner").eq(lit(Owner::PaidOut.to_string()))),
         Owner::LoLa => match miti_only {
             None => panic!("Configured wrongly, we need [miti_only] for owner LoLa"),
-            Some(false) => (col("Topic").neq(lit(Topic::MiTi.to_string())))
+            Some(false) => col("Topic")
+                .neq(lit(Topic::MiTi.to_string()))
                 .or(col("Owner").eq(lit(Owner::LoLa.to_string()))),
             Some(true) => (col("Topic").eq(lit(Topic::MiTi.to_string())))
                 .and(col("Owner").eq(lit(Owner::LoLa.to_string()))),
@@ -752,12 +793,17 @@ fn owned_consumption_of(
     topic: &Topic,
     owner: &Owner,
     payment_method: &PaymentMethod,
+    is_gross: bool,
 ) -> (Expr, String) {
     let expr = (col("Topic").eq(lit(topic.to_string())))
         .and(col("Owner").eq(lit(owner.to_string())))
         .and(col("Payment Method").eq(lit(payment_method.to_string())))
         .and(col("Purpose").neq(lit(Purpose::Tip.to_string())));
-    let alias = format!("Gross {topic} ({owner}) {payment_method}");
+    let alias = if is_gross {
+        format!("Gross {topic} ({owner}) {payment_method}")
+    } else {
+        format!("{topic} ({owner}) {payment_method}")
+    };
     (expr, alias)
 }
 
@@ -943,12 +989,6 @@ mod tests {
     "Rental_Card" => & [500.0]),
     )
     ]
-    #[case(Topic::PaidOut, PaymentMethod::Card, Purpose::Consumption,
-    df ! (
-    "Date" => & ["24.03.2023"],
-    "PaidOut_Card" => & [600.0]),
-    )
-    ]
     #[case(Topic::SoFe, PaymentMethod::Cash, Purpose::Consumption,
     df ! (
     "Date" => & ["25.03.2023"],
@@ -968,11 +1008,11 @@ mod tests {
         #[case] expected: PolarsResult<DataFrame>,
     ) -> PolarsResult<()> {
         let df_in = df!(
-            "Date" => &["16.03.2023", "14.03.2023", "15.03.2023", "28.03.2023", "20.03.2023", "14.03.2023", "20.03.2023", "22.03.2023", "23.03.2023", "24.03.2023", "25.03.2023", "25.03.2023", "26.03.2023", "27.03.2023"],
-            "Price (Gross)" => &[None, Some(1.3), Some(5.2), Some(3.6), Some(4.7), Some(0.5), Some(100.0), Some(400.0), Some(500.0), Some(600.0), Some(10.0), Some(20.0), Some(700.0), Some(70.0)],
-            "Topic" => &["Cafe", "Cafe", "MiTi", "Cafe", "Cafe", "Cafe", "Deposit", "Culture", "Rental", "PaidOut", "SoFe", "SoFe", "Packaging", "Packaging"],
-            "Payment Method" => &["Card", "Card", "Card", "Card", "Cash", "Cash", "Card", "Card", "Card", "Card", "Cash", "Card", "Card", "Cash"],
-            "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Tip", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption"],
+            "Date" => &["16.03.2023", "14.03.2023", "15.03.2023", "28.03.2023", "20.03.2023", "14.03.2023", "20.03.2023", "22.03.2023", "23.03.2023", "25.03.2023", "25.03.2023", "26.03.2023", "27.03.2023"],
+            "Price (Gross)" => &[None, Some(1.3), Some(5.2), Some(3.6), Some(4.7), Some(0.5), Some(100.0), Some(400.0), Some(500.0), Some(10.0), Some(20.0), Some(700.0), Some(70.0)],
+            "Topic" => &["Cafe", "Cafe", "MiTi", "Cafe", "Cafe", "Cafe", "Deposit", "Culture", "Rental", "SoFe", "SoFe", "Packaging", "Packaging"],
+            "Payment Method" => &["Card", "Card", "Card", "Card", "Cash", "Cash", "Card", "Card", "Card", "Cash", "Card", "Card", "Cash"],
+            "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Tip", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption"],
         )?;
         let paa = match purpose {
             Purpose::Consumption => consumption_of(&topic, &payment_method),
