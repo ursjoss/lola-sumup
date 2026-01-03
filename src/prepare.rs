@@ -456,7 +456,7 @@ fn infer_owner() -> Expr {
             .eq(lit(Topic::Culture.to_string()))
             .and(col("Beschreibung").str().contains(lit(" \\(PO\\)"), true)),
     )
-    .then(lit("PaidOut"))
+    .then(lit(Owner::PaidOut.to_string()))
     .when(
         col("Topic").eq(lit(Topic::MiTi.to_string())).and(
             col("Beschreibung")
