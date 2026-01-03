@@ -131,8 +131,8 @@ pub fn intermediate_df_02(sample_date: NaiveDate) -> DataFrame {
         "Price (Gross)" => &[16.0, 3.50, 20.0, 100.0, 400.0, 500.0, 100.0, 10.0, 20.0, 10.0, 20.0, 13.0],
         "Price (Net)" => &[16.0, 3.50, 20.0, 100.0, 400.0, 500.0, 100.0, 10.0, 20.0, 10.0, 20.0, 13.0],
         "Commission" =>[0.24123, 0.0, 0.3, 1.5, 6.0, 7.5, 1.5, 0.0, 0.3, 0.15, 0.0, 0.0],
-        "Topic" => &["MiTi", "MiTi", "MiTi", "Deposit", "Culture", "Rental", "PaidOut", "SoFe", "SoFe", "Packaging", "Packaging", "MiTi"],
-        "Owner" => &["MiTi", "LoLa", "LoLa", "", "", "", "", "", "", "", "", "MiTi"],
+        "Topic" => &["MiTi", "MiTi", "MiTi", "Deposit", "Culture", "Rental", "Culture", "SoFe", "SoFe", "Packaging", "Packaging", "MiTi"],
+        "Owner" => &["MiTi", "LoLa", "LoLa", "", "LoLa", "", "PaidOut", "", "", "", "", "MiTi"],
         "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption"],
         "Comment" => &[None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>],
     )
@@ -406,7 +406,7 @@ pub fn intermediate_df_04(
         "Price (Net)" => &[489.1, 20.0, 11.0],
         "Commission" => &[0.0, 0.3, 0.0],
         "Topic" => &["Culture", "MiTi", "MiTi"],
-        "Owner" => &["", "MiTi", "MiTi"],
+        "Owner" => &["LoLa", "MiTi", "MiTi"],
         "Purpose" => &["Consumption", "Consumption", "Consumption"],
         "Comment" => &[AnyValue::Null, AnyValue::Null, AnyValue::Null],
     )
@@ -810,8 +810,8 @@ pub fn intermediate_df_08(
         "Price (Gross)" => &[13.0, 400.0, 600.0, 100.0, 200.0],
         "Price (Net)" => &[13.0, 400.0, 600.0, 100.0, 200.0],
         "Commission" => &[0.0, 6.0, 0.0, 0.0, 3.0],
-        "Topic" => &["MiTi", "PaidOut", "PaidOut", "PaidOut", "PaidOut"],
-        "Owner" => &["MiTi", "", "", "", ""],
+        "Topic" => &["MiTi", "Culture", "Culture", "Culture", "Culture"],
+        "Owner" => &["MiTi", "PaidOut", "PaidOut", "PaidOut", "PaidOut"],
         "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption"],
         "Comment" => &[AnyValue::Null, AnyValue::Null, AnyValue::Null, AnyValue::Null, AnyValue::Null],
     )
