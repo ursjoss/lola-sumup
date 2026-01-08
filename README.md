@@ -291,13 +291,18 @@ The columns in the banana.xlsx spreadsheet are:
 ### Details Report
 
 The details export file collects all original and derived columns that are required to build the other reports or for deeper insights.
-It may seem overwhelming. It is not used as a regular export, but serves for debugging purposes, if one needs to understand how specific
-columns are calculated.
+It can be used to validate the sumup data against the several daily shift reports (first columns).
+Furthmore, it can also be used for debugging purposes, as it lists some more auxillary columns that are used in calculations.
 
 The columns of the resulting details export file are defined as follows:
 
 - Generic Columns:
   - `Date`: Calendar Date
+- Summary columns
+  - `SU Cash`: Total Income Cash [`Sumup Cash`] or `Gross Cash` + `Tips_Cash`]
+  - `SU Card`: Total Gross Income Card [`Sumup Card`] or [`Gross Card` + `Tips_Card`]
+  - `SU Total`: [`Sumup Total`] or [`Gross Total` + `Tips Total`] or [`SumUp Cash` + `SumUp Card`]
+  - `SU Tips`: [`Tips Total`] or [`Tips_Cash` + `Tips_Card`]
 - Gross Values of consumptions of topics `MiTi`, `Cafe`, `Verm` (commissions not subtracted) split by payment method
   - `MiTi_Cash`: Gross Cash Income Mittagstisch (including LoLa beverages)
   - `MiTi_Card`: Gross Card Income Mittagstisch (including LoLa beverages)
@@ -305,21 +310,6 @@ The columns of the resulting details export file are defined as follows:
   - `Cafe_Cash`: Gross Cash Income Café
   - `Cafe_Card`: Gross Card Income Café
   - `Cafe Total`: Total Gross Income Café [`Cafe_Cash` + `Cafe_Card`]
-  - `Verm_Cash`: Gross Cash Income Rentals
-  - `Verm_Card`: Gross Card Income Rentals
-  - `Verm Total`: Total Gross Income Rentals [`Verm_Cash` + `Verm_Card`]
-  - `SoFe_Cash`: Gross Cash summer party
-  - `SoFe_Card`: Gross Card summer party
-  - `SoFe Total`: Total Gross summer party [`SoFe_Cash` + `SoFe_Card`]
-  - `Deposit_Cash`: Gross Cash Key Deposit
-  - `Deposit_Card`: Gross Card Key Deposit
-  - `Deposit Total`: Total Gross Key Deposit [`Deposit_Cash` + `Deposit_Card`]
-  - `Packaging_Cash`: Gross Cash Key Deposit
-  - `Packaging_Card`: Gross Card Key Deposit
-  - `Packaging Total`: Total Gross Key Deposit [`Packaging_Cash` + `Packaging_Card`]
-  - `Rental_Cash`: Gross Cash Rental Payment
-  - `Rental_Card`: Gross Card Rental Payment
-  - `Rental Total`: Total Gross Rental Payment [`Rental_Cash` + `Rental_Card`]
   - `Culture_Cash`: Gross Cash Culture items (LoLa and PaidOut)
   - `Culture_Card`: Gross Card Culture items (LoLa and PaidOut)
   - `Culture Total`: Total Gross Culture items [`Culture_Cash` + `Culture_Card`]
@@ -329,6 +319,21 @@ The columns of the resulting details export file are defined as follows:
   - `Culture (PaidOut) Cash`: Gross Cash Culture PaidOut (to cooperation partners) items
   - `Culture (PaidOut) Card`: Gross Card Culture PaidOut (to cooperation partners) items
   - `Culture (PaidOut) Total`: Gross Culture PaidOut (to cooperation partners) items [`Culture (PaidOut) Cash` + `Culture (PaidOut) Card`]
+  - `Verm_Cash`: Gross Cash Income Rentals
+  - `Verm_Card`: Gross Card Income Rentals
+  - `Verm Total`: Total Gross Income Rentals [`Verm_Cash` + `Verm_Card`]
+  - `Packaging_Cash`: Gross Cash Key Deposit
+  - `Packaging_Card`: Gross Card Key Deposit
+  - `Packaging Total`: Total Gross Key Deposit [`Packaging_Cash` + `Packaging_Card`]
+  - `Deposit_Cash`: Gross Cash Key Deposit
+  - `Deposit_Card`: Gross Card Key Deposit
+  - `Deposit Total`: Total Gross Key Deposit [`Deposit_Cash` + `Deposit_Card`]
+  - `Rental_Cash`: Gross Cash Rental Payment
+  - `Rental_Card`: Gross Card Rental Payment
+  - `Rental Total`: Total Gross Rental Payment [`Rental_Cash` + `Rental_Card`]
+  - `SoFe_Cash`: Gross Cash summer party
+  - `SoFe_Card`: Gross Card summer party
+  - `SoFe Total`: Total Gross summer party [`SoFe_Cash` + `SoFe_Card`]
 - Gross values consumption, Tips and total reported values by payment method:
   - `Gross Cash`: Total Gross Income Cash [`MiTi_Cash` + `Cafe_Cash` + `Verm_Cash` + `SoFe_Cash` + `Deposit_Cash` + `Packaging_Cash` + `Rental_Cash` + `Culture_Cash`]
   - `Tips_Cash`: Tips Cash
