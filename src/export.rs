@@ -356,9 +356,9 @@ fn write_to_file(
 
 /// return the last of the month from provided `month`
 pub fn get_last_of_month_nd(month: &str) -> Result<NaiveDate, Box<dyn Error>> {
-    let y = month.chars().take(4).collect::<String>().parse()?;
-    let m = month.chars().skip(4).collect::<String>().parse()?;
-    let (ny, nm) = if m == 12 { (y + 1, m) } else { (y, m + 1) };
+    let y: i32 = month.chars().take(4).collect::<String>().parse()?;
+    let m: u32 = month.chars().skip(4).collect::<String>().parse()?;
+    let (ny, nm) = if m == 12 { (y + 1, 1) } else { (y, m + 1) };
     let lom = NaiveDate::from_ymd_opt(ny, nm, 1)
         .ok_or("should be able to create next_day")
         .map(|nd| nd - chrono::Duration::days(1))?;

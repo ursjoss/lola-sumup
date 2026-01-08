@@ -176,6 +176,7 @@ mod tests {
 
     #[rstest]
     #[case("202411", "30.11.2024")]
+    #[case("202412", "31.12.2024")]
     #[case("202501", "31.01.2025")]
     #[case("202502", "28.02.2025")]
     fn test_get_last_of_moth(#[case] month: &str, #[case] expected: &str) {
