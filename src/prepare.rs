@@ -177,17 +177,27 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         exact: true,
         ..Default::default()
     };
+    let raw_date_format_txr = StrptimeOptions {
+        format: Some("%Y-%m-%d".into()),
+        strict: true,
+        exact: true,
+        ..Default::default()
+    };
 
-    let change_of_shift_df = sr_df
+    let change_of_shift_df = txr_df
         .clone()
         .lazy()
-        .filter(col("Beschreibung").eq(lit("SCHICHTWECHSEL")))
+        .filter(
+            col("Beschreibung")
+                .str()
+                .contains(lit("SCHICHTWECHSEL"), true),
+        )
         .with_column(
             col("Datum")
                 .str()
-                .extract(lit(r".?(\d\d\.\d\d\.\d\d\d\d), "), 1)
+                .extract(lit(r"(\d\d\d\d\-\d\d\-\d\d)"), 1)
                 .str()
-                .strptime(DataType::Date, raw_date_format.clone(), Expr::default())
+                .strptime(DataType::Date, raw_date_format_txr.clone(), Expr::default())
                 .alias("Date"),
         )
         .with_column(
@@ -202,7 +212,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .alias("is_weekend"),
         )
         .with_column(
-            (col("Datum").str().extract(lit(r".{10}, (\d\d:\d\d)"), 1) + lit(":00"))
+            (col("Datum").str().extract(lit(r".{11}(\d\d:\d\d:\d\d)"), 1))
                 .str()
                 .to_time(time_format.clone())
                 .alias("Time"),
@@ -225,10 +235,17 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .eq(lit("Umsatz"))
                 .and(col("Status").eq(lit("Erfolgreich"))),
         )
+        .with_column(
+            (col("Datum").str().extract(lit(r".{11}(\d\d:\d\d:\d\d)"), 1))
+                .str()
+                .to_time(time_format.clone())
+                .alias("TimeTrx"),
+        )
         .select([
             col("Transaktions-ID"),
             col("Betrag inkl. MwSt.").alias("Commissioned Total"),
             col("Gebühr").alias("Commission"),
+            col("TimeTrx"),
         ]);
 
     let add_tips_df = txr_df
@@ -363,7 +380,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .select([
             col("Konto").alias("Account"),
             col("Date"),
-            col("Time"),
+            col("TimeTrx").alias("Time"),
             col("Type"),
             col("Transaktionsnummer").alias("Transaction ID"),
             col("Payment Method"),
@@ -416,23 +433,23 @@ fn infer_topic(time_options: &StrptimeOptions) -> Expr {
     .when(col("Beschreibung").eq(lit("Miete")))
     .then(lit(Topic::Rental.to_string()))
     .when(
-        col("Time")
+        col("TimeTrx")
             .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
-            .and(col("Time").lt(lit("18:00:00").str().to_time(time_options.clone())))
+            .and(col("TimeTrx").lt(lit("18:00:00").str().to_time(time_options.clone())))
             .and(col("is_weekend").eq(lit(true))),
     )
     .then(lit(Topic::Culture.to_string()))
     .when(
-        col("Time")
+        col("TimeTrx")
             .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
-            .and(col("Time").lt_eq(col("ChangeOfShift")))
+            .and(col("TimeTrx").lt_eq(col("ChangeOfShift")))
             .and(col("is_weekend").eq(lit(false))),
     )
     .then(lit(Topic::MiTi.to_string()))
     .when(
-        col("Time")
+        col("TimeTrx")
             .gt(col("ChangeOfShift"))
-            .and(col("Time").lt(lit("18:00:00").str().to_time(time_options.clone())))
+            .and(col("TimeTrx").lt(lit("18:00:00").str().to_time(time_options.clone())))
             .and(col("is_weekend").eq(lit(false))),
     )
     .then(lit(Topic::Cafe.to_string()))
@@ -664,7 +681,7 @@ mod tests {
                 "Miete", "Miete",
                 "Kerze 4", "Kerze 2", "Kerze klein",
             ],
-            "Time" => [
+            "TimeTrx" => [
                 "00:00:00", "05:59:59",
                 "06:00:00", "14:15:00",
                 "06:00:00", "14:15:00",

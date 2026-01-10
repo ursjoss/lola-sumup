@@ -65,20 +65,28 @@ fn sales_report_with_trx_id(
 
 /// Sample record 01 matching the structure of the sumup transaction report csv file
 #[fixture]
-pub fn transaction_report_df_01() -> DataFrame {
-    transaction_report_with_trx_id("TEGUCXAGDE")
+pub fn transaction_report_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> DataFrame {
+    transaction_report_with_trx_id("TEGUCXAGDE", sample_date, sample_time)
 }
 
 #[fixture]
-pub fn transaction_report_df_02() -> DataFrame {
-    transaction_report_with_trx_id("other")
+pub fn transaction_report_df_02(sample_date: NaiveDate, sample_time: NaiveTime) -> DataFrame {
+    transaction_report_with_trx_id("other", sample_date, sample_time)
 }
 
-fn transaction_report_with_trx_id(trx_id: &str) -> DataFrame {
+fn transaction_report_with_trx_id(
+    trx_id: &str,
+    sample_date: NaiveDate,
+    sample_time: NaiveTime,
+) -> DataFrame {
+    let date = sample_date.format("%Y-%m-%d").to_string();
+    let time = sample_time.format("%H:%M:%S").to_string();
     df!(
+        "Datum" => &[format!("{date} {time}")],
         "Transaktions-ID" => &[trx_id],
         "Transaktionsart" => &["Umsatz"],
         "Status" => &["Erfolgreich"],
+        "Beschreibung" => &[" foo "],
         "Betrag inkl. MwSt." => &[17.0],
         "Trinkgeldbetrag" => &[1.0],
         "Gebühr" => &[0.24],
@@ -755,7 +763,7 @@ pub fn sales_report_df_07(
     let time2 = sample_time.format("%H:%M").to_string();
     let time3 = sample_time_plus_5.format("%H:%M").to_string();
     df!(
-        "Datum" => &[format!("{date}, {time1}"), format!("{date}, {time2}"), format!("{date}, {time3}")],
+    	"Datum" => &[format!("{date}, {time1}"), format!("{date}, {time2}"), format!("{date}, {time3}")],
         "Typ" => &["Verkauf", "Verkauf", "Verkauf"],
         "Transaktionsnummer" => &["T1", "T2", "T3"],
         "Zahlungsmethode" => &["Bar", "MC", "Bar"],
@@ -774,11 +782,22 @@ pub fn sales_report_df_07(
 }
 
 #[fixture]
-pub fn transaction_report_df_07() -> DataFrame {
+pub fn transaction_report_df_07(
+    sample_date: NaiveDate,
+    sample_time: NaiveTime,
+    sample_time_minus_5: NaiveTime,
+    sample_time_plus_5: NaiveTime,
+) -> DataFrame {
+    let date = sample_date.format("%Y-%m-%d").to_string();
+    let time1 = sample_time_minus_5.format("%H:%M:%S").to_string();
+    let time2 = sample_time.format("%H:%M:%S").to_string();
+    let time3 = sample_time_plus_5.format("%H:%M:%S").to_string();
     df!(
+    	"Datum" => &[format!("{date} {time1}"), format!("{date} {time2}"), format!("{date} {time3}")],
         "Transaktions-ID" => &["T1", "T2", "T3"],
         "Transaktionsart" => &["Umsatz", "Umsatz", "Umsatz"],
         "Status" => &["Erfolgreich", "Erfolgreich", "Erfolgreich"],
+        "Beschreibung" => &["SCHICHTWECHSEL", "Kaffee", "SCHICHTWECHSEL"],
         "Betrag inkl. MwSt." => &[0.01, 3.5, 0.01],
         "Trinkgeldbetrag" => &[0.0, 0.0, 0.0],
         "Gebühr" => &[0.0, 0.05, 0.0],
