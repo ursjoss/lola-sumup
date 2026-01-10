@@ -86,7 +86,7 @@ fn write_closing_to_file(
     let col = 1;
     let format = Format::new()
         .set_background_color(Color::RGB(0x00b4_c7dc))
-        .set_num_format("#'##0.00");
+        .set_num_format("#,##0.00");
     worksheet.set_range_format(0, col, last_row, col, &format)?;
     let format = format.clone().set_bold().set_align(FormatAlign::Right);
     worksheet.set_range_format(0, col, 0, col, &format)?;

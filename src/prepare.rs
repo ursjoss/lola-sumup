@@ -31,7 +31,7 @@ pub fn prepare(
     excel_writer.set_worksheet_name(month)?;
     excel_writer.set_autofit(true);
     excel_writer.set_column_format("Date", "dd.mm.YYYY");
-    excel_writer.set_dtype_float_format("#'##0.00");
+    excel_writer.set_dtype_float_format("#,##0.00");
     excel_writer.set_freeze_panes(1, 2);
     excel_writer.write_dataframe(&df)?;
     excel_writer.save(output_path)?;
