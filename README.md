@@ -10,9 +10,9 @@ CLI to evaluate the monthly SumUp CSV extracts and extract LoLa specific reports
 The cli application `lola-sumup` is used in different phases of the monthly-closing process of the
 Quartiertreffpunkt LoLa in Basel.
 
-There are two subcommands used in the prepration of the monthly closing process: `prepare` and `export`.
-Another subcommand is used to process the accounting information after the closing, to produce a condenses
-view on the monhtly accounts: `close`.
+There are two subcommands used in the preparation of the monthly closing process: `prepare` and `export`.
+Another subcommand is used to process the accounting information after the closing to produce a condensed
+view of the monthly accounts: `close`.
 
 The `prepare` subcommand parses two SumUp extracts with monthly data and creates an intermediate file,
 an Excel file combining data from both reports, enriched with three columns `Topic`, `Owner`, and `Purpose`.
@@ -24,7 +24,7 @@ It generates four different exports from it, dedicated to different purposes in 
 monthly closing process.
 
 After the general ledger has been updated, the accounts are exported to an Excel file via Banana
-accounting software. The subcommand `close` process the excel and aggregates the year-to-date figures
+accounting software. The subcommand `close` processes the Excel file and aggregates the year-to-date figures
 on the level of the LoLa budget.
 
 ## Versions
@@ -35,8 +35,8 @@ lola-sumup has been adapted in a non-backwards-compatible way.
 | Version | Sumup-exports    |
 |---------|------------------|
 | 0.1.0   | Up to April 2024 |
-| 0.2.0   | As of May 2024  working with CSV files for interemediate and exports  |
-| 0.3.0   | As of September 2025  working with XLSX files for interemediate and exports  |
+| 0.2.0   | As of May 2024  working with CSV files for intermediate and exports  |
+| 0.3.0   | As of September 2025  working with XLSX files for intermediate and exports  |
 | 0.4.0   | As of December 2025  Switching from Topic Culture/PaidOut to Topic Culture with Owners LoLa/PaidOut |
 
 ## CLI
@@ -216,14 +216,14 @@ The columns of the resulting file are defined as follows:
   - `Kommission MiTi`: Commission on `Gross Card MiTi` (including commission on tips) [`MiTi_Commission`]
   - `Netto Karte MiTi`: Net income from menus paid by card [`Net MiTi (MiTi) Card`]
 - Netting with LoLa
-  - `Net Total Karte`: Net card payments concerning Mittagstisch (Sales from meals, tips, sales of LoLa goods paid via card) [`Net Paymnet SumUp MiTi`]
+  - `Net Total Karte`: Net card payments concerning Mittagstisch (Sales from meals, tips, sales of LoLa goods paid via card) [`Net Payment SumUp MiTi`]
   - `Verkauf LoLa (80%)` 80% of net sales lola goods [-`Net MiTi (LoLA) - Share LoLa`]
   - `Gesponsort` LoLa sponsored reductions (2.00 per Meal) [`Sponsored Reductions`]
   - `Überweisung`: Net Payment LoLa to Mittagstisch [`Debt to MiTi`]
 
 ### Accounting Report
 
-The purpose of the accounting export is to provide the relevant information on monthly level to the book-keeper.
+The purpose of the accounting export is to provide the relevant information on a monthly level to the bookkeeper.
 
 The columns of the resulting accounting.xlsx file are defined as follows:
 
@@ -259,8 +259,8 @@ The columns of the resulting accounting.xlsx file are defined as follows:
 
 
 The first three columns after the date do not require postings.
-They serve for consolidation purposes:
-- `Payment SumUp` has to match the bank statement showing the daily sumup payments
+They serve consolidation purposes:
+- `Payment SumUp` has to match the bank statement showing the daily SumUp payments
   (which are posted on our account with a delay of one or more days).
 - `Total Cash Debit` and `Total Card Debit` helps to reconcile the cash account ledger ("Kassendokument").
   Please note that those two columns potentially aggregate multiple entries in the cash account ledger for each day.
@@ -291,8 +291,8 @@ The columns in the banana.xlsx spreadsheet are:
 ### Details Report
 
 The details export file collects all original and derived columns that are required to build the other reports or for deeper insights.
-It can be used to validate the sumup data against the several daily shift reports (first columns).
-Furthmore, it can also be used for debugging purposes, as it lists some more auxillary columns that are used in calculations.
+It can be used to validate the SumUp data against the several daily shift reports (first columns).
+Furthermore, it can also be used for debugging purposes, as it lists some more auxiliary columns that are used in calculations.
 
 The columns of the resulting details export file are defined as follows:
 
@@ -369,7 +369,7 @@ The columns of the resulting details export file are defined as follows:
   - `Net MiTi (MiTi) Card`: Net Income Mittagstisch Menus w/o commission paid by card [`Gross MiTi (MiTi) Card` - `MiTi_Commission`]
   - `Net MiTi (LoLa)`: Net total income Mittagstisch with LoLa items w/o commission [`Gross MiTi (LoLa)` - `LoLa_Commission_MiTi`]
   - `Contribution MiTi`: Share MiTi from selling LoLa items [20% * `Net MiTi (LoLa)`]
-  - `Net MiTi (LoLA) - Share LoLa`: 80% of Net total income Mittagstisch with LoLa items w/o commission [`Net MiTi (LoLa)` * 0.8]
+  - `Net MiTi (LoLa) - Share LoLa`: 80% of net total income Mittagstisch with LoLa items w/o commission [`Net MiTi (LoLa)` * 0.8]
   - `Sponsored Reductions`: Reductions sponsored by LoLa [2 * (`MealCount_Reduced` + `MealCount_Praktikum`)]
   - `Debt to MiTi`: Net amount LoLa needs to pay out to Mittagstisch [`Net Payment SumUp MiTi` - `Net MiTi (LoLA) - Share LoLa` + `Sponsored Reductions`]
   - `Income LoLa MiTi`: Income LoLa from MiTi selling LoLa [`Gross MiTi (LoLa)` - `Contribution MiTi`]
