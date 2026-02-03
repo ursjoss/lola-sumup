@@ -184,7 +184,31 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         ..Default::default()
     };
 
-    let change_of_shift_df = txr_df
+    let refunded_transaction_ids = get_ids_of_refunded(sr_df)?;
+
+    let clean_txr_df = txr_df
+        .clone()
+        .lazy()
+        .join(
+            refunded_transaction_ids.clone().lazy(),
+            [col("Transaktions-ID")],
+            [col("Transaktionsnummer")],
+            JoinArgs::new(JoinType::Anti),
+        )
+        .collect()?;
+
+    let clean_sr_df = sr_df
+        .clone()
+        .lazy()
+        .join(
+            refunded_transaction_ids.lazy(),
+            [col("Transaktionsnummer")],
+            [col("Transaktionsnummer")],
+            JoinArgs::new(JoinType::Anti),
+        )
+        .collect()?;
+
+    let change_of_shift_df = clean_txr_df
         .clone()
         .lazy()
         .filter(
@@ -227,7 +251,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .group_by([col("Date")])
         .agg([col("ChangeOfShift").last().alias("ChangeOfShift")]);
 
-    let commission_df = txr_df
+    let commission_df = clean_txr_df
         .clone()
         .lazy()
         .filter(
@@ -248,7 +272,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
             col("TimeTrx"),
         ]);
 
-    let add_tips_df = txr_df
+    let add_tips_df = clean_txr_df
         .clone()
         .lazy()
         .filter(
@@ -262,7 +286,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
             col("Trinkgeldbetrag").fill_null(0.0).alias("TG"),
         ]);
 
-    let additional_tip_df = sr_df
+    let additional_tip_df = clean_sr_df
         .clone()
         .lazy()
         .join(
@@ -291,7 +315,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .unique(None, UniqueKeepStrategy::First)
         .collect()?;
 
-    let union_df = sr_df.vstack(&additional_tip_df)?;
+    let union_df = clean_sr_df.vstack(&additional_tip_df)?;
 
     let df = union_df
         .lazy()
@@ -398,6 +422,15 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .collect()?;
     warn_on_zero_value_trx(&df)?;
     Ok(df)
+}
+
+fn get_ids_of_refunded(sr_df: &DataFrame) -> PolarsResult<DataFrame> {
+    sr_df
+        .clone()
+        .lazy()
+        .filter(col("Typ").eq(lit("Refund")))
+        .select([col("Transaktionsnummer")])
+        .collect()
 }
 
 /// Accepts Typ with various values, returning either `Cash` or `Card`
@@ -607,9 +640,9 @@ mod tests {
     use rstest::*;
 
     use crate::test_fixtures::{
-        intermediate_df_01, intermediate_df_07, sales_report_df_01, sales_report_df_02,
-        sales_report_df_07, transaction_report_df_01, transaction_report_df_02,
-        transaction_report_df_07,
+        intermediate_df_01, intermediate_df_07, intermediate_df_09, sales_report_df_01,
+        sales_report_df_02, sales_report_df_07, sales_report_df_09, transaction_report_df_01,
+        transaction_report_df_02, transaction_report_df_07, transaction_report_df_09,
     };
     use crate::test_utils::assert_dataframe;
 
@@ -662,6 +695,17 @@ mod tests {
         let out = combine_input_dfs(&sales_report_df_07, &transaction_report_df_07)
             .expect("should be able to combine input dfs");
         assert_dataframe(&out, &intermediate_df_07);
+    }
+
+    #[rstest]
+    fn test_combine_input_dfs_with_refunds(
+        sales_report_df_09: DataFrame,
+        transaction_report_df_09: DataFrame,
+        intermediate_df_09: DataFrame,
+    ) {
+        let out = combine_input_dfs(&sales_report_df_09, &transaction_report_df_09)
+            .expect("should be able to combine input dfs");
+        assert_dataframe(&out, &intermediate_df_09);
     }
 
     #[fixture]

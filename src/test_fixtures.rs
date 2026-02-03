@@ -91,7 +91,7 @@ fn transaction_report_with_trx_id(
         "Trinkgeldbetrag" => &[1.0],
         "Gebühr" => &[0.24],
     )
-    .expect("valid dataframe transaction report data frame 01")
+    .expect("valid dataframe transaction report data frame 02")
 }
 
 /// Sample record 01 matching the structure of the intermediate csv file,
@@ -1019,6 +1019,94 @@ pub fn banana_df_ext_08(
         "Betrag CHF" => &[400.0, 600.0, 100.0, 200.0, 1300.0, 9.0],
     )
     .expect("Valid banana df ext 08")
+}
+
+//end region
+
+//region 09 - refunds
+#[fixture]
+pub fn sales_report_df_09(
+    sample_date: NaiveDate,
+    sample_time: NaiveTime,
+    sample_time_plus_5: NaiveTime,
+    sample_time_minus_5: NaiveTime,
+) -> DataFrame {
+    let date = sample_date.format("%d.%m.%Y").to_string();
+    let time1 = sample_time.format("%H:%M").to_string();
+    let time2 = sample_time_plus_5.format("%H:%M").to_string();
+    let time3 = sample_time_minus_5.format("%H:%M").to_string();
+    let d1 = format!("{date}, {time1}");
+    let d2 = format!("{date}, {time2}");
+    let d3 = format!("{date}, {time3}");
+    let trx_id = "TAAAZFC7HSH";
+    df!(
+        "Datum" => &[d1.clone(), d1, d2, d3],
+        "Typ" => &["Verkauf", "Verkauf", "Refund", "Verkauf"],
+        "Transaktionsnummer" => &[trx_id, trx_id, trx_id, "TAAAZFCAHD7"],
+        "Zahlungsmethode" => &["Bar", "Bar", "Bar", "Visa - Debitkarte"],
+        "Menge" => &[1_i64, 2_i64, 1_i64, 1_i64],
+        "Beschreibung" => &["Hauptgang Vegi Standard", "Vorspeise/Dessert Standard", "", "Hauptgang Vegi Reduziert"],
+        "Währung" => &["CHF", "CHF", "CHF", "CHF"],
+        "Preis vor Rabatt" => &[13.0, 6.0, -19.0, 11.0],
+        "Rabatt" => &[Some(0.0), Some(0.0), None, Some(0.0)],
+        "Preis (brutto)" => &[13.0, 6.0, -19.0, 11.0],
+        "Preis (netto)" => &[Some(13.0), Some(6.0), None, Some(11.0)],
+        "Steuer" => &[Some(0.0), Some(0.0), None, Some(0.0)],
+        "Steuersatz" => &["", "", "", ""],
+        "Konto" => &[Some("a@b.ch"), Some("a@b.ch"), None, Some("a@b.ch")],
+    )
+    .expect("valid dataframe sales report data frame 09")
+}
+
+#[fixture]
+pub fn transaction_report_df_09(
+    sample_date: NaiveDate,
+    sample_time: NaiveTime,
+    sample_time_plus_5: NaiveTime,
+    sample_time_minus_5: NaiveTime,
+) -> DataFrame {
+    let date = sample_date.format("%Y-%m-%d").to_string();
+    let time1 = sample_time.format("%H:%M:%S").to_string();
+    let time2 = sample_time_plus_5.format("%H:%M:%S").to_string();
+    let time3 = sample_time_minus_5.format("%H:%M:%S").to_string();
+    let d1 = format!("{date} {time1}");
+    let d2 = format!("{date} {time2}");
+    let d3 = format!("{date} {time3}");
+    let trx_id = "TAAAZFC7HSH";
+    df!(
+        "Datum" => &[d2, d1, d3],
+        "Transaktions-ID" => &[trx_id, trx_id, "TAAAZFCAHD7"],
+        "Transaktionsart" => &["Rückerstattung", "Umsatz", "Umsatz"],
+        "Status" => &[None, Some("Erfolgreich"), Some("Erfolgreich")],
+        "Beschreibung" => &[None, Some("1 x Hauptgang Vegi, 2 x Vorspeise/Dessert"), Some("1 x Hauptgang Vegi")],
+        "Betrag inkl. MwSt." => &[-19.0, 19.0, 11.0],
+        "Trinkgeldbetrag" => &[None, Some(0.0), Some(0.0)],
+        "Gebühr" => &[None, Some(0.0), Some(0.17)],
+    )
+    .expect("valid dataframe transaction report data frame 09")
+}
+
+#[fixture]
+pub fn intermediate_df_09(sample_date: NaiveDate, sample_time_minus_5: NaiveTime) -> DataFrame {
+    df!(
+        "Account" => &["a@b.ch"],
+        "Date" => &[sample_date],
+        "Time" => &[sample_time_minus_5],
+        "Type" => &["Sales"],
+        "Transaction ID" => &["TAAAZFCAHD7"],
+        "Payment Method" => &["Card"],
+        "Quantity" => &[1_i64],
+        "Description" => &["Hauptgang Vegi Reduziert"],
+        "Currency" => &["CHF"],
+        "Price (Gross)" => &[11.0],
+        "Price (Net)" => &[11.0],
+        "Commission" => &[0.17],
+        "Topic" => &["MiTi"],
+        "Owner" => &["MiTi"],
+        "Purpose" => &["Consumption"],
+        "Comment" => &[AnyValue::Null],
+    )
+    .expect("valid intermediate dataframe 09")
 }
 
 //end region
