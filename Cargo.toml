@@ -9,25 +9,23 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.5.56", features = ["derive"] }
+clap = { version = "4.5.57", features = ["derive"] }
 serde = { version = "1.0.228", features = ["derive"] }
 chrono= { version = "0.4.43", features = ["serde"] }
 strum = { version = "0.27.2" }
 strum_macros = { version = "0.27.2" }
 quick-xml = { version = "0.39.0", features = ["serde"] }
 toml = "0.9.11"
-polars_excel_writer = "0.22.0"
+polars_excel_writer = "0.24.0"
 calamine = { version = "0.32.0", features = ["chrono"] }
-rust_xlsxwriter = { version = "0.92.4", features = ["polars"] }
+rust_xlsxwriter = { version = "0.93.0", features = ["polars"] }
 
 [dependencies.polars]
 version = "0.52.0"
 features = [
     "abs",
     "concat_str",
-    "dtype-categorical",
     "dtype-date",
-    "dtype-i128",
     "is_in",
     "lazy",
     "regex",
