@@ -18,7 +18,7 @@ quick-xml = { version = "0.39.0", features = ["serde"] }
 toml = "0.9.11"
 polars_excel_writer = "0.24.0"
 calamine = { version = "0.32.0", features = ["chrono"] }
-rust_xlsxwriter = { version = "0.92.4", features = ["polars"] }
+rust_xlsxwriter = { version = "0.93.0", features = ["polars"] }
 
 [dependencies.polars]
 version = "0.52.0"
