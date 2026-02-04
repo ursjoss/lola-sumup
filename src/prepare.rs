@@ -52,6 +52,11 @@ fn process_input(
         .finish()?
         .lazy()
         .with_column(
+            col("Preis (netto)")
+                .fill_null(col("Preis (brutto)"))
+                .alias("Preis (netto)"),
+        )
+        .with_column(
             when(
                 col("Beschreibung")
                     .eq(lit("SCHICHTWECHSEL"))
@@ -79,7 +84,15 @@ fn process_input(
         .with_infer_schema_length(Some(1500))
         .with_parse_options(parse_options)
         .try_into_reader_with_file_path(Some(transaction_report.into()))?
-        .finish()?;
+        .finish()?
+        .lazy()
+        .with_column(
+            col("Netto")
+                .fill_null(col("Betrag inkl. MwSt."))
+                .alias("Netto"),
+        )
+        .collect()?;
+
     fail_on_missing_trx(&txr_df, &sr_df)?;
     combine_input_dfs(&sr_df, &txr_df)
 }
