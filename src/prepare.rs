@@ -199,6 +199,27 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
 
     let refunded_transaction_ids = get_ids_of_refunded(sr_df)?;
 
+    let violations = refunded_transaction_ids
+        .clone()
+        .lazy()
+        .join(
+            sr_df.clone().lazy(),
+            [col("Transaktionsnummer")],
+            [col("Transaktionsnummer")],
+            JoinType::Inner.into(),
+        )
+        .group_by([col("Transaktionsnummer")])
+        .agg([col("Preis (netto)").sum().alias("Total Netto")])
+        .filter(col("Total Netto").neq(0.0))
+        .collect()?;
+
+    if violations.shape().0 > 0 {
+        println!("{violations}");
+        return Err(Box::from(format!(
+            "Refund not fully compensating the sales transactions! {violations:?}"
+        )));
+    }
+
     let clean_txr_df = txr_df
         .clone()
         .lazy()
@@ -654,8 +675,9 @@ mod tests {
 
     use crate::test_fixtures::{
         intermediate_df_01, intermediate_df_07, intermediate_df_09, sales_report_df_01,
-        sales_report_df_02, sales_report_df_07, sales_report_df_09, transaction_report_df_01,
-        transaction_report_df_02, transaction_report_df_07, transaction_report_df_09,
+        sales_report_df_02, sales_report_df_07, sales_report_df_09, sales_report_df_10,
+        transaction_report_df_01, transaction_report_df_02, transaction_report_df_07,
+        transaction_report_df_09, transaction_report_df_10,
     };
     use crate::test_utils::assert_dataframe;
 
@@ -719,6 +741,18 @@ mod tests {
         let out = combine_input_dfs(&sales_report_df_09, &transaction_report_df_09)
             .expect("should be able to combine input dfs");
         assert_dataframe(&out, &intermediate_df_09);
+    }
+
+    #[rstest]
+    fn test_combine_input_dfs_with_non_matching_refunds_throws(
+        sales_report_df_10: DataFrame,
+        transaction_report_df_10: DataFrame,
+    ) {
+        let out = combine_input_dfs(&sales_report_df_10, &transaction_report_df_10);
+        assert!(
+            out.is_err(),
+            "combining input_dfs with refunds that don't net to 0 should fail"
+        );
     }
 
     #[fixture]
