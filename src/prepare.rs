@@ -197,19 +197,49 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         ..Default::default()
     };
 
-    let refunded_transaction_ids = get_ids_of_refunded(sr_df)?;
+    let refunded_transaction_ids = sr_df
+        .clone()
+        .lazy()
+        .filter(col("Typ").eq(lit("Refund")))
+        .select([col("Transaktionsnummer")])
+        .collect()?;
 
-    let clean_txr_df = txr_df
+    let violations = refunded_transaction_ids
         .clone()
         .lazy()
         .join(
-            refunded_transaction_ids.clone().lazy(),
-            [col("Transaktions-ID")],
+            sr_df.clone().lazy(),
             [col("Transaktionsnummer")],
-            JoinArgs::new(JoinType::Anti),
+            [col("Transaktionsnummer")],
+            JoinType::Inner.into(),
         )
+        .group_by([col("Transaktionsnummer")])
+        .agg([col("Preis (netto)").sum().alias("Total Netto")])
+        .filter(col("Total Netto").neq(0.0))
         .collect()?;
 
+    if violations.shape().0 > 0 {
+        println!("{violations}");
+        return Err(Box::from(
+            "Refund not fully compensating the sales transactions!".to_string(),
+        ));
+    }
+    let refunded_ids = sr_df
+        .clone()
+        .lazy()
+        .filter(col("Typ").eq(lit("Refund")))
+        .select([col("Transaktionsnummer").implode()])
+        .collect()?
+        .column("Transaktionsnummer")?
+        .as_materialized_series()
+        .clone();
+
+    // Filter out transactions that are in the refunded list
+    let clean_txr_df = txr_df
+        .clone()
+        .lazy()
+        .filter(col("Transaktions-ID").is_in(lit(refunded_ids), true).not())
+        .collect()?;
     let clean_sr_df = sr_df
         .clone()
         .lazy()
@@ -437,15 +467,6 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
     Ok(df)
 }
 
-fn get_ids_of_refunded(sr_df: &DataFrame) -> PolarsResult<DataFrame> {
-    sr_df
-        .clone()
-        .lazy()
-        .filter(col("Typ").eq(lit("Refund")))
-        .select([col("Transaktionsnummer")])
-        .collect()
-}
-
 /// Accepts Typ with various values, returning either `Cash` or `Card`
 fn infer_type() -> Expr {
     when(col("Typ").eq(lit("Verkauf")))
@@ -654,8 +675,9 @@ mod tests {
 
     use crate::test_fixtures::{
         intermediate_df_01, intermediate_df_07, intermediate_df_09, sales_report_df_01,
-        sales_report_df_02, sales_report_df_07, sales_report_df_09, transaction_report_df_01,
-        transaction_report_df_02, transaction_report_df_07, transaction_report_df_09,
+        sales_report_df_02, sales_report_df_07, sales_report_df_09, sales_report_df_10,
+        transaction_report_df_01, transaction_report_df_02, transaction_report_df_07,
+        transaction_report_df_09, transaction_report_df_10,
     };
     use crate::test_utils::assert_dataframe;
 
@@ -719,6 +741,18 @@ mod tests {
         let out = combine_input_dfs(&sales_report_df_09, &transaction_report_df_09)
             .expect("should be able to combine input dfs");
         assert_dataframe(&out, &intermediate_df_09);
+    }
+
+    #[rstest]
+    fn test_combine_input_dfs_with_non_matching_refunds_throws(
+        sales_report_df_10: DataFrame,
+        transaction_report_df_10: DataFrame,
+    ) {
+        let out = combine_input_dfs(&sales_report_df_10, &transaction_report_df_10);
+        assert!(
+            out.is_err(),
+            "combining input_dfs with refunds that don't net to 0 should fail"
+        );
     }
 
     #[fixture]

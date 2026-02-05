@@ -1031,6 +1031,22 @@ pub fn sales_report_df_09(
     sample_time_plus_5: NaiveTime,
     sample_time_minus_5: NaiveTime,
 ) -> DataFrame {
+    sales_report_df_09_10(
+        sample_date,
+        sample_time,
+        sample_time_plus_5,
+        sample_time_minus_5,
+        0.0,
+    )
+}
+
+fn sales_report_df_09_10(
+    sample_date: NaiveDate,
+    sample_time: NaiveTime,
+    sample_time_plus_5: NaiveTime,
+    sample_time_minus_5: NaiveTime,
+    delta_refund: f64,
+) -> DataFrame {
     let date = sample_date.format("%d.%m.%Y").to_string();
     let time1 = sample_time.format("%H:%M").to_string();
     let time2 = sample_time_plus_5.format("%H:%M").to_string();
@@ -1039,6 +1055,7 @@ pub fn sales_report_df_09(
     let d2 = format!("{date}, {time2}");
     let d3 = format!("{date}, {time3}");
     let trx_id = "TAAAZFC7HSH";
+    let refund = -19.0 - delta_refund;
     df!(
         "Datum" => &[d1.clone(), d1, d2, d3],
         "Typ" => &["Verkauf", "Verkauf", "Refund", "Verkauf"],
@@ -1049,8 +1066,8 @@ pub fn sales_report_df_09(
         "Währung" => &["CHF", "CHF", "CHF", "CHF"],
         "Preis vor Rabatt" => &[13.0, 6.0, -19.0, 11.0],
         "Rabatt" => &[Some(0.0), Some(0.0), None, Some(0.0)],
-        "Preis (brutto)" => &[13.0, 6.0, -19.0, 11.0],
-        "Preis (netto)" => &[Some(13.0), Some(6.0), None, Some(11.0)],
+        "Preis (brutto)" => &[13.0, 6.0, refund, 11.0],
+        "Preis (netto)" => &[Some(13.0), Some(6.0), Some(refund), Some(11.0)],
         "Steuer" => &[Some(0.0), Some(0.0), None, Some(0.0)],
         "Steuersatz" => &["", "", "", ""],
         "Konto" => &[Some("a@b.ch"), Some("a@b.ch"), None, Some("a@b.ch")],
@@ -1109,4 +1126,37 @@ pub fn intermediate_df_09(sample_date: NaiveDate, sample_time_minus_5: NaiveTime
     .expect("valid intermediate dataframe 09")
 }
 
+//end region
+
+//region - mismatching refunds
+#[fixture]
+pub fn sales_report_df_10(
+    sample_date: NaiveDate,
+    sample_time: NaiveTime,
+    sample_time_plus_5: NaiveTime,
+    sample_time_minus_5: NaiveTime,
+) -> DataFrame {
+    sales_report_df_09_10(
+        sample_date,
+        sample_time,
+        sample_time_plus_5,
+        sample_time_minus_5,
+        1.0,
+    )
+}
+
+#[fixture]
+pub fn transaction_report_df_10(
+    sample_date: NaiveDate,
+    sample_time: NaiveTime,
+    sample_time_plus_5: NaiveTime,
+    sample_time_minus_5: NaiveTime,
+) -> DataFrame {
+    transaction_report_df_09(
+        sample_date,
+        sample_time,
+        sample_time_plus_5,
+        sample_time_minus_5,
+    )
+}
 //end region
