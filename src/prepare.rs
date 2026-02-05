@@ -197,7 +197,12 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         ..Default::default()
     };
 
-    let refunded_transaction_ids = get_ids_of_refunded(sr_df)?;
+    let refunded_transaction_ids = sr_df
+        .clone()
+        .lazy()
+        .filter(col("Typ").eq(lit("Refund")))
+        .select([col("Transaktionsnummer")])
+        .collect()?;
 
     let violations = refunded_transaction_ids
         .clone()
@@ -215,22 +220,26 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
 
     if violations.shape().0 > 0 {
         println!("{violations}");
-        return Err(Box::from(format!(
-            "Refund not fully compensating the sales transactions! {violations:?}"
-        )));
+        return Err(Box::from(
+            "Refund not fully compensating the sales transactions!".to_string(),
+        ));
     }
+    let refunded_ids = sr_df
+        .clone()
+        .lazy()
+        .filter(col("Typ").eq(lit("Refund")))
+        .select([col("Transaktionsnummer").implode()])
+        .collect()?
+        .column("Transaktionsnummer")?
+        .as_materialized_series()
+        .clone();
 
+    // Filter out transactions that are in the refunded list
     let clean_txr_df = txr_df
         .clone()
         .lazy()
-        .join(
-            refunded_transaction_ids.clone().lazy(),
-            [col("Transaktions-ID")],
-            [col("Transaktionsnummer")],
-            JoinArgs::new(JoinType::Anti),
-        )
+        .filter(col("Transaktions-ID").is_in(lit(refunded_ids), true).not())
         .collect()?;
-
     let clean_sr_df = sr_df
         .clone()
         .lazy()
@@ -456,15 +465,6 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .collect()?;
     warn_on_zero_value_trx(&df)?;
     Ok(df)
-}
-
-fn get_ids_of_refunded(sr_df: &DataFrame) -> PolarsResult<DataFrame> {
-    sr_df
-        .clone()
-        .lazy()
-        .filter(col("Typ").eq(lit("Refund")))
-        .select([col("Transaktionsnummer")])
-        .collect()
 }
 
 /// Accepts Typ with various values, returning either `Cash` or `Card`
