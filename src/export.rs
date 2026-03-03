@@ -216,7 +216,7 @@ fn validate(raw_df: &DataFrame) -> Result<(), Box<dyn Error>> {
         col("Transaction ID"),
         col("Payment Method"),
         col("Description"),
-        col("Price (Gross)"),
+        col("Price (Net)"),
         col("Topic"),
         col("Owner"),
         col("Purpose"),
