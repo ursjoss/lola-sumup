@@ -681,7 +681,7 @@ pub fn collect_data(raw_df: DataFrame) -> PolarsResult<DataFrame> {
 
 /// Aggregates daily consumption
 fn price_by_date_for(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> LazyFrame {
-    key_figure_by_date_for("Price (Gross)", predicate_and_alias, ldf)
+    key_figure_by_date_for("Price (Net)", predicate_and_alias, ldf)
 }
 
 /// Aggregates daily commission
@@ -817,7 +817,7 @@ fn meal_total(predicate_and_alias: (Expr, String), ldf: LazyFrame) -> LazyFrame 
     let (predicate, _) = predicate_and_alias;
     ldf.filter(predicate)
         .group_by(["Date"])
-        .agg([col("Price (Gross)")
+        .agg([col("Price (Net)")
             .fill_null(0)
             .sum()
             .alias("Total Praktikum")
@@ -1013,7 +1013,7 @@ mod tests {
     ) -> PolarsResult<()> {
         let df_in = df!(
             "Date" => &["16.03.2023", "14.03.2023", "15.03.2023", "28.03.2023", "20.03.2023", "14.03.2023", "20.03.2023", "22.03.2023", "23.03.2023", "25.03.2023", "25.03.2023", "26.03.2023", "27.03.2023"],
-            "Price (Gross)" => &[None, Some(1.3), Some(5.2), Some(3.6), Some(4.7), Some(0.5), Some(100.0), Some(400.0), Some(500.0), Some(10.0), Some(20.0), Some(700.0), Some(70.0)],
+            "Price (Net)" => &[None, Some(1.3), Some(5.2), Some(3.6), Some(4.7), Some(0.5), Some(100.0), Some(400.0), Some(500.0), Some(10.0), Some(20.0), Some(700.0), Some(70.0)],
             "Topic" => &["Cafe", "Cafe", "MiTi", "Cafe", "Cafe", "Cafe", "Deposit", "Culture", "Rental", "SoFe", "SoFe", "Packaging", "Packaging"],
             "Payment Method" => &["Card", "Card", "Card", "Card", "Cash", "Cash", "Card", "Card", "Card", "Cash", "Card", "Card", "Cash"],
             "Purpose" => &["Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Tip", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption", "Consumption"],

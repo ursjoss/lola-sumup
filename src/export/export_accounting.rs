@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use std::error::Error;
 
 use polars::prelude::*;
@@ -73,10 +74,13 @@ pub fn gather_df_accounting(df_det: &DataFrame) -> PolarsResult<DataFrame> {
         .collect()
 }
 
-pub fn validate_acc_constraint(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
+pub fn validate_acc_constraint(
+    df_acc: &DataFrame,
+    month: &str,
+) -> Result<DataFrame, Box<dyn Error>> {
     validate_acc_constraint_10920(df_acc)?;
-    validate_acc_constraint_20051(df_acc)?;
-    validate_acc_constraint_20121(df_acc)
+    validate_acc_constraint_20121(df_acc)?;
+    validate_acc_constraint_20051(df_acc, month)
 }
 
 /// validates the transitory account 10920 nets to 0
@@ -97,12 +101,16 @@ fn validate_acc_constraint_10920(df_acc: &DataFrame) -> Result<(), Box<dyn Error
 }
 
 /// validates the transitory account 20051 nets to 0
-fn validate_acc_constraint_20051(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
+fn validate_acc_constraint_20051(
+    df_acc: &DataFrame,
+    month: &str,
+) -> Result<DataFrame, Box<dyn Error>> {
     let net_expr = col(Posting::NET_CARD_TOTAL_MITI.alias)
         - col(Posting::DEBT_TO_MITI.alias)
         - col(Posting::INCOME_LOLA_MITI.alias)
         + col(Posting::SPONSORED_REDUCTIONS.alias);
-    validate_constraint(df_acc, net_expr, "20051")?
+    let _ = validate_constraint(df_acc, net_expr.clone(), "20051")?;
+    calculate_correction_20051(df_acc, &net_expr, month)
 }
 
 /// validates the transitory account 20121 nets to 0
@@ -136,6 +144,56 @@ fn validate_constraint(
     } else {
         Ok(())
     })
+}
+
+fn calculate_correction_20051(
+    df_acc: &DataFrame,
+    net_expr: &Expr,
+    month: &str,
+) -> Result<DataFrame, Box<dyn Error>> {
+    let last_of_month = get_last_of_month_nd(month)?;
+    let correction = df_acc
+        .clone()
+        .lazy()
+        .with_column(
+            net_expr
+                .clone()
+                .round(2, RoundMode::HalfToEven)
+                .alias("Net"),
+        )
+        .filter(col("Date").is_null())
+        .select([
+            lit(last_of_month).cast(DataType::Date).alias("Datum"),
+            lit(NULL).alias("Beleg"),
+            lit(NULL).alias("Rechnung"),
+            lit("SU Rundungskorrektur 20051").alias("Beschreibung"),
+            when(col("Net").gt(0.0))
+                .then(lit("20051"))
+                .otherwise(lit("68450"))
+                .alias("KtSoll"),
+            when(col("Net").lt(0.0))
+                .then(lit("20051"))
+                .otherwise(lit("68450"))
+                .alias("KtHaben"),
+            lit(NULL).alias("Anzahl"),
+            lit(NULL).alias("Einheit"),
+            lit(NULL).alias("Preis/Einheit"),
+            col("Net").abs().alias("Betrag CHF"),
+        ])
+        .filter(col("Betrag CHF").neq(lit(0.0)))
+        .collect()?;
+    Ok(correction)
+}
+
+/// return the last of the month from provided `month`
+pub fn get_last_of_month_nd(month: &str) -> Result<NaiveDate, Box<dyn Error>> {
+    let y: i32 = month.chars().take(4).collect::<String>().parse()?;
+    let m: u32 = month.chars().skip(4).collect::<String>().parse()?;
+    let (ny, nm) = if m == 12 { (y + 1, 1) } else { (y, m + 1) };
+    let lom = NaiveDate::from_ymd_opt(ny, nm, 1)
+        .ok_or("should be able to create next_day")
+        .map(|nd| nd - chrono::Duration::days(1))?;
+    Ok(lom)
 }
 
 #[cfg(test)]
@@ -519,71 +577,6 @@ mod tests {
     )]
     #[case(1343.36, 552.0, 1162.0, 0.0, 0.0, 10.0, 20.0, 0.0, 0.0, 0.0, 20.0, 12.0, 20.0, 10.0, 100.0, 500.0, 400.0, 0.0, 100.0, 100.0, 189.25, 1.0, 17.99,
     2.0, 0.0, 148.76, 42.49, Some(-9.1), "10920")]
-    // violations of account 20051
-    #[case(
-        1334.26,
-        552.0,
-        1162.0,
-        0.0,
-        0.0,
-        10.0,
-        20.0,
-        0.0,
-        0.0,
-        0.0,
-        20.0,
-        12.0,
-        20.0,
-        10.0,
-        100.0,
-        500.0,
-        400.0,
-        0.0,
-        100.0,
-        100.0,
-        189.25,
-        1.0,
-        17.99,
-        2.0,
-        0.0,
-        148.70,
-        42.49,
-        Some(0.06),
-        "20051"
-    )]
-    #[case(
-        1334.26,
-        552.0,
-        1162.0,
-        0.0,
-        0.0,
-        10.0,
-        20.0,
-        0.0,
-        0.0,
-        0.0,
-        20.0,
-        12.0,
-        20.0,
-        10.0,
-        100.0,
-        500.0,
-        400.0,
-        0.0,
-        100.0,
-        100.0,
-        189.25,
-        1.0,
-        17.99,
-        2.0,
-        0.0,
-        148.76,
-        42.43,
-        Some(0.06),
-        "20051"
-    )]
-    #[case(1334.26, 552.0, 1162.0, 0.0, 0.0, 10.0, 20.0, 0.0, 0.0, 0.0, 20.0, 12.0, 20.0, 10.0, 100.0, 500.0, 400.0, 0.0, 100.0, 100.0, 189.25, 1.0, 17.99,
-    2.0, 0.0, 148.76, 42.55, Some(-0.06), "20051")]
     // violations of account 20121
     #[case(
         1334.26,
@@ -679,6 +672,7 @@ mod tests {
         #[case] account: &str,
     ) -> PolarsResult<()> {
         let date = NaiveDate::parse_from_str("17.4.23", "%d.%m.%y").expect("valid date");
+        let month = "202304";
         let df = df!(
             "Date" => &[date],
             "Payment SumUp" => &[payment_sumup],
@@ -710,12 +704,162 @@ mod tests {
             "20051/30500" => &[income_lola_miti],
             "10930/10100" => &[debt_to_miti],
         )?;
-        match validate_acc_constraint(&df) {
-            Ok(()) => assert!(
-                delta.is_none(),
-                "Would not have expected delta {} on {date}.",
-                delta.unwrap()
-            ),
+        match validate_acc_constraint(&df, month) {
+            Ok(_corr_df) => {
+                assert!(
+                    delta.is_none(),
+                    "Would not have expected delta {} on {date}.",
+                    delta.unwrap()
+                );
+            }
+            Err(e) => match delta {
+                Some(d) => assert_eq!(
+                    e.to_string(),
+                    format!(
+                        "Constraint violation for accounting export on {date}: net value of account {account} is {d} instead of 0.0"
+                    )
+                ),
+                None => panic!("Would have expected delta on {date} but not in fixture: {e}"),
+            },
+        }
+
+        Ok(())
+    }
+
+    #[rstest]
+    // violations of account 20051
+    #[case(
+        1334.26,
+        552.0,
+        1162.0,
+        0.0,
+        0.0,
+        10.0,
+        20.0,
+        0.0,
+        0.0,
+        0.0,
+        20.0,
+        12.0,
+        20.0,
+        10.0,
+        100.0,
+        500.0,
+        400.0,
+        0.0,
+        100.0,
+        100.0,
+        189.25,
+        1.0,
+        17.99,
+        2.0,
+        0.0,
+        148.70,
+        42.49,
+        Some(0.06),
+        "20051"
+    )]
+    #[case(
+        1334.26,
+        552.0,
+        1162.0,
+        0.0,
+        0.0,
+        10.0,
+        20.0,
+        0.0,
+        0.0,
+        0.0,
+        20.0,
+        12.0,
+        20.0,
+        10.0,
+        100.0,
+        500.0,
+        400.0,
+        0.0,
+        100.0,
+        100.0,
+        189.25,
+        1.0,
+        17.99,
+        2.0,
+        0.0,
+        148.76,
+        42.43,
+        Some(0.06),
+        "20051"
+    )]
+    #[case(1334.26, 552.0, 1162.0, 0.0, 0.0, 10.0, 20.0, 0.0, 0.0, 0.0, 20.0, 12.0, 20.0, 10.0, 100.0, 500.0, 400.0, 0.0, 100.0, 100.0, 189.25, 1.0, 17.99,
+    2.0, 0.0, 148.76, 42.55, Some(-0.06), "20051")]
+    fn test_violations_20051(
+        #[case] payment_sumup: f64,
+        #[case] total_cash_debit: f64,
+        #[case] total_card_debit: f64,
+        #[case] cafe_cash: f64,
+        #[case] verm_cash: f64,
+        #[case] sofe_cash: f64,
+        #[case] deposit_cash: f64,
+        #[case] rental_cash: f64,
+        #[case] packaging_cash: f64,
+        #[case] culture_cash: f64,
+        #[case] cafe_card: f64,
+        #[case] verm_card: f64,
+        #[case] sofe_card: f64,
+        #[case] deposit_card: f64,
+        #[case] rental_card: f64,
+        #[case] packaging_card: f64,
+        #[case] culture_card: f64,
+        #[case] paid_out_cash: f64,
+        #[case] paid_out_card: f64,
+        #[case] paid_out_total: f64,
+        #[case] net_card_income_plus_tips_miti_card: f64,
+        #[case] tips_lola_paid_via_card: f64,
+        #[case] commission_lola: f64,
+        #[case] sponsored_reductions: f64,
+        #[case] total_praktikum: f64,
+        #[case] debt_to_miti: f64,
+        #[case] income_lola_miti: f64,
+        #[case] delta: Option<f64>,
+        #[case] account: &str,
+    ) -> PolarsResult<()> {
+        let date = NaiveDate::parse_from_str("17.4.23", "%d.%m.%y").expect("valid date");
+        let month = "202304";
+        let df = df!(
+            "Date" => &[date],
+            "Payment SumUp" => &[payment_sumup],
+            "Total Cash Debit" => &[total_cash_debit],
+            "Total Card Debit" => &[total_card_debit],
+            "10000/23050" => &[deposit_cash],
+            "10000/30200" => &[cafe_cash],
+            "10000/30700" => &[verm_cash],
+            "10000/30810" => &[sofe_cash],
+            "10000/31000" => &[rental_cash],
+            "10000/32000" => &[culture_cash],
+            "10000/46000" => &[packaging_cash],
+            "10000/20121" => &[paid_out_cash],
+            "10920/20121" => &[paid_out_card],
+            "20121/10000" => &[paid_out_total],
+            "10920/23050" => &[deposit_card],
+            "10920/30200" => &[cafe_card],
+            "10920/30700" => &[verm_card],
+            "10920/30810" => &[sofe_card],
+            "10920/31000" => &[rental_card],
+            "10920/32000" => &[culture_card],
+            "10920/46000" => &[packaging_card],
+            "10920/20051" => &[net_card_income_plus_tips_miti_card],
+            "10920/10910" => &[tips_lola_paid_via_card],
+            "68450/10920" => &[Some(commission_lola)],
+            "59991/20051" => &[sponsored_reductions],
+            "59991/20120" => &[total_praktikum],
+            "20051/10930" => &[debt_to_miti],
+            "20051/30500" => &[income_lola_miti],
+            "10930/10100" => &[debt_to_miti],
+        )?;
+        match validate_acc_constraint(&df, month) {
+            Ok(corr_df) => {
+                assert_eq!(corr_df.shape().0, 0);
+            }
             Err(e) => match delta {
                 Some(d) => assert_eq!(
                     e.to_string(),
