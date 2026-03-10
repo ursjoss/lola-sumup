@@ -74,13 +74,16 @@ pub fn gather_df_accounting(df_det: &DataFrame) -> PolarsResult<DataFrame> {
         .collect()
 }
 
-pub fn validate_acc_constraint(
+/// Validates there are no excessive rounding differences as leftovers
+/// in transitory accounts. Where defined, it calculates and returns
+/// a correction posting that nets the balance.
+pub fn validate_acc_constraint_and_calculate_correction_postings(
     df_acc: &DataFrame,
     month: &str,
 ) -> Result<DataFrame, Box<dyn Error>> {
     validate_acc_constraint_10920(df_acc)?;
     validate_acc_constraint_20121(df_acc)?;
-    validate_acc_constraint_20051(df_acc, month)
+    validate_acc_constraint_and_calculate_correction_20051(df_acc, month)
 }
 
 /// validates the transitory account 10920 nets to 0
@@ -100,8 +103,16 @@ fn validate_acc_constraint_10920(df_acc: &DataFrame) -> Result<(), Box<dyn Error
     validate_constraint(df_acc, net_expr, "10920")?
 }
 
-/// validates the transitory account 20051 nets to 0
-fn validate_acc_constraint_20051(
+/// validates the transitory account 20121 nets to 0
+fn validate_acc_constraint_20121(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
+    let net_expr = col(Posting::PAIDOUT_CASH.alias) + col(Posting::PAIDOUT_CARD.alias)
+        - col(Posting::PAIDOUT_TOTAL.alias);
+    validate_constraint(df_acc, net_expr, "20121")?
+}
+
+/// validates the transitory account 20051 nets to 0 and
+/// calculates the correction posting necessary to net account 20051 to 0
+fn validate_acc_constraint_and_calculate_correction_20051(
     df_acc: &DataFrame,
     month: &str,
 ) -> Result<DataFrame, Box<dyn Error>> {
@@ -111,13 +122,6 @@ fn validate_acc_constraint_20051(
         + col(Posting::SPONSORED_REDUCTIONS.alias);
     let _ = validate_constraint(df_acc, net_expr.clone(), "20051")?;
     calculate_correction_20051(df_acc, &net_expr, month)
-}
-
-/// validates the transitory account 20121 nets to 0
-fn validate_acc_constraint_20121(df_acc: &DataFrame) -> Result<(), Box<dyn Error>> {
-    let net_expr = col(Posting::PAIDOUT_CASH.alias) + col(Posting::PAIDOUT_CARD.alias)
-        - col(Posting::PAIDOUT_TOTAL.alias);
-    validate_constraint(df_acc, net_expr, "20121")?
 }
 
 fn validate_constraint(
@@ -704,13 +708,14 @@ mod tests {
             "20051/30500" => &[income_lola_miti],
             "10930/10100" => &[debt_to_miti],
         )?;
-        match validate_acc_constraint(&df, month) {
-            Ok(_corr_df) => {
+        match validate_acc_constraint_and_calculate_correction_postings(&df, month) {
+            Ok(corr_df) => {
                 assert!(
                     delta.is_none(),
                     "Would not have expected delta {} on {date}.",
                     delta.unwrap()
                 );
+                assert_eq!(corr_df.shape().0, 0);
             }
             Err(e) => match delta {
                 Some(d) => assert_eq!(
@@ -856,7 +861,7 @@ mod tests {
             "20051/30500" => &[income_lola_miti],
             "10930/10100" => &[debt_to_miti],
         )?;
-        match validate_acc_constraint(&df, month) {
+        match validate_acc_constraint_and_calculate_correction_postings(&df, month) {
             Ok(corr_df) => {
                 assert_eq!(corr_df.shape().0, 0);
             }

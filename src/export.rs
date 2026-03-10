@@ -11,7 +11,9 @@ use crate::export::constraint::{
     validate_owners, validate_payment_methods, validate_purposes, validate_topics,
     validation_topic_owner,
 };
-use crate::export::export_accounting::{gather_df_accounting, validate_acc_constraint};
+use crate::export::export_accounting::{
+    gather_df_accounting, validate_acc_constraint_and_calculate_correction_postings,
+};
 use crate::export::export_banana::{gather_df_banana, gather_df_banana_details};
 use crate::export::export_details::collect_data;
 use crate::export::export_miti::gather_df_miti;
@@ -202,7 +204,7 @@ fn crunch_data(
         df_det.sort(["Date"], SortMultipleOptions::new().with_nulls_last(true))?;
     let df_acc = gather_df_accounting(&df_det_extended)?;
     let mut df_banana_summary = gather_df_banana(&df_acc.clone(), month)?;
-    let correction = validate_acc_constraint(&df_acc, month)?;
+    let correction = validate_acc_constraint_and_calculate_correction_postings(&df_acc, month)?;
     df_banana_summary.extend(&correction)?;
     let df_banana_details = gather_df_banana_details(raw_df)?;
     let df_banana = filter_and_enrich_banana(&df_banana_summary, &df_banana_details)?;
