@@ -489,12 +489,12 @@ fn infer_payment_method() -> Expr {
 }
 
 /// Infers the `Topic` from the time of sale:
-/// before 06:00 and after 18:00 -> `Culture` or `PaidOut` if description contains " (PO)" or if it is a week-end.
-/// between 06:00 and `ChangeOfShift` -> `MiTi`
-/// between `ChangeOfShift` and 18:00 -> `Cafe`
-/// If the description starts with "Recircle Tupper Depot", the topic will be `Packaging` regardless of time or day.
-/// If the description is "Miete", the topic will be `Rental` regardless of time or day.
-/// If the description starts with "Kerze", the topic will be Culture regardless of time or day.
+/// - before 06:00 and after 18:00 -> `Culture` or if it is a week-end.
+/// - between 06:00 and `ChangeOfShift` -> `MiTi`
+/// - between `ChangeOfShift` and 18:00 -> `Cafe`
+/// - If the description starts with "Recircle Tupper Depot", the topic will be `Packaging` regardless of time or day.
+/// - If the description is "Miete", the topic will be `Rental` regardless of time or day.
+/// - If the description starts with "Kerze", the topic will be Culture regardless of time or day.
 fn infer_topic(time_options: &StrptimeOptions) -> Expr {
     when(
         col("Beschreibung")
