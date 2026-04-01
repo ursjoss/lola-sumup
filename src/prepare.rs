@@ -488,7 +488,9 @@ fn infer_payment_method() -> Expr {
         .otherwise(lit(PaymentMethod::Card.to_string()))
 }
 
-/// Infers the `Topic` from the time of sale:
+/// Infers the `Topic` from category or from the time of sale:
+/// - if the `Category` is "Mittagstisch" the Topic is `MiTi` regardless of the time of the day
+/// - if the `Category` contains " (PO)", the Topic is `Culture` regardless of the time of the day
 /// - before 06:00 and after 18:00 -> `Culture` or if it is a week-end.
 /// - between 06:00 and `ChangeOfShift` -> `MiTi`
 /// - between `ChangeOfShift` and 18:00 -> `Cafe`
@@ -496,38 +498,42 @@ fn infer_payment_method() -> Expr {
 /// - If the description is "Miete", the topic will be `Rental` regardless of time or day.
 /// - If the description starts with "Kerze", the topic will be Culture regardless of time or day.
 fn infer_topic(time_options: &StrptimeOptions) -> Expr {
-    when(
-        col("Beschreibung")
-            .str()
-            .starts_with(lit("Recircle Tupper Depot")),
-    )
-    .then(lit(Topic::Packaging.to_string()))
-    .when(col("Beschreibung").str().starts_with(lit("Kerze")))
-    .then(lit(Topic::Culture.to_string()))
-    .when(col("Beschreibung").eq(lit("Miete")))
-    .then(lit(Topic::Rental.to_string()))
-    .when(
-        col("TimeTrx")
-            .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
-            .and(col("TimeTrx").lt(lit("18:00:00").str().to_time(time_options.clone())))
-            .and(col("is_weekend").eq(lit(true))),
-    )
-    .then(lit(Topic::Culture.to_string()))
-    .when(
-        col("TimeTrx")
-            .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
-            .and(col("TimeTrx").lt_eq(col("ChangeOfShift")))
-            .and(col("is_weekend").eq(lit(false))),
-    )
-    .then(lit(Topic::MiTi.to_string()))
-    .when(
-        col("TimeTrx")
-            .gt(col("ChangeOfShift"))
-            .and(col("TimeTrx").lt(lit("18:00:00").str().to_time(time_options.clone())))
-            .and(col("is_weekend").eq(lit(false))),
-    )
-    .then(lit(Topic::Cafe.to_string()))
-    .otherwise(lit(Topic::Culture.to_string()))
+    when(col("Category").eq(lit("Mittagstisch")))
+        .then(lit(Topic::MiTi.to_string()))
+        .when(col("Category").str().contains(lit(" \\(PO\\)"), true))
+        .then(lit(Topic::Culture.to_string()))
+        .when(
+            col("Beschreibung")
+                .str()
+                .starts_with(lit("Recircle Tupper Depot")),
+        )
+        .then(lit(Topic::Packaging.to_string()))
+        .when(col("Beschreibung").str().starts_with(lit("Kerze")))
+        .then(lit(Topic::Culture.to_string()))
+        .when(col("Beschreibung").eq(lit("Miete")))
+        .then(lit(Topic::Rental.to_string()))
+        .when(
+            col("TimeTrx")
+                .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
+                .and(col("TimeTrx").lt(lit("18:00:00").str().to_time(time_options.clone())))
+                .and(col("is_weekend").eq(lit(true))),
+        )
+        .then(lit(Topic::Culture.to_string()))
+        .when(
+            col("TimeTrx")
+                .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
+                .and(col("TimeTrx").lt_eq(col("ChangeOfShift")))
+                .and(col("is_weekend").eq(lit(false))),
+        )
+        .then(lit(Topic::MiTi.to_string()))
+        .when(
+            col("TimeTrx")
+                .gt(col("ChangeOfShift"))
+                .and(col("TimeTrx").lt(lit("18:00:00").str().to_time(time_options.clone())))
+                .and(col("is_weekend").eq(lit(false))),
+        )
+        .then(lit(Topic::Cafe.to_string()))
+        .otherwise(lit(Topic::Culture.to_string()))
 }
 
 /// Infers the `Owner` from `Topic` and `Category` and `Beschreibung`:
@@ -784,6 +790,7 @@ mod tests {
                 rtd, rtd, rtd, rtd, rtd, rtd, rtd, rtd,
                 "Miete", "Miete",
                 "Kerze 4", "Kerze 2", "Kerze klein",
+                "X", "X",
             ],
             "TimeTrx" => [
                 "00:00:00", "05:59:59",
@@ -797,6 +804,7 @@ mod tests {
                 "00:00:00", "05:59:59", "06:00:00", "14:15:00", "14:15:01", "17:59:59", "18:00:00", "23:59:59",
                 "00:00:00", "12:00:00",
                 "09:00:00", "14:00:00", "18:00:00",
+                "14:15:01", "17:59:59",
             ],
             "ChangeOfShift" => [
                 "14:15:00", "14:15:00",
@@ -810,6 +818,7 @@ mod tests {
                 "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00",
                 "14:15:00", "14:15:00",
                 "14:15:00", "14:15:00", "14:15:00",
+                "14:15:00", "14:15:00",
             ],
             "is_weekend" => [
                 false, false,
@@ -823,6 +832,21 @@ mod tests {
                 false, false, false, false, false, true, true, false,
                 false, true,
                 false, true, false,
+                false, false,
+            ],
+            "Category" => [
+           	    "", "",
+                "", "",
+                "", "",
+                "", "",
+                "", "",
+                "", "",
+                "", "",
+                "", "", "", "",
+                "", "", "", "", "", "", "", "",
+                "", "",
+                "", "", "",
+                "Mittagstisch", "foo (PO)",
             ],
         ]
         .unwrap()
@@ -840,14 +864,15 @@ mod tests {
                culture.clone(), culture.clone(),
                miti.clone(), miti.clone(),
                culture.clone(), culture.clone(),
-               cafe.clone(), cafe,
-               miti.clone(), miti,
+               cafe.clone(), cafe.clone(),
+               miti.clone(), miti.clone(),
                culture.clone(), culture.clone(),
                culture.clone(), culture.clone(),
                culture.clone(), culture.clone(), culture.clone(), culture.clone(),
                pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg,
                rental.clone(), rental,
-               culture.clone(), culture.clone(), culture,
+               culture.clone(), culture.clone(), culture.clone(),
+               miti, culture,
            ]
        ].unwrap()
     }
