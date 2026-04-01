@@ -530,9 +530,9 @@ fn infer_topic(time_options: &StrptimeOptions) -> Expr {
     .otherwise(lit(Topic::Culture.to_string()))
 }
 
-/// Infers the `Owner` from `Topic` and `Beschreibung`:
+/// Infers the `Owner` from `Topic` and `Category` and `Beschreibung`:
 /// - if `Topic` is neither `MiTi` nor `Culture`, the `Owner` will be blank
-/// - for `Topic::Culture`, the Owner is `PaidOut` if the description ends with ' (PO)'
+/// - for `Topic::Culture`, the Owner is `PaidOut` if the category or the description ends with ' (PO)'
 /// - for `Topic::MiTi`, the Owner is `MiTi` if the description matches one of a hardcoded list of Strings.
 /// - Otherwise the owner is `LoLa` (for both `MiTi` and `Culture`)
 fn infer_owner() -> Expr {
@@ -861,5 +861,64 @@ mod tests {
             .collect()
             .unwrap();
         assert_eq!(result, topic_expected_df);
+    }
+
+    #[fixture]
+    fn owner_sample_df() -> DataFrame {
+        let culture = Topic::Culture.to_string();
+        let miti = Topic::MiTi.to_string();
+        let cafe = Topic::Cafe.to_string();
+        let pkg = Topic::Packaging.to_string();
+        let rental = Topic::Rental.to_string();
+
+        df! [
+            "Beschreibung" => [
+                "foo", "bar", "baz",
+                "Dessert", "Hauptgang Vegi Standard", "unbekannte bechreibung",
+                "bar (PO)", "foo",
+            ],
+            "Category" => [
+                "Alkoholfrei", "Heissgetränke", "Schichtwechsel",
+                "Mittagstisch", "Mittagstisch", "Mittagstisch",
+                "Kultur Essen (PO)", "Any (PO)",
+            ],
+            "Preis (brutto)" => [
+                3.5, 6.0, 0.01,
+                4.0, 13.0, 17.0,
+                4.0, 7.0,
+            ],
+            "Topic" => [
+                cafe, pkg, rental,
+                miti.clone(), miti.clone(), miti,
+                culture.clone(), culture,
+            ],
+        ]
+        .unwrap()
+    }
+
+    #[fixture]
+    fn owner_expected_df() -> DataFrame {
+        let lola = Owner::LoLa.to_string();
+        let miti = Owner::MiTi.to_string();
+        let paidout = Owner::PaidOut.to_string();
+        df![
+            "Owner" => [
+                None::<String>, None::<String>, None::<String>,
+                Some(miti.clone()), Some(miti), Some(lola.clone()),
+                Some(paidout), Some(lola),
+            ],
+        ]
+        .unwrap()
+    }
+
+    #[rstest]
+    fn test_infer_owner(owner_sample_df: DataFrame, owner_expected_df: DataFrame) {
+        let result = owner_sample_df
+            .lazy()
+            .with_column(infer_owner().alias("Owner"))
+            .select([col("Owner")])
+            .collect()
+            .unwrap();
+        assert_eq!(result, owner_expected_df);
     }
 }
