@@ -532,6 +532,8 @@ fn infer_topic(time_options: &StrptimeOptions) -> Expr {
 
 /// Infers the `Owner` from `Topic` and `Category` and `Beschreibung`:
 /// - if `Topic` is neither `MiTi` nor `Culture`, the `Owner` will be blank
+/// - if `Category` is `Mittagstisch`, the owner is `MiTi`
+/// - if `Category` contains ' (PO)', the owner is `PaidOut`
 /// - for `Topic::Culture`, the Owner is `PaidOut` if the category or the description ends with ' (PO)'
 /// - for `Topic::MiTi`, the Owner is `MiTi` if the description matches one of a hardcoded list of Strings.
 /// - Otherwise the owner is `LoLa` (for both `MiTi` and `Culture`)
@@ -542,6 +544,10 @@ fn infer_owner() -> Expr {
             .and(col("Topic").neq(lit(Topic::Culture.to_string()))),
     )
     .then(lit(NULL))
+    .when(col("Category").eq(lit("Mittagstisch")))
+    .then(lit(Owner::MiTi.to_string()))
+    .when(col("Category").str().contains(lit(" \\(PO\\)"), true))
+    .then(lit(Owner::PaidOut.to_string()))
     .when(
         col("Topic")
             .eq(lit(Topic::Culture.to_string()))
@@ -898,14 +904,13 @@ mod tests {
 
     #[fixture]
     fn owner_expected_df() -> DataFrame {
-        let lola = Owner::LoLa.to_string();
         let miti = Owner::MiTi.to_string();
         let paidout = Owner::PaidOut.to_string();
         df![
             "Owner" => [
                 None::<String>, None::<String>, None::<String>,
-                Some(miti.clone()), Some(miti), Some(lola.clone()),
-                Some(paidout), Some(lola),
+                Some(miti.clone()), Some(miti.clone()), Some(miti),
+                Some(paidout.clone()), Some(paidout),
             ],
         ]
         .unwrap()
