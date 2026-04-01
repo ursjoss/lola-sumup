@@ -251,7 +251,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         )
         .collect()?;
 
-    let change_of_shift_df = clean_txr_df
+    let mut change_of_shift_df = clean_txr_df
         .clone()
         .lazy()
         .filter(
@@ -292,9 +292,11 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         )
         .select([col("Date"), col("Time").alias("ChangeOfShift")])
         .group_by([col("Date")])
-        .agg([col("ChangeOfShift").last().alias("ChangeOfShift")]);
+        .agg([col("ChangeOfShift").last().alias("ChangeOfShift")])
+        .collect()?;
+    change_of_shift_df.rechunk_mut();
 
-    let commission_df = clean_txr_df
+    let mut commission_df = clean_txr_df
         .clone()
         .lazy()
         .filter(
@@ -313,7 +315,9 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
             col("Betrag inkl. MwSt.").alias("Commissioned Total"),
             col("Gebühr").alias("Commission"),
             col("TimeTrx"),
-        ]);
+        ])
+        .collect()?;
+    commission_df.rechunk_mut();
 
     let add_tips_df = clean_txr_df
         .clone()
@@ -360,7 +364,8 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .unique(None, UniqueKeepStrategy::First)
         .collect()?;
 
-    let union_df = clean_sr_df.vstack(&additional_tip_df)?;
+    let mut union_df = clean_sr_df.vstack(&additional_tip_df)?;
+    union_df.rechunk_mut();
 
     let df = union_df
         .lazy()
@@ -422,13 +427,13 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .alias("Preis (netto)"),
         )
         .join(
-            commission_df,
+            commission_df.lazy(),
             [col("Transaktionsnummer")],
             [col("Transaktions-ID")],
             JoinType::Left.into(),
         )
         .join(
-            change_of_shift_df,
+            change_of_shift_df.lazy(),
             [col("Date")],
             [col("Date")],
             JoinType::Left.into(),
