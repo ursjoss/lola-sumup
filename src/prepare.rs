@@ -226,7 +226,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
     if violations.shape().0 > 0 {
         println!("{violations}");
         return Err(Box::from(
-            "Refund not fully compensating the sales transactions!".to_string(),
+            "Refund not fully compensating the sales transactions! If this is due to partial refund, clear the sales transactions file manually.".to_string(),
         ));
     }
     let refunded_ids = sr_df
