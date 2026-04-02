@@ -197,10 +197,15 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         ..Default::default()
     };
 
+    // sales report - Typ: "Refund" until 2026-01, "Rückerstattung from 2026-02 onwards"
+    let refund_filter = col("Typ")
+        .eq(lit("Rückerstattung"))
+        .or(col("Typ").eq(lit("Refund")));
+
     let refunded_transaction_ids = sr_df
         .clone()
         .lazy()
-        .filter(col("Typ").eq(lit("Refund")))
+        .filter(refund_filter.clone())
         .select([col("Transaktionsnummer")])
         .collect()?;
 
@@ -221,13 +226,13 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
     if violations.shape().0 > 0 {
         println!("{violations}");
         return Err(Box::from(
-            "Refund not fully compensating the sales transactions!".to_string(),
+            "Refund not fully compensating the sales transactions! If this is due to partial refund, clear the sales transactions file manually.".to_string(),
         ));
     }
     let refunded_ids = sr_df
         .clone()
         .lazy()
-        .filter(col("Typ").eq(lit("Refund")))
+        .filter(refund_filter)
         .select([col("Transaktionsnummer").implode()])
         .collect()?
         .column("Transaktionsnummer")?
@@ -694,9 +699,9 @@ mod tests {
 
     use crate::test_fixtures::{
         intermediate_df_01, intermediate_df_07, intermediate_df_09, sales_report_df_01,
-        sales_report_df_02, sales_report_df_07, sales_report_df_09, sales_report_df_10,
-        transaction_report_df_01, transaction_report_df_02, transaction_report_df_07,
-        transaction_report_df_09, transaction_report_df_10,
+        sales_report_df_02, sales_report_df_07, sales_report_df_09, sales_report_df_09legacy,
+        sales_report_df_10, transaction_report_df_01, transaction_report_df_02,
+        transaction_report_df_07, transaction_report_df_09, transaction_report_df_10,
     };
     use crate::test_utils::assert_dataframe;
 
@@ -749,6 +754,17 @@ mod tests {
         let out = combine_input_dfs(&sales_report_df_07, &transaction_report_df_07)
             .expect("should be able to combine input dfs");
         assert_dataframe(&out, &intermediate_df_07);
+    }
+
+    #[rstest]
+    fn test_combine_input_dfs_with_refunds_legacy(
+        sales_report_df_09legacy: DataFrame,
+        transaction_report_df_09: DataFrame,
+        intermediate_df_09: DataFrame,
+    ) {
+        let out = combine_input_dfs(&sales_report_df_09legacy, &transaction_report_df_09)
+            .expect("should be able to combine input dfs");
+        assert_dataframe(&out, &intermediate_df_09);
     }
 
     #[rstest]
