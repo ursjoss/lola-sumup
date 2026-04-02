@@ -1029,6 +1029,23 @@ pub fn banana_df_ext_08(
 
 //region 09 - refunds
 #[fixture]
+pub fn sales_report_df_09legacy(
+    sample_date: NaiveDate,
+    sample_time: NaiveTime,
+    sample_time_plus_5: NaiveTime,
+    sample_time_minus_5: NaiveTime,
+) -> DataFrame {
+    sales_report_df_09_10(
+        sample_date,
+        sample_time,
+        sample_time_plus_5,
+        sample_time_minus_5,
+        0.0,
+        "Refund",
+    )
+}
+
+#[fixture]
 pub fn sales_report_df_09(
     sample_date: NaiveDate,
     sample_time: NaiveTime,
@@ -1041,6 +1058,7 @@ pub fn sales_report_df_09(
         sample_time_plus_5,
         sample_time_minus_5,
         0.0,
+        "Rückerstattung",
     )
 }
 
@@ -1050,6 +1068,7 @@ fn sales_report_df_09_10(
     sample_time_plus_5: NaiveTime,
     sample_time_minus_5: NaiveTime,
     delta_refund: f64,
+    refund_text: &str,
 ) -> DataFrame {
     let date = sample_date.format("%d.%m.%Y").to_string();
     let time1 = sample_time.format("%H:%M").to_string();
@@ -1062,7 +1081,7 @@ fn sales_report_df_09_10(
     let refund = -19.0 - delta_refund;
     df!(
         "Datum" => &[d1.clone(), d1, d2, d3],
-        "Typ" => &["Verkauf", "Verkauf", "Refund", "Verkauf"],
+        "Typ" => &["Verkauf", "Verkauf", refund_text, "Verkauf"],
         "Transaktionsnummer" => &[trx_id, trx_id, trx_id, "TAAAZFCAHD7"],
         "Zahlungsmethode" => &["Bar", "Bar", "Bar", "Visa - Debitkarte"],
         "Menge" => &[1_i64, 2_i64, 1_i64, 1_i64],
@@ -1148,6 +1167,7 @@ pub fn sales_report_df_10(
         sample_time_plus_5,
         sample_time_minus_5,
         1.0,
+        "Rückerstattung",
     )
 }
 
