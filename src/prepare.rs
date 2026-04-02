@@ -488,51 +488,59 @@ fn infer_payment_method() -> Expr {
         .otherwise(lit(PaymentMethod::Card.to_string()))
 }
 
-/// Infers the `Topic` from the time of sale:
-/// before 06:00 and after 18:00 -> `Culture` or `PaidOut` if description contains " (PO)" or if it is a week-end.
-/// between 06:00 and `ChangeOfShift` -> `MiTi`
-/// between `ChangeOfShift` and 18:00 -> `Cafe`
-/// If the description starts with "Recircle Tupper Depot", the topic will be `Packaging` regardless of time or day.
-/// If the description is "Miete", the topic will be `Rental` regardless of time or day.
-/// If the description starts with "Kerze", the topic will be Culture regardless of time or day.
+/// Infers the `Topic` from category or from the time of sale:
+/// - if the `Category` is "Mittagstisch" the Topic is `MiTi` regardless of the time of the day
+/// - if the `Category` contains " (PO)", the Topic is `Culture` regardless of the time of the day
+/// - before 06:00 and after 18:00 -> `Culture` or if it is a week-end.
+/// - between 06:00 and `ChangeOfShift` -> `MiTi`
+/// - between `ChangeOfShift` and 18:00 -> `Cafe`
+/// - If the description starts with "Recircle Tupper Depot", the topic will be `Packaging` regardless of time or day.
+/// - If the description is "Miete", the topic will be `Rental` regardless of time or day.
+/// - If the description starts with "Kerze", the topic will be Culture regardless of time or day.
 fn infer_topic(time_options: &StrptimeOptions) -> Expr {
-    when(
-        col("Beschreibung")
-            .str()
-            .starts_with(lit("Recircle Tupper Depot")),
-    )
-    .then(lit(Topic::Packaging.to_string()))
-    .when(col("Beschreibung").str().starts_with(lit("Kerze")))
-    .then(lit(Topic::Culture.to_string()))
-    .when(col("Beschreibung").eq(lit("Miete")))
-    .then(lit(Topic::Rental.to_string()))
-    .when(
-        col("TimeTrx")
-            .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
-            .and(col("TimeTrx").lt(lit("18:00:00").str().to_time(time_options.clone())))
-            .and(col("is_weekend").eq(lit(true))),
-    )
-    .then(lit(Topic::Culture.to_string()))
-    .when(
-        col("TimeTrx")
-            .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
-            .and(col("TimeTrx").lt_eq(col("ChangeOfShift")))
-            .and(col("is_weekend").eq(lit(false))),
-    )
-    .then(lit(Topic::MiTi.to_string()))
-    .when(
-        col("TimeTrx")
-            .gt(col("ChangeOfShift"))
-            .and(col("TimeTrx").lt(lit("18:00:00").str().to_time(time_options.clone())))
-            .and(col("is_weekend").eq(lit(false))),
-    )
-    .then(lit(Topic::Cafe.to_string()))
-    .otherwise(lit(Topic::Culture.to_string()))
+    when(col("Category").eq(lit("Mittagstisch")))
+        .then(lit(Topic::MiTi.to_string()))
+        .when(col("Category").str().contains(lit(" \\(PO\\)"), true))
+        .then(lit(Topic::Culture.to_string()))
+        .when(
+            col("Beschreibung")
+                .str()
+                .starts_with(lit("Recircle Tupper Depot")),
+        )
+        .then(lit(Topic::Packaging.to_string()))
+        .when(col("Beschreibung").str().starts_with(lit("Kerze")))
+        .then(lit(Topic::Culture.to_string()))
+        .when(col("Beschreibung").eq(lit("Miete")))
+        .then(lit(Topic::Rental.to_string()))
+        .when(
+            col("TimeTrx")
+                .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
+                .and(col("TimeTrx").lt(lit("18:00:00").str().to_time(time_options.clone())))
+                .and(col("is_weekend").eq(lit(true))),
+        )
+        .then(lit(Topic::Culture.to_string()))
+        .when(
+            col("TimeTrx")
+                .gt_eq(lit("06:00:00").str().to_time(time_options.clone()))
+                .and(col("TimeTrx").lt_eq(col("ChangeOfShift")))
+                .and(col("is_weekend").eq(lit(false))),
+        )
+        .then(lit(Topic::MiTi.to_string()))
+        .when(
+            col("TimeTrx")
+                .gt(col("ChangeOfShift"))
+                .and(col("TimeTrx").lt(lit("18:00:00").str().to_time(time_options.clone())))
+                .and(col("is_weekend").eq(lit(false))),
+        )
+        .then(lit(Topic::Cafe.to_string()))
+        .otherwise(lit(Topic::Culture.to_string()))
 }
 
-/// Infers the `Owner` from `Topic` and `Beschreibung`:
+/// Infers the `Owner` from `Topic` and `Category` and `Beschreibung`:
 /// - if `Topic` is neither `MiTi` nor `Culture`, the `Owner` will be blank
-/// - for `Topic::Culture`, the Owner is `PaidOut` if the description ends with ' (PO)'
+/// - if `Category` is `Mittagstisch`, the owner is `MiTi`
+/// - if `Category` contains ' (PO)', the owner is `PaidOut`
+/// - for `Topic::Culture`, the Owner is `PaidOut` if the category or the description ends with ' (PO)'
 /// - for `Topic::MiTi`, the Owner is `MiTi` if the description matches one of a hardcoded list of Strings.
 /// - Otherwise the owner is `LoLa` (for both `MiTi` and `Culture`)
 fn infer_owner() -> Expr {
@@ -542,6 +550,10 @@ fn infer_owner() -> Expr {
             .and(col("Topic").neq(lit(Topic::Culture.to_string()))),
     )
     .then(lit(NULL))
+    .when(col("Category").eq(lit("Mittagstisch")))
+    .then(lit(Owner::MiTi.to_string()))
+    .when(col("Category").str().contains(lit(" \\(PO\\)"), true))
+    .then(lit(Owner::PaidOut.to_string()))
     .when(
         col("Topic")
             .eq(lit(Topic::Culture.to_string()))
@@ -778,6 +790,7 @@ mod tests {
                 rtd, rtd, rtd, rtd, rtd, rtd, rtd, rtd,
                 "Miete", "Miete",
                 "Kerze 4", "Kerze 2", "Kerze klein",
+                "X", "X",
             ],
             "TimeTrx" => [
                 "00:00:00", "05:59:59",
@@ -791,6 +804,7 @@ mod tests {
                 "00:00:00", "05:59:59", "06:00:00", "14:15:00", "14:15:01", "17:59:59", "18:00:00", "23:59:59",
                 "00:00:00", "12:00:00",
                 "09:00:00", "14:00:00", "18:00:00",
+                "14:15:01", "17:59:59",
             ],
             "ChangeOfShift" => [
                 "14:15:00", "14:15:00",
@@ -804,6 +818,7 @@ mod tests {
                 "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00", "14:15:00",
                 "14:15:00", "14:15:00",
                 "14:15:00", "14:15:00", "14:15:00",
+                "14:15:00", "14:15:00",
             ],
             "is_weekend" => [
                 false, false,
@@ -817,6 +832,21 @@ mod tests {
                 false, false, false, false, false, true, true, false,
                 false, true,
                 false, true, false,
+                false, false,
+            ],
+            "Category" => [
+           	    "", "",
+                "", "",
+                "", "",
+                "", "",
+                "", "",
+                "", "",
+                "", "",
+                "", "", "", "",
+                "", "", "", "", "", "", "", "",
+                "", "",
+                "", "", "",
+                "Mittagstisch", "foo (PO)",
             ],
         ]
         .unwrap()
@@ -834,14 +864,15 @@ mod tests {
                culture.clone(), culture.clone(),
                miti.clone(), miti.clone(),
                culture.clone(), culture.clone(),
-               cafe.clone(), cafe,
-               miti.clone(), miti,
+               cafe.clone(), cafe.clone(),
+               miti.clone(), miti.clone(),
                culture.clone(), culture.clone(),
                culture.clone(), culture.clone(),
                culture.clone(), culture.clone(), culture.clone(), culture.clone(),
                pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg.clone(), pkg,
                rental.clone(), rental,
-               culture.clone(), culture.clone(), culture,
+               culture.clone(), culture.clone(), culture.clone(),
+               miti, culture,
            ]
        ].unwrap()
     }
@@ -861,5 +892,63 @@ mod tests {
             .collect()
             .unwrap();
         assert_eq!(result, topic_expected_df);
+    }
+
+    #[fixture]
+    fn owner_sample_df() -> DataFrame {
+        let culture = Topic::Culture.to_string();
+        let miti = Topic::MiTi.to_string();
+        let cafe = Topic::Cafe.to_string();
+        let pkg = Topic::Packaging.to_string();
+        let rental = Topic::Rental.to_string();
+
+        df! [
+            "Beschreibung" => [
+                "foo", "bar", "baz",
+                "Dessert", "Hauptgang Vegi Standard", "unbekannte bechreibung",
+                "bar (PO)", "foo",
+            ],
+            "Category" => [
+                "Alkoholfrei", "Heissgetränke", "Schichtwechsel",
+                "Mittagstisch", "Mittagstisch", "Mittagstisch",
+                "Kultur Essen (PO)", "Any (PO)",
+            ],
+            "Preis (brutto)" => [
+                3.5, 6.0, 0.01,
+                4.0, 13.0, 17.0,
+                4.0, 7.0,
+            ],
+            "Topic" => [
+                cafe, pkg, rental,
+                miti.clone(), miti.clone(), miti,
+                culture.clone(), culture,
+            ],
+        ]
+        .unwrap()
+    }
+
+    #[fixture]
+    fn owner_expected_df() -> DataFrame {
+        let miti = Owner::MiTi.to_string();
+        let paidout = Owner::PaidOut.to_string();
+        df![
+            "Owner" => [
+                None::<String>, None::<String>, None::<String>,
+                Some(miti.clone()), Some(miti.clone()), Some(miti),
+                Some(paidout.clone()), Some(paidout),
+            ],
+        ]
+        .unwrap()
+    }
+
+    #[rstest]
+    fn test_infer_owner(owner_sample_df: DataFrame, owner_expected_df: DataFrame) {
+        let result = owner_sample_df
+            .lazy()
+            .with_column(infer_owner().alias("Owner"))
+            .select([col("Owner")])
+            .collect()
+            .unwrap();
+        assert_eq!(result, owner_expected_df);
     }
 }
