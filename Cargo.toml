@@ -54,3 +54,7 @@ strip = true
 [profile.dist]
 inherits = "release"
 lto = "thin"
+
+[package.metadata.dist]
+dist = true
+
