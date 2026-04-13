@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2](https://github.com/jococo-ch/lola-sumup/compare/v0.4.1...v0.4.2) - 2026-04-13
+
+### Fixed
+
+- have release-plz rely on git only and not cargo registry at all
+- nudge release-plz to not compare content with the cargo registry
+
+### Other
+
+- release v0.4.1 ([#525](https://github.com/jococo-ch/lola-sumup/pull/525))
+
 ## [0.4.1](https://github.com/jococo-ch/lola-sumup/compare/v0.1.0...v0.4.1) - 2026-04-13
 
 ### Added
