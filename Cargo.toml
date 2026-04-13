@@ -1,6 +1,6 @@
 [package]
 name = "lola-sumup"
-version = "0.4.2"
+version = "0.4.3"
 publish = false
 authors = ["Urs Joss <urs.joss@gmx.ch>"]
 edition = "2024"
