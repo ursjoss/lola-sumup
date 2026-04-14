@@ -27,17 +27,18 @@ After the general ledger has been updated, the accounts are exported to an Excel
 accounting software. The subcommand `close` processes the Excel file and aggregates the year-to-date figures
 on the level of the LoLa budget.
 
-## Versions
+## Versions - mostly related to changes in the sumup epxorts
 
-The format of the sumup sales reports has changed.
+In some months, the format of the sumup sales reports has changed.
 lola-sumup has been adapted in a non-backwards-compatible way.
 
 | Version | Sumup-exports    |
 |---------|------------------|
 | 0.1.0   | Up to April 2024 |
-| 0.2.0   | As of May 2024  working with CSV files for intermediate and exports  |
-| 0.3.0   | As of September 2025  working with XLSX files for intermediate and exports  |
-| 0.4.0   | As of December 2025  Switching from Topic Culture/PaidOut to Topic Culture with Owners LoLa/PaidOut |
+| 0.2.0   | As of May 2024 - working with CSV files for intermediate and exports  |
+| 0.3.0   | As of September 2025 - working with XLSX files for intermediate and exports  |
+| 0.4.0   | As of December 2025 - Switching from Topic Culture/PaidOut to Topic Culture with Owners LoLa/PaidOut |
+| 0.4.1   | As of March 2026 - working with new sales report columns Category and SKU |
 
 ## CLI
 
