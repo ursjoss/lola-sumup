@@ -2,7 +2,7 @@
 git_only = true
 publish = false
 git_release_enable = false
-release_commits: "^(feat|fix|perf|refactor|revert|sec)(\\(.*\\))?[!:]"
+release_commits = "^(feat|fix|perf|refactor|revert|sec)(\\(.*\\))?[!:]"
 
 [changelog]
 commit_parsers = [
