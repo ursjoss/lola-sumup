@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6](https://github.com/jococo-ch/lola-sumup/compare/v0.4.5...v0.4.6) - 2026-04-14
+
+### Other
+
+- *(deps)* bump rand from 0.9.2 to 0.9.4 in the cargo group across 1 directory ([#533](https://github.com/jococo-ch/lola-sumup/pull/533))
+
 ## [0.4.5](https://github.com/jococo-ch/lola-sumup/compare/v0.4.4...v0.4.5) - 2026-04-13
 
 ### Fixed
