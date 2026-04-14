@@ -2,4 +2,21 @@
 git_only = true
 publish = false
 git_release_enable = false
+release_commits: "^(feat|fix|perf|refactor|revert|sec)(\\(.*\\))?[!:]"
+
+[changelog]
+commit_parsers = [
+    { message = "^feat", group = "### Added" },
+    { message = "^fix", group = "### Fixed" },
+    { message = "^perf", group = "### Performance" },
+    { message = "^refactor", group = "### Refactored" },
+    { message = "^revert", group = "### Reverted" },
+    { message = "^sec", group = "### Security" },
+    { message = "^chore\\(deps\\)", skip = true },
+    { message = "^chore", skip = true },
+    { message = "^docs", skip = true },
+    { message = "^ci", skip = true },
+    { message = "^test", skip = true },
+    { message = "^.*", group = "### Other" },
+]
 
