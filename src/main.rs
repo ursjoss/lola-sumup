@@ -7,11 +7,9 @@ use std::path::PathBuf;
 use chrono::Local;
 use clap::{Parser, Subcommand};
 
-use crate::close::close;
 use crate::export::export;
 use crate::prepare::prepare;
 
-mod close;
 mod export;
 mod prepare;
 
@@ -49,13 +47,6 @@ enum Commands {
         /// the intermediate file to process
         intermediate_file: PathBuf,
     },
-    /// Run the monthly closing process
-    Close {
-        /// the budget configuration file in TOML format
-        budget_config_file: PathBuf,
-        /// The spreadsheet export file from the accounting software
-        accounts_file: PathBuf,
-    },
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -78,10 +69,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             let month = derive_month_from_intermediate(file_name)?;
             export(intermediate_file, &month, ts)
         }
-        Commands::Close {
-            budget_config_file,
-            accounts_file,
-        } => close(budget_config_file, accounts_file, ts),
     }
 }
 

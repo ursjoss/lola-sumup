@@ -52,7 +52,7 @@ fn read_intermediate_from_excel(
     month: &str,
 ) -> Result<DataFrame, Box<dyn Error>> {
     let columns_vec = read_columns_from_excel(input_path, month)?;
-    let height = columns_vec.first().map(|c| c.len()).unwrap_or(0);
+    let height = columns_vec.first().map_or(0, polars::prelude::Column::len);
     let df = DataFrame::new(height, columns_vec)?
         .lazy()
         .with_column(
@@ -336,7 +336,7 @@ fn export_banana(
 }
 
 /// Constructs a path for an XLSX file from `prefix`, `month` and `ts` (timestamp).
-pub fn path_with_prefix(prefix: &str, month: &str, ts: &str) -> PathBuf {
+fn path_with_prefix(prefix: &str, month: &str, ts: &str) -> PathBuf {
     PathBuf::from(format!("{prefix}_{month}_{ts}.xlsx"))
 }
 

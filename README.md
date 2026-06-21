@@ -1,18 +1,14 @@
 # lola-sumup
 
-
-[![](https://github.com/ursjoss/lola-sumup/actions/workflows/verify.yml/badge.svg?branch=main)](https://github.com/ursjoss/lola-sumup/actions/workflows/verify.yml)
+[![](https://github.com/jococo-ch/lola-sumup/actions/workflows/verify.yml/badge.svg?branch=main)](https://github.com/jococo-ch/lola-sumup/actions/workflows/verify.yml)
 
 CLI to evaluate the monthly SumUp CSV extracts and extract LoLa specific reports.
 
 ## Summary
 
-The cli application `lola-sumup` is used in different phases of the monthly-closing process of the
-Quartiertreffpunkt LoLa in Basel.
+The cli application `lola-sumup` is used in the monthly-closing process of the Quartiertreffpunkt LoLa in Basel.
 
-There are two subcommands used in the preparation of the monthly closing process: `prepare` and `export`.
-Another subcommand is used to process the accounting information after the closing to produce a condensed
-view of the monthly accounts: `close`.
+It involves two subcommands used in the preparation of the monthly closing process: `prepare` and `export`.
 
 The `prepare` subcommand parses two SumUp extracts with monthly data and creates an intermediate file,
 an Excel file combining data from both reports, enriched with three columns `Topic`, `Owner`, and `Purpose`.
@@ -23,9 +19,8 @@ The (potentially redacted) intermediate file is consumed by the second `export` 
 It generates four different exports from it, dedicated to different purposes in the context of LoLa's
 monthly closing process.
 
-After the general ledger has been updated, the accounts are exported to an Excel file via Banana
-accounting software. The subcommand `close` processes the Excel file and aggregates the year-to-date figures
-on the level of the LoLa budget.
+Note: The program also included a third subcommand `close`. It was moved to a dedicated repository though:
+https://github.com/jococo-ch/lola.git
 
 ## Versions - mostly related to changes in the sumup epxorts
 
@@ -43,7 +38,7 @@ lola-sumup has been adapted in a non-backwards-compatible way.
 
 ## CLI
 
-The `lola-sumup` command has three subcommands:
+The `lola-sumup` command has two subcommands:
 
 ```
 A cli program to create LoLa specific exports from monthly SumUp reports
@@ -53,7 +48,6 @@ Usage: lola-sumup <COMMAND>
 Commands:
   prepare  Prepares an enriched intermediate file from the original `SumUp` sales report CSV and transaction report CSV
   export   Consumes the (potentially redacted) intermediate file and exports to different special purpose Excel files
-  close    Run the monthly closing process
   help     Print this message or the help of the given subcommand(s)
 
 Options:
@@ -166,26 +160,6 @@ It produces five exports in Excel format (with month and execution timestamp in 
 
 Each of the exports contains a main worksheet with the export and in addition a second sheet "transactions"
 listing the underlying transactions from the intermediate file.
-
-### The close step
-
-The `lola-sumup close` command:
-
-```
-Run the monthly closing process
-
-Usage: lola-sumup close <BUDGET_CONFIG_FILE> <ACCOUNTS_FILE>
-
-Arguments:
-  <BUDGET_CONFIG_FILE>  the budget configuration file in TOML format
-  <ACCOUNTS_FILE>       The spreadsheet export file from the accounting software
-
-Options:
-  -h, --help     Print help
-  -V, --version  Print version
-```
-
-It dumps the aggregated year-to-date figures to the command line.
 
 ## Description of the exports
 
