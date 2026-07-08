@@ -15,7 +15,7 @@ chrono= { version = "0.4.45", features = ["serde"] }
 strum = { version = "0.28.0" }
 strum_macros = { version = "0.28.0" }
 polars_excel_writer = "0.24.0"
-calamine = { version = "0.35.0", features = ["chrono"] }
+calamine = { version = "0.36.0", features = ["chrono"] }
 rust_xlsxwriter = { version = "0.93.0", features = ["polars"] }
 
 [dependencies.polars]
