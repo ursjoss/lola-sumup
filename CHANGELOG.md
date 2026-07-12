@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0](https://github.com/jococo-ch/lola-sumup/compare/v0.4.10...v0.5.0) - 2026-07-12
+
+### Removed
+
+- Remove close command ([#561](https://github.com/jococo-ch/lola-sumup/pull/561))
+
+### Other
+
+- Fix formatting in CHANGELOG.md headings
+
+
 ## [0.4.10](https://github.com/jococo-ch/lola-sumup/compare/v0.4.9...v0.4.10) - 2026-05-01
 
 ### Added
