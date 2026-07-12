@@ -52,7 +52,8 @@ fn read_intermediate_from_excel(
     month: &str,
 ) -> Result<DataFrame, Box<dyn Error>> {
     let columns_vec = read_columns_from_excel(input_path, month)?;
-    let df = DataFrame::new(columns_vec)?
+    let height = columns_vec.first().map_or(0, polars::prelude::Column::len);
+    let df = DataFrame::new(height, columns_vec)?
         .lazy()
         .with_column(
             col("Date")
@@ -60,7 +61,7 @@ fn read_intermediate_from_excel(
                     |s| {
                         let parsed: Int32Chunked = s
                             .str()?
-                            .into_iter()
+                            .iter()
                             .map(|opt_s| {
                                 opt_s
                                     .and_then(|s| s.parse::<i32>().ok())
@@ -80,7 +81,7 @@ fn read_intermediate_from_excel(
                     |s| {
                         let parsed: Float64Chunked = s
                             .str()?
-                            .into_iter()
+                            .iter()
                             .map(|opt_s| {
                                 opt_s
                                     .and_then(|s| s.parse::<f64>().ok())
@@ -100,7 +101,7 @@ fn read_intermediate_from_excel(
                     |s| {
                         let parsed: Int32Chunked = s
                             .str()?
-                            .into_iter()
+                            .iter()
                             .map(|opt_s| opt_s.and_then(|s| s.parse::<i32>().ok()))
                             .collect();
                         Ok(parsed.into_column())
@@ -115,7 +116,7 @@ fn read_intermediate_from_excel(
                     |s| {
                         let parsed: Float64Chunked = s
                             .str()?
-                            .into_iter()
+                            .iter()
                             .map(|opt_s| opt_s.and_then(|s| s.parse::<f64>().ok()))
                             .collect();
                         Ok(parsed.into_column())
@@ -130,7 +131,7 @@ fn read_intermediate_from_excel(
                     |s| {
                         let parsed: Float64Chunked = s
                             .str()?
-                            .into_iter()
+                            .iter()
                             .map(|opt_s| opt_s.and_then(|s| s.parse::<f64>().ok()))
                             .collect();
                         Ok(parsed.into_column())
@@ -145,7 +146,7 @@ fn read_intermediate_from_excel(
                     |s| {
                         let parsed: Float64Chunked = s
                             .str()?
-                            .into_iter()
+                            .iter()
                             .map(|opt_s| opt_s.and_then(|s| s.parse::<f64>().ok()))
                             .collect();
                         Ok(parsed.into_column())
@@ -301,7 +302,7 @@ fn filter_and_enrich_banana(
         let unwanted_accounts: HashSet<&str> = unwanted_accounts_df
             .column("KtHaben")?
             .str()?
-            .into_iter()
+            .iter()
             .flatten()
             .collect::<Vec<&str>>()
             .into_iter()
@@ -309,7 +310,7 @@ fn filter_and_enrich_banana(
         let mask_vals: Vec<bool> = df_banana_summary
             .column("KtHaben")?
             .str()?
-            .into_iter()
+            .iter()
             .map(|opt| match opt {
                 Some(v) => !unwanted_accounts.contains(v),
                 None => false,
