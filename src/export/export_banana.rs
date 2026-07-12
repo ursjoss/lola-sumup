@@ -9,7 +9,7 @@ use super::posting::Posting;
 fn get_description(col: &Column) -> PolarsResult<Column> {
     let accounts = col.str()?;
     Ok(accounts
-        .into_iter()
+        .iter()
         .map(|a| {
             a.map(|a| Posting::from_alias(a).map(|p| format!("SU {}", p.description)))
                 .or(None)?
