@@ -4,6 +4,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    exclude-paths:
+      - ".github/workflows/release.yml"
     groups:
       all-actions:
         patterns: [ "*" ]
@@ -11,6 +13,4 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    exclude-paths:
-      - ".github/workflows/release.yml"
 
