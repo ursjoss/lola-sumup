@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.11](https://github.com/jococo-ch/lola-sumup/compare/v0.4.10...v0.4.11) - 2026-07-12
+
+### Other
+
+- Bump cargo-dist to 0.32.0
+- Fix formatting in CHANGELOG.md headings
+
+### Refactored
+
+- clippy suggestion collapsible_match
+
 ## [0.4.10](https://github.com/jococo-ch/lola-sumup/compare/v0.4.9...v0.4.10) - 2026-05-01
 
 ### Added
