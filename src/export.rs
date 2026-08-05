@@ -340,7 +340,39 @@ fn path_with_prefix(prefix: &str, month: &str, ts: &str) -> PathBuf {
     PathBuf::from(format!("{prefix}_{month}_{ts}.xlsx"))
 }
 
+/// Returns the name of the first of the `sheets` that has no rows to export, if any.
+fn first_empty_sheet<'a>(sheets: &[(&'a str, usize)]) -> Option<&'a str> {
+    sheets
+        .iter()
+        .find(|(_, rows)| *rows == 0)
+        .map(|(name, _)| *name)
+}
+
+/// German message stating that the report `prefix` was skipped because sheet `empty_sheet` has no rows.
+fn skipped_message(prefix: &str, empty_sheet: &str) -> String {
+    format!(
+        "Bericht «{prefix}» übersprungen: keine Zeilen zum Exportieren (Blatt «{empty_sheet}» ist leer)."
+    )
+}
+
+/// German message stating that the report `prefix` was written to `path`, listing the rows per sheet.
+fn exported_message(prefix: &str, path: &Path, sheets: &[(&str, usize)]) -> String {
+    let per_sheet: Vec<String> = sheets
+        .iter()
+        .map(|(name, rows)| format!("«{name}»: {rows} Zeilen"))
+        .collect();
+    format!(
+        "Bericht «{prefix}» nach {} exportiert, mit {} Blättern ({}).",
+        path.display(),
+        sheets.len(),
+        per_sheet.join(", ")
+    )
+}
+
 /// Writes the dataframe `df` to the file system into path `path`.
+///
+/// Skips the report entirely if any of its sheets has no rows - `rust_xlsxwriter` cannot
+/// create a table without at least one row of data.
 fn write_to_file(
     main_df: &DataFrame,
     trx_df: &DataFrame,
@@ -351,6 +383,15 @@ fn write_to_file(
     // work around https://github.com/jmcnamara/polars_excel_writer/issues/26
     let mut trx_df = trx_df.clone();
     trx_df.rechunk_mut();
+
+    let sheets = [
+        (prefix, main_df.height()),
+        ("transaktionen", trx_df.height()),
+    ];
+    if let Some(empty_sheet) = first_empty_sheet(&sheets) {
+        println!("{}", skipped_message(prefix, empty_sheet));
+        return Ok(());
+    }
 
     let path = &path_with_prefix(prefix, month, ts);
     let mut excel_writer = PolarsExcelWriter::new();
@@ -372,6 +413,8 @@ fn write_to_file(
     excel_writer.set_column_format("Time", "HH:MM:SS");
 
     workbook.save(path)?;
+
+    println!("{}", exported_message(prefix, path, &sheets));
     Ok(())
 }
 
@@ -398,6 +441,35 @@ mod tests {
     };
 
     use super::*;
+
+    #[rstest]
+    #[case(&[("details", 21), ("transaktionen", 20)], None)]
+    #[case(&[("mittagstisch", 6), ("transaktionen", 0)], Some("transaktionen"))]
+    #[case(&[("banana", 0), ("transaktionen", 20)], Some("banana"))]
+    #[case(&[("banana", 0), ("transaktionen", 0)], Some("banana"))]
+    fn test_first_empty_sheet(#[case] sheets: &[(&str, usize)], #[case] expected: Option<&str>) {
+        assert_eq!(first_empty_sheet(sheets), expected);
+    }
+
+    #[test]
+    fn test_skipped_message() {
+        assert_eq!(
+            skipped_message("mittagstisch", "transaktionen"),
+            "Bericht «mittagstisch» übersprungen: keine Zeilen zum Exportieren (Blatt «transaktionen» ist leer)."
+        );
+    }
+
+    #[test]
+    fn test_exported_message() {
+        assert_eq!(
+            exported_message(
+                "details",
+                &path_with_prefix("details", "202607", "20260805_202727"),
+                &[("details", 21), ("transaktionen", 20)],
+            ),
+            "Bericht «details» nach details_202607_20260805_202727.xlsx exportiert, mit 2 Blättern («details»: 21 Zeilen, «transaktionen»: 20 Zeilen)."
+        );
+    }
 
     #[rstest]
     fn can_crunch_data_without_panic(intermediate_df_02: DataFrame) {
