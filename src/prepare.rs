@@ -11,6 +11,8 @@ use polars_excel_writer::PolarsExcelWriter;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
 
+use crate::report_log::{first_empty_sheet, per_sheet_phrase, sheets_phrase};
+
 /// Processes the sumup input files (sales-report and transaction report) to produce an intermediate file.
 /// Some derived fields are prepared based on heuristics in a best-effort approach (Topic, Owner, Purpose).
 /// The user may optionally redact those where the heuristics are not sufficient.
@@ -27,6 +29,12 @@ pub fn prepare(
             .with_multithreaded(false)
             .with_maintain_order(true),
     )?;
+    let sheets = [(month, df.height())];
+    if let Some(empty_sheet) = first_empty_sheet(&sheets) {
+        println!("{}", intermediate_skipped_message(empty_sheet));
+        return Ok(());
+    }
+
     let mut excel_writer = PolarsExcelWriter::new();
     excel_writer.set_worksheet_name(month)?;
     excel_writer.set_autofit(true);
@@ -35,7 +43,26 @@ pub fn prepare(
     excel_writer.set_freeze_panes(1, 2);
     excel_writer.write_dataframe(&df)?;
     excel_writer.save(output_path)?;
+
+    println!("{}", intermediate_written_message(output_path, &sheets));
     Ok(())
+}
+
+/// German message stating that the intermediate file was skipped because sheet `empty_sheet` has no rows.
+fn intermediate_skipped_message(empty_sheet: &str) -> String {
+    format!(
+        "Zwischendatei übersprungen: keine Zeilen zum Schreiben (Blatt «{empty_sheet}» ist leer)."
+    )
+}
+
+/// German message stating that the intermediate file was written to `path`, listing the rows per sheet.
+fn intermediate_written_message(path: &Path, sheets: &[(&str, usize)]) -> String {
+    format!(
+        "Zwischendatei nach {} geschrieben, mit {} ({}).",
+        path.display(),
+        sheets_phrase(sheets.len()),
+        per_sheet_phrase(sheets)
+    )
 }
 
 /// Reads the two input csv files from filesystem, processes the data returns it as dataframe.
@@ -709,6 +736,25 @@ mod tests {
     use crate::test_utils::assert_dataframe;
 
     use super::*;
+
+    #[test]
+    fn test_intermediate_skipped_message() {
+        assert_eq!(
+            intermediate_skipped_message("202607"),
+            "Zwischendatei übersprungen: keine Zeilen zum Schreiben (Blatt «202607» ist leer)."
+        );
+    }
+
+    #[test]
+    fn test_intermediate_written_message() {
+        assert_eq!(
+            intermediate_written_message(
+                Path::new("intermediate_202607_20260805_202727.xlsx"),
+                &[("202607", 253)],
+            ),
+            "Zwischendatei nach intermediate_202607_20260805_202727.xlsx geschrieben, mit 1 Blatt («202607»: 253 Zeilen)."
+        );
+    }
 
     #[rstest]
     fn given_trx_in_both_frames_when_asserting_we_should_not_fail(

@@ -12,6 +12,7 @@ use crate::prepare::prepare;
 
 mod export;
 mod prepare;
+mod report_log;
 
 #[cfg(test)]
 mod test_fixtures;

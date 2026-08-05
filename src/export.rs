@@ -19,6 +19,7 @@ use crate::export::export_details::collect_data;
 use crate::export::export_miti::gather_df_miti;
 use crate::export::export_reconciliation::gather_df_reconciliation;
 use crate::prepare::{Topic, warn_on_zero_value_trx};
+use crate::report_log::{first_empty_sheet, per_sheet_phrase, sheets_phrase};
 
 mod constraint;
 mod export_accounting;
@@ -340,7 +341,27 @@ fn path_with_prefix(prefix: &str, month: &str, ts: &str) -> PathBuf {
     PathBuf::from(format!("{prefix}_{month}_{ts}.xlsx"))
 }
 
+/// German message stating that the report `prefix` was skipped because sheet `empty_sheet` has no rows.
+fn skipped_message(prefix: &str, empty_sheet: &str) -> String {
+    format!(
+        "Bericht «{prefix}» übersprungen: keine Zeilen zum Exportieren (Blatt «{empty_sheet}» ist leer)."
+    )
+}
+
+/// German message stating that the report `prefix` was written to `path`, listing the rows per sheet.
+fn exported_message(prefix: &str, path: &Path, sheets: &[(&str, usize)]) -> String {
+    format!(
+        "Bericht «{prefix}» nach {} exportiert, mit {} ({}).",
+        path.display(),
+        sheets_phrase(sheets.len()),
+        per_sheet_phrase(sheets)
+    )
+}
+
 /// Writes the dataframe `df` to the file system into path `path`.
+///
+/// Skips the report entirely if any of its sheets has no rows - `rust_xlsxwriter` cannot
+/// create a table without at least one row of data.
 fn write_to_file(
     main_df: &DataFrame,
     trx_df: &DataFrame,
@@ -351,6 +372,15 @@ fn write_to_file(
     // work around https://github.com/jmcnamara/polars_excel_writer/issues/26
     let mut trx_df = trx_df.clone();
     trx_df.rechunk_mut();
+
+    let sheets = [
+        (prefix, main_df.height()),
+        ("transaktionen", trx_df.height()),
+    ];
+    if let Some(empty_sheet) = first_empty_sheet(&sheets) {
+        println!("{}", skipped_message(prefix, empty_sheet));
+        return Ok(());
+    }
 
     let path = &path_with_prefix(prefix, month, ts);
     let mut excel_writer = PolarsExcelWriter::new();
@@ -372,6 +402,8 @@ fn write_to_file(
     excel_writer.set_column_format("Time", "HH:MM:SS");
 
     workbook.save(path)?;
+
+    println!("{}", exported_message(prefix, path, &sheets));
     Ok(())
 }
 
@@ -398,6 +430,26 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn test_skipped_message() {
+        assert_eq!(
+            skipped_message("mittagstisch", "transaktionen"),
+            "Bericht «mittagstisch» übersprungen: keine Zeilen zum Exportieren (Blatt «transaktionen» ist leer)."
+        );
+    }
+
+    #[test]
+    fn test_exported_message() {
+        assert_eq!(
+            exported_message(
+                "details",
+                &path_with_prefix("details", "202607", "20260805_202727"),
+                &[("details", 21), ("transaktionen", 20)],
+            ),
+            "Bericht «details» nach details_202607_20260805_202727.xlsx exportiert, mit 2 Blättern («details»: 21 Zeilen, «transaktionen»: 20 Zeilen)."
+        );
+    }
 
     #[rstest]
     fn can_crunch_data_without_panic(intermediate_df_02: DataFrame) {
