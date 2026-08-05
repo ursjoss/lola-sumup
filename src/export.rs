@@ -19,6 +19,7 @@ use crate::export::export_details::collect_data;
 use crate::export::export_miti::gather_df_miti;
 use crate::export::export_reconciliation::gather_df_reconciliation;
 use crate::prepare::{Topic, warn_on_zero_value_trx};
+use crate::report_log::{first_empty_sheet, per_sheet_phrase, sheets_phrase};
 
 mod constraint;
 mod export_accounting;
@@ -340,14 +341,6 @@ fn path_with_prefix(prefix: &str, month: &str, ts: &str) -> PathBuf {
     PathBuf::from(format!("{prefix}_{month}_{ts}.xlsx"))
 }
 
-/// Returns the name of the first of the `sheets` that has no rows to export, if any.
-fn first_empty_sheet<'a>(sheets: &[(&'a str, usize)]) -> Option<&'a str> {
-    sheets
-        .iter()
-        .find(|(_, rows)| *rows == 0)
-        .map(|(name, _)| *name)
-}
-
 /// German message stating that the report `prefix` was skipped because sheet `empty_sheet` has no rows.
 fn skipped_message(prefix: &str, empty_sheet: &str) -> String {
     format!(
@@ -357,15 +350,11 @@ fn skipped_message(prefix: &str, empty_sheet: &str) -> String {
 
 /// German message stating that the report `prefix` was written to `path`, listing the rows per sheet.
 fn exported_message(prefix: &str, path: &Path, sheets: &[(&str, usize)]) -> String {
-    let per_sheet: Vec<String> = sheets
-        .iter()
-        .map(|(name, rows)| format!("«{name}»: {rows} Zeilen"))
-        .collect();
     format!(
-        "Bericht «{prefix}» nach {} exportiert, mit {} Blättern ({}).",
+        "Bericht «{prefix}» nach {} exportiert, mit {} ({}).",
         path.display(),
-        sheets.len(),
-        per_sheet.join(", ")
+        sheets_phrase(sheets.len()),
+        per_sheet_phrase(sheets)
     )
 }
 
@@ -441,15 +430,6 @@ mod tests {
     };
 
     use super::*;
-
-    #[rstest]
-    #[case(&[("details", 21), ("transaktionen", 20)], None)]
-    #[case(&[("mittagstisch", 6), ("transaktionen", 0)], Some("transaktionen"))]
-    #[case(&[("banana", 0), ("transaktionen", 20)], Some("banana"))]
-    #[case(&[("banana", 0), ("transaktionen", 0)], Some("banana"))]
-    fn test_first_empty_sheet(#[case] sheets: &[(&str, usize)], #[case] expected: Option<&str>) {
-        assert_eq!(first_empty_sheet(sheets), expected);
-    }
 
     #[test]
     fn test_skipped_message() {
