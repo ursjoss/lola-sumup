@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1](https://github.com/jococo-ch/lola-sumup/compare/v0.5.0...v0.5.1) - 2026-08-05
+
+### Fixed
+
+- [#572] Log table exports (prepare and export) and skip writing an export that would fail with 0 rows ([#573](https://github.com/jococo-ch/lola-sumup/pull/573))
+
 ## [0.5.0](https://github.com/jococo-ch/lola-sumup/compare/v0.4.10...v0.5.0) - 2026-07-12
 
 ### Removed
