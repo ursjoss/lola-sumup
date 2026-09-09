@@ -31,7 +31,7 @@ features = [
 
 [dev-dependencies]
 pretty_assertions = "1.4"
-rstest = "0.26"
+rstest = "0.27"
 
 [profile.dev]
 opt-level=1
