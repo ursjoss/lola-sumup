@@ -302,6 +302,17 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .to_time(time_format.clone())
                 .alias("Time"),
         )
+        .with_column(
+            concat_str(
+                [
+                    col("Date").dt().to_string("%Y-%m-%d"),
+                    col("Time").dt().to_string("%H:%M:%S"),
+                ],
+                " ",
+                false,
+            )
+            .alias("Date_trx"),
+        )
         .join(
             refunded_transaction_ids.lazy(),
             [col("Transaktionsnummer")],
@@ -310,7 +321,43 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         )
         .collect()?;
 
-    let mut change_of_shift_df = clean_txr_df
+    // derive virtual transactions for cache payments from sales report
+    let cash_txr_df = clean_sr_df
+        .clone()
+        .lazy()
+        .filter(
+            col("Typ")
+                .eq(lit("Verkauf"))
+                .and(col("Zahlungsmethode").eq(lit("Bar"))),
+        )
+        .group_by([col("Konto"), col("Date_trx"), col("Transaktionsnummer")])
+        .agg([col("Preis (netto)").sum().alias("Total Netto")])
+        .select([
+            col("Konto"),
+            col("Date_trx").alias("Zeitstempel"),
+            col("Transaktionsnummer").alias("Transaktionscode"),
+            lit("Zahlung").alias("Transaktionsart"),
+            lit("Erfolgreich").alias("Status"),
+            lit("").alias("Referenz"),
+            lit("").alias("Kartensystem"),
+            lit(0_i64)
+                .cast(DataType::Int64)
+                .alias("Letzte 4 Ziffern der Karte"),
+            lit("").alias("Kartentyp"),
+            lit("CASH").alias("Zahlungsmethode"),
+            lit("N/A").alias("Eingabemodus"),
+            lit("").alias("Autorisierungscode"),
+            lit("aggregated").alias("Beschreibung"),
+            col("Total Netto").alias("Betrag"),
+            lit(0.0).alias("Gebührenbetrag"),
+            col("Total Netto").alias("Auszahlungsbetrag"),
+            lit("").alias("Auszahlungsdatum"),
+            lit("").alias("Auszahlungs-ID"),
+        ])
+        .collect()?;
+    let clean_enriched_txr_df = clean_txr_df.vstack(&cash_txr_df)?;
+
+    let mut change_of_shift_df = clean_enriched_txr_df
         .clone()
         .lazy()
         .filter(
@@ -365,6 +412,22 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .eq(lit("Zahlung"))
                 .and(col("Status").eq(lit("Erfolgreich"))),
         )
+        .select([
+            col("Transaktionscode"),
+            col("Betrag").alias("Commissioned Total"),
+            col("Gebührenbetrag").alias("Commission"),
+        ])
+        .collect()?;
+    commission_df.rechunk_mut();
+
+    let mut txr_timestamped_df = clean_enriched_txr_df
+        .clone()
+        .lazy()
+        .filter(
+            col("Transaktionsart")
+                .eq(lit("Zahlung"))
+                .and(col("Status").eq(lit("Erfolgreich"))),
+        )
         .with_column(
             (col("Zeitstempel")
                 .str()
@@ -374,13 +437,11 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
             .alias("TimeTrx"),
         )
         .select([
-            col("Transaktionscode"),
-            col("Betrag").alias("Commissioned Total"),
-            col("Gebührenbetrag").alias("Commission"),
+            col("Transaktionscode").alias("Transaktionscode2"),
             col("TimeTrx"),
         ])
         .collect()?;
-    commission_df.rechunk_mut();
+    txr_timestamped_df.rechunk_mut();
 
     let df = clean_sr_df
         .lazy()
@@ -423,6 +484,12 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
             JoinType::Left.into(),
         )
         .join(
+            txr_timestamped_df.lazy(),
+            [col("Transaktionsnummer")],
+            [col("Transaktionscode2")],
+            JoinType::Left.into(),
+        )
+        .join(
             change_of_shift_df.lazy(),
             [col("Date")],
             [col("Date")],
@@ -431,6 +498,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .with_column(
             (col("Preis (brutto)") / col("Commissioned Total") * col("Commission"))
                 .round(4, RoundMode::HalfToEven)
+                .fill_nan(0.0)
                 .alias("Commission"),
         )
         .with_column(
@@ -683,10 +751,11 @@ mod tests {
     use rstest::*;
 
     use crate::test_fixtures::{
-        intermediate_df_01, intermediate_df_07, intermediate_df_09, sales_report_df_01,
-        sales_report_df_02, sales_report_df_07, sales_report_df_09, sales_report_df_09legacy,
-        sales_report_df_10, transaction_report_df_01, transaction_report_df_02,
-        transaction_report_df_07, transaction_report_df_09, transaction_report_df_10,
+        intermediate_df_01, intermediate_df_07, intermediate_df_09, intermediate_df_11,
+        sales_report_df_01, sales_report_df_02, sales_report_df_07, sales_report_df_09,
+        sales_report_df_09legacy, sales_report_df_10, sales_report_df_11, transaction_report_df_01,
+        transaction_report_df_02, transaction_report_df_07, transaction_report_df_09,
+        transaction_report_df_10, transaction_report_df_11,
     };
     use crate::test_utils::assert_dataframe;
 
@@ -792,6 +861,17 @@ mod tests {
             out.is_err(),
             "combining input_dfs with refunds that don't net to 0 should fail"
         );
+    }
+
+    #[rstest]
+    fn test_multiple_cash_payments_with_same_trx_id(
+        sales_report_df_11: DataFrame,
+        transaction_report_df_11: DataFrame,
+        intermediate_df_11: DataFrame,
+    ) {
+        let out = combine_input_dfs(&sales_report_df_11, &transaction_report_df_11)
+            .expect("should be able to combine input dfs");
+        assert_dataframe(&out, &intermediate_df_11);
     }
 
     #[fixture]

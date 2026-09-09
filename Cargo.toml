@@ -22,6 +22,7 @@ rust_xlsxwriter = { version = "0.98", features = ["polars"] }
 version = "0.55"
 features = [
     "abs",
+    "concat_str",
     "is_in",
     "lazy",
     "round_series",
@@ -48,4 +49,3 @@ lto = "thin"
 
 [package.metadata.dist]
 dist = true
-

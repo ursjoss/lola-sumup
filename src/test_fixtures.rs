@@ -84,13 +84,24 @@ fn transaction_report_with_trx_id(
     let date = sample_date.format("%Y-%m-%d").to_string();
     let time = sample_time.format("%H:%M:%S").to_string();
     df!(
+        "Konto" => &["a@b.ch"],
         "Zeitstempel" => &[format!("{date} {time}")],
         "Transaktionscode" => &[trx_id],
         "Transaktionsart" => &["Zahlung"],
         "Status" => &["Erfolgreich"],
+        "Referenz" => &[""],
+        "Kartensystem" => &["MASTERCARD"],
+        "Letzte 4 Ziffern der Karte" => &[1234_i64],
+        "Kartentyp" => &["DEBIT"],
+        "Zahlungsmethode" => &["POS"],
+        "Eingabemodus" => &["CONTACTLESS"],
+        "Autorisierungscode" => &["IGT3LF"],
         "Beschreibung" => &[" foo "],
         "Betrag" => &[17.0],
         "Gebührenbetrag" => &[0.24],
+        "Auszahlungsbetrag" => &[16.76],
+        "Auszahlungsdatum" => &["2026-09-01"],
+        "Auszahlungs-ID" => &["xxx"],
     )
     .expect("valid dataframe transaction report data frame 02")
 }
@@ -805,24 +816,28 @@ pub fn sales_report_df_07(
 }
 
 #[fixture]
-pub fn transaction_report_df_07(
-    sample_date: NaiveDate,
-    sample_time: NaiveTime,
-    sample_time_minus_5: NaiveTime,
-    sample_time_plus_5: NaiveTime,
-) -> DataFrame {
+pub fn transaction_report_df_07(sample_date: NaiveDate, sample_time: NaiveTime) -> DataFrame {
     let date = sample_date.format("%Y-%m-%d").to_string();
-    let time1 = sample_time_minus_5.format("%H:%M:%S").to_string();
     let time2 = sample_time.format("%H:%M:%S").to_string();
-    let time3 = sample_time_plus_5.format("%H:%M:%S").to_string();
     df!(
-    	"Zeitstempel" => &[format!("{date} {time1}"), format!("{date} {time2}"), format!("{date} {time3}")],
-        "Transaktionscode" => &["T1", "T2", "T3"],
-        "Transaktionsart" => &["Zahlung", "Zahlung", "Zahlung"],
-        "Status" => &["Erfolgreich", "Erfolgreich", "Erfolgreich"],
-        "Beschreibung" => &["SCHICHTWECHSEL", "Kaffee", "SCHICHTWECHSEL"],
-        "Betrag" => &[0.01, 3.5, 0.01],
-        "Gebührenbetrag" => &[0.0, 0.05, 0.0],
+        "Konto" => &["a@b.ch"],
+        "Zeitstempel" => &[format!("{date} {time2}")],
+        "Transaktionscode" => &["T2"],
+        "Transaktionsart" => &["Zahlung"],
+        "Status" => &["Erfolgreich"],
+        "Referenz" => &[""],
+        "Kartensystem" => &["MASTERCARD"],
+        "Letzte 4 Ziffern der Karte" => &[1234_i64],
+        "Kartentyp" => &["DEBIT"],
+        "Zahlungsmethode" => &["POS"],
+        "Eingabemodus" => &["CONTACTLESS"],
+        "Autorisierungscode" => &["IGT3LF"],
+        "Beschreibung" => &["Kaffee"],
+        "Betrag" => &[3.5],
+        "Gebührenbetrag" => &[0.05],
+        "Auszahlungsbetrag" => &[3.5],
+        "Auszahlungsdatum" => &["2026-09-01"],
+        "Auszahlungs-ID" => &["xxx"],
     )
     .expect("valid dataframe transaction report data frame 07")
 }
@@ -841,12 +856,12 @@ pub fn intermediate_df_07(
         "Type" => &["Sales", "Sales", "Sales"],
         "Transaction ID" => &["T1", "T2", "T3"],
         "Payment Method" => &["Cash", "Card", "Cash"],
-        "Quantity" => &[1_i64, 1_i64, 1_i64 ],
+        "Quantity" => &[1_i32, 1_i32, 1_i32 ],
         "Description" => &["SCHICHTWECHSEL", "Kaffee", "SCHICHTWECHSEL"],
         "Currency" => &["CHF", "CHF", "CHF"],
         "Price (Gross)" => &[0.0, 3.5, 0.0],
         "Price (Net)" => &[0.0, 3.5, 0.0],
-        "Commission" => &[0.0, 0.05, 0.0],
+        "Commission" => &[None, Some(0.05), None],
         "Topic" => &["MiTi", "MiTi", "MiTi"],
         "Owner" => &["LoLa", "LoLa", "LoLa"],
         "Purpose" => &["Consumption", "Consumption", "Consumption"],
@@ -872,7 +887,7 @@ pub fn intermediate_df_08(
         "Type" => &["Sales", "Sales", "Sales", "Sales", "Sales"],
         "Transaction ID" => &["T1", "T2", "T3", "T4", "T5"],
         "Payment Method" => &["Cash", "Card", "Cash", "Cash", "Card"],
-        "Quantity" => &[1_i64, 1_i64, 1_i64, 1_i64, 1_i64],
+        "Quantity" => &[1_i32, 1_i32, 1_i32, 1_i32, 1_i32],
         "Description" => &["Hauptgang Vegi Standard", "Buffet 1 (PO)", "Buffet 1 (PO)", "Buffet 2 (PO)", "Buffet 2 (PO)"],
         "Currency" => &["CHF", "CHF", "CHF", "CHF", "CHF"],
         "Price (Gross)" => &[13.0, 400.0, 600.0, 100.0, 200.0],
@@ -1102,17 +1117,17 @@ fn sales_report_df_09_10(
         "Datum" => &[d1.clone(), d1, d2, d3],
         "Typ" => &["Verkauf", "Verkauf", refund_text, "Verkauf"],
         "Transaktionsnummer" => &[trx_id, trx_id, trx_id, "TAAAZFCAHD7"],
-        "Zahlungsmethode" => &["Bar", "Bar", "Bar", "Visa - Debitkarte"],
+        "Zahlungsmethode" => &["Mastercard - Debitkarte", "Mastercard - Debitkarte", "Mastercard - Debitkarte", "Visa - Debitkarte"],
         "Menge" => &[1_i64, 2_i64, 1_i64, 1_i64],
         "Beschreibung" => &["Hauptgang Vegi Standard", "Vorspeise/Dessert Standard", "", "Hauptgang Vegi Reduziert"],
         "Kategorie" => &["Mittagstisch", "Mittagstisch", "", "Mittagstisch"],
         "Artikelnummer" => &["", "", "", ""],
         "Währung" => &["CHF", "CHF", "CHF", "CHF"],
         "Preis vor Rabatt" => &[13.0, 6.0, -19.0, 11.0],
-        "Rabatt" => &[Some(0.0), Some(0.0), None, Some(0.0)],
+        "Rabatt" => &[Some(0.0), Some(0.0), Some(0.0), Some(0.0)],
         "Preis (brutto)" => &[13.0, 6.0, refund, 11.0],
         "Preis (netto)" => &[Some(13.0), Some(6.0), Some(refund), Some(11.0)],
-        "Steuer" => &[Some(0.0), Some(0.0), None, Some(0.0)],
+        "Steuer" => &[Some(0.0), Some(0.0), Some(0.0), Some(0.0)],
         "Steuersatz" => &["", "", "", ""],
         "Konto" => &[Some("a@b.ch"), Some("a@b.ch"), None, Some("a@b.ch")],
     )
@@ -1135,13 +1150,24 @@ pub fn transaction_report_df_09(
     let d3 = format!("{date} {time3}");
     let trx_id = "TAAAZFC7HSH";
     df!(
+        "Konto" => &["a@b.ch", "a@b.ch", "a@b.ch"],
         "Zeitstempel" => &[d2, d1, d3],
         "Transaktionscode" => &[trx_id, trx_id, "TAAAZFCAHD7"],
         "Transaktionsart" => &["Rückerstattung", "Zahlung", "Zahlung"],
         "Status" => &[None, Some("Erfolgreich"), Some("Erfolgreich")],
-        "Beschreibung" => &[None, Some("1 x Hauptgang Vegi, 2 x Vorspeise/Dessert"), Some("1 x Hauptgang Vegi")],
+        "Referenz" => &["", "", ""],
+        "Kartensystem" => &["MASTERCARD", "MASTERCARD", "MASTERCARD"],
+        "Letzte 4 Ziffern der Karte" => &[123_i64, 1234_i64, 2345_i64],
+        "Kartentyp" => &["DEBIT", "DEBIT", "DEBIT"],
+        "Zahlungsmethode" => &["POS", "POS", "POS"],
+        "Eingabemodus" => &["CONTACTLESS", "CONTACTLESS", "CONTACTLESS"],
+        "Autorisierungscode" => &["IGT3LF", "IGT3LF", "IGT3LF"],
+        "Beschreibung" => &[Some(""), Some("1 x Hauptgang Vegi, 2 x Vorspeise/Dessert"), Some("1 x Hauptgang Vegi")],
         "Betrag" => &[-19.0, 19.0, 11.0],
-        "Gebührenbetrag" => &[None, Some(0.0), Some(0.17)],
+        "Gebührenbetrag" => &[Some(0.0), Some(0.0), Some(0.17)],
+        "Auszahlungsbetrag" => &[-19.0, 19.0, 10.83],
+        "Auszahlungsdatum" => &["2026-09-01", "2026-09-01", "2026-09-01"],
+        "Auszahlungs-ID" => &["xxx", "xxx", "xxx"],
     )
     .expect("valid dataframe transaction report data frame 09")
 }
@@ -1203,4 +1229,98 @@ pub fn transaction_report_df_10(
         sample_time_minus_5,
     )
 }
+//endregion
+
+//region
+#[fixture]
+pub fn sales_report_df_11(
+    sample_date: NaiveDate,
+    sample_time: NaiveTime,
+    sample_time_plus_5: NaiveTime,
+) -> DataFrame {
+    let date = sample_date.format("%d.%m.%Y").to_string();
+    let time1 = sample_time.format("%H:%M").to_string();
+    let time2 = sample_time_plus_5.format("%H:%M").to_string();
+    let d1 = format!("{date}, {time1}");
+    let d2 = format!("{date}, {time2}");
+    let trx_id = "TAAAZFC7HSH";
+    df!(
+        "Datum" => &[d1.clone(), d1, d2],
+        "Typ" => &["Verkauf", "Verkauf", "Verkauf"],
+        "Transaktionsnummer" => &[trx_id, trx_id, "TAAAZFCAHD7"],
+        "Zahlungsmethode" => &["Bar", "Bar", "Mastercard - Debitkarte"],
+        "Menge" => &[1_i64, 2_i64, 1_i64],
+        "Beschreibung" => &["Hauptgang Vegi Standard", "Vorspeise/Dessert Standard", "Hauptgang Vegi Reduziert"],
+        "Kategorie" => &["Mittagstisch", "Mittagstisch", "Mittagstisch"],
+        "Artikelnummer" => &["", "", ""],
+        "Währung" => &["CHF", "CHF", "CHF"],
+        "Preis vor Rabatt" => &[13.0, 6.0, 11.0],
+        "Rabatt" => &[Some(0.0), Some(0.0), Some(0.0)],
+        "Preis (brutto)" => &[13.0, 6.0, 11.0],
+        "Preis (netto)" => &[Some(13.0), Some(6.0), Some(11.0)],
+        "Steuer" => &[Some(0.0), Some(0.0), Some(0.0)],
+        "Steuersatz" => &["", "", ""],
+        "Konto" => &[Some("a@b.ch"), Some("a@b.ch"), Some("a@b.ch")],
+    )
+    .expect("valid dataframe sales report data frame 11")
+}
+
+#[fixture]
+pub fn transaction_report_df_11(
+    sample_date: NaiveDate,
+    sample_time_plus_5: NaiveTime,
+) -> DataFrame {
+    let date = sample_date.format("%Y-%m-%d").to_string();
+    let time = sample_time_plus_5.format("%H:%M:%S").to_string();
+    let d3 = format!("{date} {time}");
+    df!(
+        "Konto" => &["a@b.ch"],
+        "Zeitstempel" => &[d3],
+        "Transaktionscode" => &["TAAAZFCAHD7"],
+        "Transaktionsart" => &["Zahlung"],
+        "Status" => &[Some("Erfolgreich")],
+        "Referenz" => &[""],
+        "Kartensystem" => &["MASTERCARD"],
+        "Letzte 4 Ziffern der Karte" => &[2345_i64],
+        "Kartentyp" => &["DEBIT"],
+        "Zahlungsmethode" => &["POS"],
+        "Eingabemodus" => &["CONTACTLESS"],
+        "Autorisierungscode" => &["IGT3LF"],
+        "Beschreibung" => &[Some("1 x Hauptgang Vegi")],
+        "Betrag" => &[11.0],
+        "Gebührenbetrag" => &[Some(0.17)],
+        "Auszahlungsbetrag" => &[10.83],
+        "Auszahlungsdatum" => &["2026-09-01"],
+        "Auszahlungs-ID" => &["xxx"],
+    )
+    .expect("valid dataframe transaction report data frame 11")
+}
+
+#[fixture]
+pub fn intermediate_df_11(
+    sample_date: NaiveDate,
+    sample_time: NaiveTime,
+    sample_time_plus_5: NaiveTime,
+) -> DataFrame {
+    df!(
+        "Account" => &["a@b.ch", "a@b.ch", "a@b.ch"],
+        "Date" => &[sample_date, sample_date, sample_date],
+        "Time" => &[sample_time, sample_time, sample_time_plus_5],
+        "Type" => &["Sales", "Sales", "Sales"],
+        "Transaction ID" => &["TAAAZFC7HSH", "TAAAZFC7HSH", "TAAAZFCAHD7"],
+        "Payment Method" => &["Cash", "Cash", "Card"],
+        "Quantity" => &[1_i64, 2_i64, 1_i64],
+        "Description" => &["Hauptgang Vegi Standard", "Vorspeise/Dessert Standard", "Hauptgang Vegi Reduziert"],
+        "Currency" => &["CHF", "CHF", "CHF"],
+        "Price (Gross)" => &[13.0, 6.0, 11.0],
+        "Price (Net)" => &[13.0, 6.0, 11.0],
+        "Commission" => &[None, None, Some(0.17)],
+        "Topic" => &["MiTi", "MiTi", "MiTi"],
+        "Owner" => &["MiTi", "MiTi", "MiTi"],
+        "Purpose" => &["Consumption", "Consumption", "Consumption"],
+        "Comment" => &[AnyValue::Null, AnyValue::Null, AnyValue::Null],
+    )
+    .expect("valid intermediate dataframe 09")
+}
+
 //end region
