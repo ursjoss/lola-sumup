@@ -277,6 +277,31 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
     let clean_sr_df = sr_df
         .clone()
         .lazy()
+        .with_column(
+            col("Datum")
+                .str()
+                .extract(lit(r".?(\d\d\.\d\d\.\d\d\d\d), "), 1)
+                .str()
+                .strptime(DataType::Date, raw_date_format.clone(), Expr::default())
+                .alias("Date"),
+        )
+        .with_column(
+            col("Date")
+                .dt()
+                .weekday()
+                .cast(DataType::Int64)
+                .is_in(
+                    lit(Series::from_vec("we".into(), vec![6, 7])).implode(false),
+                    false,
+                )
+                .alias("is_weekend"),
+        )
+        .with_column(
+            (col("Datum").str().extract(lit(r".{10}, (\d\d:\d\d)"), 1) + lit(":00"))
+                .str()
+                .to_time(time_format.clone())
+                .alias("Time"),
+        )
         .join(
             refunded_transaction_ids.lazy(),
             [col("Transaktionsnummer")],
@@ -359,31 +384,6 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
 
     let df = clean_sr_df
         .lazy()
-        .with_column(
-            col("Datum")
-                .str()
-                .extract(lit(r".?(\d\d\.\d\d\.\d\d\d\d), "), 1)
-                .str()
-                .strptime(DataType::Date, raw_date_format.clone(), Expr::default())
-                .alias("Date"),
-        )
-        .with_column(
-            col("Date")
-                .dt()
-                .weekday()
-                .cast(DataType::Int64)
-                .is_in(
-                    lit(Series::from_vec("we".into(), vec![6, 7])).implode(false),
-                    false,
-                )
-                .alias("is_weekend"),
-        )
-        .with_column(
-            (col("Datum").str().extract(lit(r".{10}, (\d\d:\d\d)"), 1) + lit(":00"))
-                .str()
-                .to_time(time_format.clone())
-                .alias("Time"),
-        )
         .with_column(
             col("Beschreibung")
                 .str()
