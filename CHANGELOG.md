@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2](https://github.com/jococo-ch/lola-sumup/compare/v0.5.1...v0.5.2) - 2026-09-09
+
+### Added
+
+- [#583] adapt to new trx report as of Sept. 2026 ([#585](https://github.com/jococo-ch/lola-sumup/pull/585))
+
 ## [0.5.1](https://github.com/jococo-ch/lola-sumup/compare/v0.5.0...v0.5.1) - 2026-08-05
 
 ### Fixed
