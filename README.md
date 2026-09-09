@@ -35,6 +35,7 @@ lola-sumup has been adapted in a non-backwards-compatible way.
 | 0.4.0   | As of December 2025 - Switching from Topic Culture/PaidOut to Topic Culture with Owners LoLa/PaidOut |
 | 0.4.1   | As of March 2026 - working with new sales report columns Category and SKU |
 | 0.4.10  | As of April 2026 - with renamed columns Kategorie and Artikelnummer |
+| 0.5.2   | As of September 2026 - with new format of sumup transaction report |
 
 ## CLI
 
