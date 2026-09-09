@@ -90,7 +90,7 @@ fn transaction_report_with_trx_id(
         "Status" => &["Erfolgreich"],
         "Beschreibung" => &[" foo "],
         "Betrag" => &[17.0],
-        "Gebühr" => &[0.24],
+        "Gebührenbetrag" => &[0.24],
     )
     .expect("valid dataframe transaction report data frame 02")
 }
@@ -822,7 +822,7 @@ pub fn transaction_report_df_07(
         "Status" => &["Erfolgreich", "Erfolgreich", "Erfolgreich"],
         "Beschreibung" => &["SCHICHTWECHSEL", "Kaffee", "SCHICHTWECHSEL"],
         "Betrag" => &[0.01, 3.5, 0.01],
-        "Gebühr" => &[0.0, 0.05, 0.0],
+        "Gebührenbetrag" => &[0.0, 0.05, 0.0],
     )
     .expect("valid dataframe transaction report data frame 07")
 }
@@ -1141,7 +1141,7 @@ pub fn transaction_report_df_09(
         "Status" => &[None, Some("Erfolgreich"), Some("Erfolgreich")],
         "Beschreibung" => &[None, Some("1 x Hauptgang Vegi, 2 x Vorspeise/Dessert"), Some("1 x Hauptgang Vegi")],
         "Betrag" => &[-19.0, 19.0, 11.0],
-        "Gebühr" => &[None, Some(0.0), Some(0.17)],
+        "Gebührenbetrag" => &[None, Some(0.0), Some(0.17)],
     )
     .expect("valid dataframe transaction report data frame 09")
 }

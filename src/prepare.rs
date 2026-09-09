@@ -347,7 +347,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .select([
             col("Transaktionscode"),
             col("Betrag").alias("Commissioned Total"),
-            col("Gebühr").alias("Commission"),
+            col("Gebührenbetrag").alias("Commission"),
             col("TimeTrx"),
         ])
         .collect()?;
