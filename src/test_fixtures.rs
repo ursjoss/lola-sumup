@@ -84,7 +84,7 @@ fn transaction_report_with_trx_id(
     let date = sample_date.format("%Y-%m-%d").to_string();
     let time = sample_time.format("%H:%M:%S").to_string();
     df!(
-        "Datum" => &[format!("{date} {time}")],
+        "Zeitstempel" => &[format!("{date} {time}")],
         "Transaktions-ID" => &[trx_id],
         "Transaktionsart" => &["Umsatz"],
         "Status" => &["Erfolgreich"],
@@ -817,7 +817,7 @@ pub fn transaction_report_df_07(
     let time2 = sample_time.format("%H:%M:%S").to_string();
     let time3 = sample_time_plus_5.format("%H:%M:%S").to_string();
     df!(
-    	"Datum" => &[format!("{date} {time1}"), format!("{date} {time2}"), format!("{date} {time3}")],
+    	"Zeitstempel" => &[format!("{date} {time1}"), format!("{date} {time2}"), format!("{date} {time3}")],
         "Transaktions-ID" => &["T1", "T2", "T3"],
         "Transaktionsart" => &["Umsatz", "Umsatz", "Umsatz"],
         "Status" => &["Erfolgreich", "Erfolgreich", "Erfolgreich"],
@@ -1137,7 +1137,7 @@ pub fn transaction_report_df_09(
     let d3 = format!("{date} {time3}");
     let trx_id = "TAAAZFC7HSH";
     df!(
-        "Datum" => &[d2, d1, d3],
+        "Zeitstempel" => &[d2, d1, d3],
         "Transaktions-ID" => &[trx_id, trx_id, "TAAAZFCAHD7"],
         "Transaktionsart" => &["Rückerstattung", "Umsatz", "Umsatz"],
         "Status" => &[None, Some("Erfolgreich"), Some("Erfolgreich")],

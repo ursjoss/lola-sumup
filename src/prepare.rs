@@ -290,7 +290,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .contains(lit("SCHICHTWECHSEL"), true),
         )
         .with_column(
-            col("Datum")
+            col("Zeitstempel")
                 .str()
                 .extract(lit(r"(\d\d\d\d\-\d\d\-\d\d)"), 1)
                 .str()
@@ -309,10 +309,12 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .alias("is_weekend"),
         )
         .with_column(
-            (col("Datum").str().extract(lit(r".{11}(\d\d:\d\d:\d\d)"), 1))
+            (col("Zeitstempel")
                 .str()
-                .to_time(time_format.clone())
-                .alias("Time"),
+                .extract(lit(r".{11}(\d\d:\d\d:\d\d)"), 1))
+            .str()
+            .to_time(time_format.clone())
+            .alias("Time"),
         )
         .filter(
             col("is_weekend")
@@ -335,10 +337,12 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .and(col("Status").eq(lit("Erfolgreich"))),
         )
         .with_column(
-            (col("Datum").str().extract(lit(r".{11}(\d\d:\d\d:\d\d)"), 1))
+            (col("Zeitstempel")
                 .str()
-                .to_time(time_format.clone())
-                .alias("TimeTrx"),
+                .extract(lit(r".{11}(\d\d:\d\d:\d\d)"), 1))
+            .str()
+            .to_time(time_format.clone())
+            .alias("TimeTrx"),
         )
         .select([
             col("Transaktions-ID"),
