@@ -166,7 +166,11 @@ fn fail_on_missing_trx(txr_df: &DataFrame, sr_df: &DataFrame) -> Result<(), Box<
     let sr = sr_df
         .clone()
         .lazy()
-        .filter(col("Transaktionsnummer").is_not_null())
+        .filter(
+            col("Transaktionsnummer")
+                .is_not_null()
+                .and(col("Zahlungsmethode").neq(lit("Bar"))),
+        )
         .select([col("Transaktionsnummer")]);
     let missing_in_sr = txr
         .clone()
