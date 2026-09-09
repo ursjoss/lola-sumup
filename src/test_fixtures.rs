@@ -86,7 +86,7 @@ fn transaction_report_with_trx_id(
     df!(
         "Zeitstempel" => &[format!("{date} {time}")],
         "Transaktionscode" => &[trx_id],
-        "Transaktionsart" => &["Umsatz"],
+        "Transaktionsart" => &["Zahlung"],
         "Status" => &["Erfolgreich"],
         "Beschreibung" => &[" foo "],
         "Betrag" => &[17.0],
@@ -819,7 +819,7 @@ pub fn transaction_report_df_07(
     df!(
     	"Zeitstempel" => &[format!("{date} {time1}"), format!("{date} {time2}"), format!("{date} {time3}")],
         "Transaktionscode" => &["T1", "T2", "T3"],
-        "Transaktionsart" => &["Umsatz", "Umsatz", "Umsatz"],
+        "Transaktionsart" => &["Zahlung", "Zahlung", "Zahlung"],
         "Status" => &["Erfolgreich", "Erfolgreich", "Erfolgreich"],
         "Beschreibung" => &["SCHICHTWECHSEL", "Kaffee", "SCHICHTWECHSEL"],
         "Betrag" => &[0.01, 3.5, 0.01],
@@ -1139,7 +1139,7 @@ pub fn transaction_report_df_09(
     df!(
         "Zeitstempel" => &[d2, d1, d3],
         "Transaktionscode" => &[trx_id, trx_id, "TAAAZFCAHD7"],
-        "Transaktionsart" => &["Rückerstattung", "Umsatz", "Umsatz"],
+        "Transaktionsart" => &["Rückerstattung", "Zahlung", "Zahlung"],
         "Status" => &[None, Some("Erfolgreich"), Some("Erfolgreich")],
         "Beschreibung" => &[None, Some("1 x Hauptgang Vegi, 2 x Vorspeise/Dessert"), Some("1 x Hauptgang Vegi")],
         "Betrag" => &[-19.0, 19.0, 11.0],
