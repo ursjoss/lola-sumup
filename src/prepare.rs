@@ -3,7 +3,7 @@ use std::fmt::{Debug, Display, Formatter};
 use std::path::Path;
 
 use polars::datatypes::DataType;
-use polars::frame::{DataFrame, UniqueKeepStrategy};
+use polars::frame::DataFrame;
 use polars::io::SerReader;
 use polars::prelude::*;
 use polars::series::Series;
@@ -113,11 +113,6 @@ fn process_input(
         .try_into_reader_with_file_path(Some(transaction_report.into()))?
         .finish()?
         .lazy()
-        .with_column(
-            col("Netto")
-                .fill_null(col("Betrag inkl. MwSt."))
-                .alias("Netto"),
-        )
         .collect()?;
 
     fail_on_missing_trx(&txr_df, &sr_df)?;
@@ -165,19 +160,23 @@ fn fail_on_missing_trx(txr_df: &DataFrame, sr_df: &DataFrame) -> Result<(), Box<
                     lit(Series::from_iter(valid_stati.clone())).implode(false),
                     false,
                 )
-                .and(col("Transaktions-ID").is_not_null()),
+                .and(col("Transaktionscode").is_not_null()),
         )
-        .select([col("Transaktions-ID")]);
+        .select([col("Transaktionscode")]);
     let sr = sr_df
         .clone()
         .lazy()
-        .filter(col("Transaktionsnummer").is_not_null())
+        .filter(
+            col("Transaktionsnummer")
+                .is_not_null()
+                .and(col("Zahlungsmethode").neq(lit("Bar"))),
+        )
         .select([col("Transaktionsnummer")]);
     let missing_in_sr = txr
         .clone()
         .join(
             sr.clone(),
-            [col("Transaktions-ID")],
+            [col("Transaktionscode")],
             [col("Transaktionsnummer")],
             JoinType::Anti.into(),
         )
@@ -191,7 +190,7 @@ fn fail_on_missing_trx(txr_df: &DataFrame, sr_df: &DataFrame) -> Result<(), Box<
             .join(
                 txr,
                 [col("Transaktionsnummer")],
-                [col("Transaktions-ID")],
+                [col("Transaktionscode")],
                 JoinType::Anti.into(),
             )
             .collect()?;
@@ -273,136 +272,10 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
     let clean_txr_df = txr_df
         .clone()
         .lazy()
-        .filter(col("Transaktions-ID").is_in(lit(refunded_ids), true).not())
+        .filter(col("Transaktionscode").is_in(lit(refunded_ids), true).not())
         .collect()?;
     let clean_sr_df = sr_df
         .clone()
-        .lazy()
-        .join(
-            refunded_transaction_ids.lazy(),
-            [col("Transaktionsnummer")],
-            [col("Transaktionsnummer")],
-            JoinArgs::new(JoinType::Anti),
-        )
-        .collect()?;
-
-    let mut change_of_shift_df = clean_txr_df
-        .clone()
-        .lazy()
-        .filter(
-            col("Beschreibung")
-                .str()
-                .contains(lit("SCHICHTWECHSEL"), true),
-        )
-        .with_column(
-            col("Datum")
-                .str()
-                .extract(lit(r"(\d\d\d\d\-\d\d\-\d\d)"), 1)
-                .str()
-                .strptime(DataType::Date, raw_date_format_txr.clone(), Expr::default())
-                .alias("Date"),
-        )
-        .with_column(
-            col("Date")
-                .dt()
-                .weekday()
-                .cast(DataType::Int64)
-                .is_in(
-                    lit(Series::from_vec("we".into(), vec![6, 7])).implode(false),
-                    false,
-                )
-                .alias("is_weekend"),
-        )
-        .with_column(
-            (col("Datum").str().extract(lit(r".{11}(\d\d:\d\d:\d\d)"), 1))
-                .str()
-                .to_time(time_format.clone())
-                .alias("Time"),
-        )
-        .filter(
-            col("is_weekend")
-                .eq(lit(false))
-                .and(col("Time").gt(lit("12:00:00").str().to_time(time_format.clone())))
-                .and(col("Time").lt(lit("16:00:00").str().to_time(time_format.clone()))),
-        )
-        .select([col("Date"), col("Time").alias("ChangeOfShift")])
-        .group_by([col("Date")])
-        .agg([col("ChangeOfShift").last().alias("ChangeOfShift")])
-        .collect()?;
-    change_of_shift_df.rechunk_mut();
-
-    let mut commission_df = clean_txr_df
-        .clone()
-        .lazy()
-        .filter(
-            col("Transaktionsart")
-                .eq(lit("Umsatz"))
-                .and(col("Status").eq(lit("Erfolgreich"))),
-        )
-        .with_column(
-            (col("Datum").str().extract(lit(r".{11}(\d\d:\d\d:\d\d)"), 1))
-                .str()
-                .to_time(time_format.clone())
-                .alias("TimeTrx"),
-        )
-        .select([
-            col("Transaktions-ID"),
-            col("Betrag inkl. MwSt.").alias("Commissioned Total"),
-            col("Gebühr").alias("Commission"),
-            col("TimeTrx"),
-        ])
-        .collect()?;
-    commission_df.rechunk_mut();
-
-    let add_tips_df = clean_txr_df
-        .clone()
-        .lazy()
-        .filter(
-            col("Transaktionsart")
-                .eq(lit("Umsatz"))
-                .and(col("Status").eq(lit("Erfolgreich")))
-                .and(col("Trinkgeldbetrag").fill_null(0.0).gt(0.0)),
-        )
-        .select([
-            col("Transaktions-ID"),
-            col("Trinkgeldbetrag").fill_null(0.0).alias("TG"),
-        ]);
-
-    let additional_tip_df = clean_sr_df
-        .clone()
-        .lazy()
-        .join(
-            add_tips_df,
-            [col("Transaktionsnummer")],
-            [col("Transaktions-ID")],
-            JoinType::Inner.into(),
-        )
-        .filter(col("TG").gt(lit(0.0)))
-        .select([
-            col("Datum"),
-            col("Typ"),
-            col("Transaktionsnummer"),
-            col("Zahlungsmethode"),
-            lit(1).alias("Menge").cast(DataType::Int64),
-            lit("Trinkgeld").alias("Beschreibung"),
-            col("Kategorie"),
-            col("Artikelnummer"),
-            col("Währung"),
-            col("TG").alias("Preis vor Rabatt"),
-            lit(0.0).alias("Rabatt"),
-            col("TG").alias("Preis (brutto)"),
-            col("TG").alias("Preis (netto)"),
-            lit(0.0).alias("Steuer"),
-            lit(NULL).alias("Steuersatz"),
-            col("Konto"),
-        ])
-        .unique(None, UniqueKeepStrategy::First)
-        .collect()?;
-
-    let mut union_df = clean_sr_df.vstack(&additional_tip_df)?;
-    union_df.rechunk_mut();
-
-    let df = union_df
         .lazy()
         .with_column(
             col("Datum")
@@ -429,6 +302,149 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .to_time(time_format.clone())
                 .alias("Time"),
         )
+        .with_column(
+            concat_str(
+                [
+                    col("Date").dt().to_string("%Y-%m-%d"),
+                    col("Time").dt().to_string("%H:%M:%S"),
+                ],
+                " ",
+                false,
+            )
+            .alias("Date_trx"),
+        )
+        .join(
+            refunded_transaction_ids.lazy(),
+            [col("Transaktionsnummer")],
+            [col("Transaktionsnummer")],
+            JoinArgs::new(JoinType::Anti),
+        )
+        .collect()?;
+
+    // derive virtual transactions for cache payments from sales report
+    let cash_txr_df = clean_sr_df
+        .clone()
+        .lazy()
+        .filter(
+            col("Typ")
+                .eq(lit("Verkauf"))
+                .and(col("Zahlungsmethode").eq(lit("Bar"))),
+        )
+        .group_by([col("Konto"), col("Date_trx"), col("Transaktionsnummer")])
+        .agg([col("Preis (netto)").sum().alias("Total Netto")])
+        .select([
+            col("Konto"),
+            col("Date_trx").alias("Zeitstempel"),
+            col("Transaktionsnummer").alias("Transaktionscode"),
+            lit("Zahlung").alias("Transaktionsart"),
+            lit("Erfolgreich").alias("Status"),
+            lit("").alias("Referenz"),
+            lit("").alias("Kartensystem"),
+            lit(0_i64)
+                .cast(DataType::Int64)
+                .alias("Letzte 4 Ziffern der Karte"),
+            lit("").alias("Kartentyp"),
+            lit("CASH").alias("Zahlungsmethode"),
+            lit("N/A").alias("Eingabemodus"),
+            lit("").alias("Autorisierungscode"),
+            lit("aggregated").alias("Beschreibung"),
+            col("Total Netto").alias("Betrag"),
+            lit(0.0).alias("Gebührenbetrag"),
+            col("Total Netto").alias("Auszahlungsbetrag"),
+            lit("").alias("Auszahlungsdatum"),
+            lit("").alias("Auszahlungs-ID"),
+        ])
+        .collect()?;
+    let clean_enriched_txr_df = clean_txr_df.vstack(&cash_txr_df)?;
+
+    let mut change_of_shift_df = clean_enriched_txr_df
+        .clone()
+        .lazy()
+        .filter(
+            col("Beschreibung")
+                .str()
+                .contains(lit("SCHICHTWECHSEL"), true),
+        )
+        .with_column(
+            col("Zeitstempel")
+                .str()
+                .extract(lit(r"(\d\d\d\d\-\d\d\-\d\d)"), 1)
+                .str()
+                .strptime(DataType::Date, raw_date_format_txr.clone(), Expr::default())
+                .alias("Date"),
+        )
+        .with_column(
+            col("Date")
+                .dt()
+                .weekday()
+                .cast(DataType::Int64)
+                .is_in(
+                    lit(Series::from_vec("we".into(), vec![6, 7])).implode(false),
+                    false,
+                )
+                .alias("is_weekend"),
+        )
+        .with_column(
+            (col("Zeitstempel")
+                .str()
+                .extract(lit(r".{11}(\d\d:\d\d:\d\d)"), 1))
+            .str()
+            .to_time(time_format.clone())
+            .alias("Time"),
+        )
+        .filter(
+            col("is_weekend")
+                .eq(lit(false))
+                .and(col("Time").gt(lit("12:00:00").str().to_time(time_format.clone())))
+                .and(col("Time").lt(lit("16:00:00").str().to_time(time_format.clone()))),
+        )
+        .select([col("Date"), col("Time").alias("ChangeOfShift")])
+        .group_by([col("Date")])
+        .agg([col("ChangeOfShift").last().alias("ChangeOfShift")])
+        .collect()?;
+    change_of_shift_df.rechunk_mut();
+
+    let mut commission_df = clean_txr_df
+        .clone()
+        .lazy()
+        .filter(
+            col("Transaktionsart")
+                .eq(lit("Zahlung"))
+                .and(col("Status").eq(lit("Erfolgreich"))),
+        )
+        .select([
+            col("Transaktionscode"),
+            col("Betrag").alias("Commissioned Total"),
+            col("Gebührenbetrag").alias("Commission"),
+        ])
+        .collect()?;
+    commission_df.rechunk_mut();
+
+    let mut txr_timestamped_df = clean_enriched_txr_df
+        .clone()
+        .lazy()
+        .filter(
+            col("Transaktionsart")
+                .eq(lit("Zahlung"))
+                .and(col("Status").eq(lit("Erfolgreich"))),
+        )
+        .with_column(
+            (col("Zeitstempel")
+                .str()
+                .extract(lit(r".{11}(\d\d:\d\d:\d\d)"), 1))
+            .str()
+            .to_time(time_format.clone())
+            .alias("TimeTrx"),
+        )
+        .select([
+            col("Transaktionscode").alias("Transaktionscode2"),
+            col("TimeTrx"),
+        ])
+        .collect()?;
+    txr_timestamped_df.rechunk_mut();
+
+    let df = clean_sr_df
+        .lazy()
         .with_column(
             col("Beschreibung")
                 .str()
@@ -464,7 +480,13 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .join(
             commission_df.lazy(),
             [col("Transaktionsnummer")],
-            [col("Transaktions-ID")],
+            [col("Transaktionscode")],
+            JoinType::Left.into(),
+        )
+        .join(
+            txr_timestamped_df.lazy(),
+            [col("Transaktionsnummer")],
+            [col("Transaktionscode2")],
             JoinType::Left.into(),
         )
         .join(
@@ -476,6 +498,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .with_column(
             (col("Preis (brutto)") / col("Commissioned Total") * col("Commission"))
                 .round(4, RoundMode::HalfToEven)
+                .fill_nan(0.0)
                 .alias("Commission"),
         )
         .with_column(
@@ -728,10 +751,11 @@ mod tests {
     use rstest::*;
 
     use crate::test_fixtures::{
-        intermediate_df_01, intermediate_df_07, intermediate_df_09, sales_report_df_01,
-        sales_report_df_02, sales_report_df_07, sales_report_df_09, sales_report_df_09legacy,
-        sales_report_df_10, transaction_report_df_01, transaction_report_df_02,
-        transaction_report_df_07, transaction_report_df_09, transaction_report_df_10,
+        intermediate_df_01, intermediate_df_07, intermediate_df_09, intermediate_df_11,
+        sales_report_df_01, sales_report_df_02, sales_report_df_07, sales_report_df_09,
+        sales_report_df_09legacy, sales_report_df_10, sales_report_df_11, transaction_report_df_01,
+        transaction_report_df_02, transaction_report_df_07, transaction_report_df_09,
+        transaction_report_df_10, transaction_report_df_11,
     };
     use crate::test_utils::assert_dataframe;
 
@@ -837,6 +861,17 @@ mod tests {
             out.is_err(),
             "combining input_dfs with refunds that don't net to 0 should fail"
         );
+    }
+
+    #[rstest]
+    fn test_multiple_cash_payments_with_same_trx_id(
+        sales_report_df_11: DataFrame,
+        transaction_report_df_11: DataFrame,
+        intermediate_df_11: DataFrame,
+    ) {
+        let out = combine_input_dfs(&sales_report_df_11, &transaction_report_df_11)
+            .expect("should be able to combine input dfs");
+        assert_dataframe(&out, &intermediate_df_11);
     }
 
     #[fixture]
