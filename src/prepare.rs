@@ -160,9 +160,9 @@ fn fail_on_missing_trx(txr_df: &DataFrame, sr_df: &DataFrame) -> Result<(), Box<
                     lit(Series::from_iter(valid_stati.clone())).implode(false),
                     false,
                 )
-                .and(col("Transaktions-ID").is_not_null()),
+                .and(col("Transaktionscode").is_not_null()),
         )
-        .select([col("Transaktions-ID")]);
+        .select([col("Transaktionscode")]);
     let sr = sr_df
         .clone()
         .lazy()
@@ -172,7 +172,7 @@ fn fail_on_missing_trx(txr_df: &DataFrame, sr_df: &DataFrame) -> Result<(), Box<
         .clone()
         .join(
             sr.clone(),
-            [col("Transaktions-ID")],
+            [col("Transaktionscode")],
             [col("Transaktionsnummer")],
             JoinType::Anti.into(),
         )
@@ -186,7 +186,7 @@ fn fail_on_missing_trx(txr_df: &DataFrame, sr_df: &DataFrame) -> Result<(), Box<
             .join(
                 txr,
                 [col("Transaktionsnummer")],
-                [col("Transaktions-ID")],
+                [col("Transaktionscode")],
                 JoinType::Anti.into(),
             )
             .collect()?;
@@ -268,7 +268,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
     let clean_txr_df = txr_df
         .clone()
         .lazy()
-        .filter(col("Transaktions-ID").is_in(lit(refunded_ids), true).not())
+        .filter(col("Transaktionscode").is_in(lit(refunded_ids), true).not())
         .collect()?;
     let clean_sr_df = sr_df
         .clone()
@@ -345,7 +345,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
             .alias("TimeTrx"),
         )
         .select([
-            col("Transaktions-ID"),
+            col("Transaktionscode"),
             col("Betrag").alias("Commissioned Total"),
             col("Gebühr").alias("Commission"),
             col("TimeTrx"),
@@ -363,7 +363,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
                 .and(col("Trinkgeldbetrag").fill_null(0.0).gt(0.0)),
         )
         .select([
-            col("Transaktions-ID"),
+            col("Transaktionscode"),
             col("Trinkgeldbetrag").fill_null(0.0).alias("TG"),
         ]);
 
@@ -373,7 +373,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .join(
             add_tips_df,
             [col("Transaktionsnummer")],
-            [col("Transaktions-ID")],
+            [col("Transaktionscode")],
             JoinType::Inner.into(),
         )
         .filter(col("TG").gt(lit(0.0)))
@@ -463,7 +463,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .join(
             commission_df.lazy(),
             [col("Transaktionsnummer")],
-            [col("Transaktions-ID")],
+            [col("Transaktionscode")],
             JoinType::Left.into(),
         )
         .join(

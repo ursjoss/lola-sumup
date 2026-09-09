@@ -85,7 +85,7 @@ fn transaction_report_with_trx_id(
     let time = sample_time.format("%H:%M:%S").to_string();
     df!(
         "Zeitstempel" => &[format!("{date} {time}")],
-        "Transaktions-ID" => &[trx_id],
+        "Transaktionscode" => &[trx_id],
         "Transaktionsart" => &["Umsatz"],
         "Status" => &["Erfolgreich"],
         "Beschreibung" => &[" foo "],
@@ -818,7 +818,7 @@ pub fn transaction_report_df_07(
     let time3 = sample_time_plus_5.format("%H:%M:%S").to_string();
     df!(
     	"Zeitstempel" => &[format!("{date} {time1}"), format!("{date} {time2}"), format!("{date} {time3}")],
-        "Transaktions-ID" => &["T1", "T2", "T3"],
+        "Transaktionscode" => &["T1", "T2", "T3"],
         "Transaktionsart" => &["Umsatz", "Umsatz", "Umsatz"],
         "Status" => &["Erfolgreich", "Erfolgreich", "Erfolgreich"],
         "Beschreibung" => &["SCHICHTWECHSEL", "Kaffee", "SCHICHTWECHSEL"],
@@ -1138,7 +1138,7 @@ pub fn transaction_report_df_09(
     let trx_id = "TAAAZFC7HSH";
     df!(
         "Zeitstempel" => &[d2, d1, d3],
-        "Transaktions-ID" => &[trx_id, trx_id, "TAAAZFCAHD7"],
+        "Transaktionscode" => &[trx_id, trx_id, "TAAAZFCAHD7"],
         "Transaktionsart" => &["Rückerstattung", "Umsatz", "Umsatz"],
         "Status" => &[None, Some("Erfolgreich"), Some("Erfolgreich")],
         "Beschreibung" => &[None, Some("1 x Hauptgang Vegi, 2 x Vorspeise/Dessert"), Some("1 x Hauptgang Vegi")],
