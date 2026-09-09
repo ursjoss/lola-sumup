@@ -113,11 +113,6 @@ fn process_input(
         .try_into_reader_with_file_path(Some(transaction_report.into()))?
         .finish()?
         .lazy()
-        .with_column(
-            col("Netto")
-                .fill_null(col("Betrag inkl. MwSt."))
-                .alias("Netto"),
-        )
         .collect()?;
 
     fail_on_missing_trx(&txr_df, &sr_df)?;
@@ -347,7 +342,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         )
         .select([
             col("Transaktions-ID"),
-            col("Betrag inkl. MwSt.").alias("Commissioned Total"),
+            col("Betrag").alias("Commissioned Total"),
             col("Gebühr").alias("Commission"),
             col("TimeTrx"),
         ])

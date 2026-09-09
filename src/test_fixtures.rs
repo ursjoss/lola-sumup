@@ -89,7 +89,7 @@ fn transaction_report_with_trx_id(
         "Transaktionsart" => &["Umsatz"],
         "Status" => &["Erfolgreich"],
         "Beschreibung" => &[" foo "],
-        "Betrag inkl. MwSt." => &[17.0],
+        "Betrag" => &[17.0],
         "Trinkgeldbetrag" => &[1.0],
         "Gebühr" => &[0.24],
     )
@@ -822,7 +822,7 @@ pub fn transaction_report_df_07(
         "Transaktionsart" => &["Umsatz", "Umsatz", "Umsatz"],
         "Status" => &["Erfolgreich", "Erfolgreich", "Erfolgreich"],
         "Beschreibung" => &["SCHICHTWECHSEL", "Kaffee", "SCHICHTWECHSEL"],
-        "Betrag inkl. MwSt." => &[0.01, 3.5, 0.01],
+        "Betrag" => &[0.01, 3.5, 0.01],
         "Trinkgeldbetrag" => &[0.0, 0.0, 0.0],
         "Gebühr" => &[0.0, 0.05, 0.0],
     )
@@ -1142,7 +1142,7 @@ pub fn transaction_report_df_09(
         "Transaktionsart" => &["Rückerstattung", "Umsatz", "Umsatz"],
         "Status" => &[None, Some("Erfolgreich"), Some("Erfolgreich")],
         "Beschreibung" => &[None, Some("1 x Hauptgang Vegi, 2 x Vorspeise/Dessert"), Some("1 x Hauptgang Vegi")],
-        "Betrag inkl. MwSt." => &[-19.0, 19.0, 11.0],
+        "Betrag" => &[-19.0, 19.0, 11.0],
         "Trinkgeldbetrag" => &[None, Some(0.0), Some(0.0)],
         "Gebühr" => &[None, Some(0.0), Some(0.17)],
     )
