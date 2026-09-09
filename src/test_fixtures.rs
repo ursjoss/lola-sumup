@@ -90,7 +90,6 @@ fn transaction_report_with_trx_id(
         "Status" => &["Erfolgreich"],
         "Beschreibung" => &[" foo "],
         "Betrag" => &[17.0],
-        "Trinkgeldbetrag" => &[1.0],
         "Gebühr" => &[0.24],
     )
     .expect("valid dataframe transaction report data frame 02")
@@ -101,22 +100,22 @@ fn transaction_report_with_trx_id(
 #[fixture]
 pub fn intermediate_df_01(sample_date: NaiveDate, sample_time: NaiveTime) -> DataFrame {
     df!(
-        "Account" => &["a@b.ch", "a@b.ch"],
-        "Date" => &[sample_date, sample_date],
-        "Time" => &[sample_time, sample_time],
-        "Type" => &["Sales", "Sales"],
-        "Transaction ID" => &["TEGUCXAGDE", "TEGUCXAGDE"],
-        "Payment Method" => &["Card", "Card"],
-        "Quantity" => &[1_i64, 1_i64],
-        "Description" => &["foo", "Trinkgeld"],
-        "Currency" => &["CHF", "CHF"],
-        "Price (Gross)" => &[16.0, 1.0],
-        "Price (Net)" => &[16.0, 1.0],
-        "Commission" => &[0.2259, 0.0141],
-        "Topic" => &["MiTi", "MiTi"],
-        "Owner" => &["LoLa", "MiTi"],
-        "Purpose" => &["Consumption", "Tip"],
-        "Comment" => &[AnyValue::Null, AnyValue::Null],
+        "Account" => &["a@b.ch"],
+        "Date" => &[sample_date],
+        "Time" => &[sample_time],
+        "Type" => &["Sales"],
+        "Transaction ID" => &["TEGUCXAGDE"],
+        "Payment Method" => &["Card"],
+        "Quantity" => &[1_i64],
+        "Description" => &["foo"],
+        "Currency" => &["CHF"],
+        "Price (Gross)" => &[16.0],
+        "Price (Net)" => &[16.0],
+        "Commission" => &[0.2259],
+        "Topic" => &["MiTi"],
+        "Owner" => &["LoLa"],
+        "Purpose" => &["Consumption"],
+        "Comment" => &[AnyValue::Null],
     )
     .expect("valid intermediate dataframe 01")
 }
@@ -823,7 +822,6 @@ pub fn transaction_report_df_07(
         "Status" => &["Erfolgreich", "Erfolgreich", "Erfolgreich"],
         "Beschreibung" => &["SCHICHTWECHSEL", "Kaffee", "SCHICHTWECHSEL"],
         "Betrag" => &[0.01, 3.5, 0.01],
-        "Trinkgeldbetrag" => &[0.0, 0.0, 0.0],
         "Gebühr" => &[0.0, 0.05, 0.0],
     )
     .expect("valid dataframe transaction report data frame 07")
@@ -1143,7 +1141,6 @@ pub fn transaction_report_df_09(
         "Status" => &[None, Some("Erfolgreich"), Some("Erfolgreich")],
         "Beschreibung" => &[None, Some("1 x Hauptgang Vegi, 2 x Vorspeise/Dessert"), Some("1 x Hauptgang Vegi")],
         "Betrag" => &[-19.0, 19.0, 11.0],
-        "Trinkgeldbetrag" => &[None, Some(0.0), Some(0.0)],
         "Gebühr" => &[None, Some(0.0), Some(0.17)],
     )
     .expect("valid dataframe transaction report data frame 09")

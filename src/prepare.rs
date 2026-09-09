@@ -3,7 +3,7 @@ use std::fmt::{Debug, Display, Formatter};
 use std::path::Path;
 
 use polars::datatypes::DataType;
-use polars::frame::{DataFrame, UniqueKeepStrategy};
+use polars::frame::DataFrame;
 use polars::io::SerReader;
 use polars::prelude::*;
 use polars::series::Series;
@@ -353,55 +353,7 @@ fn combine_input_dfs(sr_df: &DataFrame, txr_df: &DataFrame) -> Result<DataFrame,
         .collect()?;
     commission_df.rechunk_mut();
 
-    let add_tips_df = clean_txr_df
-        .clone()
-        .lazy()
-        .filter(
-            col("Transaktionsart")
-                .eq(lit("Zahlung"))
-                .and(col("Status").eq(lit("Erfolgreich")))
-                .and(col("Trinkgeldbetrag").fill_null(0.0).gt(0.0)),
-        )
-        .select([
-            col("Transaktionscode"),
-            col("Trinkgeldbetrag").fill_null(0.0).alias("TG"),
-        ]);
-
-    let additional_tip_df = clean_sr_df
-        .clone()
-        .lazy()
-        .join(
-            add_tips_df,
-            [col("Transaktionsnummer")],
-            [col("Transaktionscode")],
-            JoinType::Inner.into(),
-        )
-        .filter(col("TG").gt(lit(0.0)))
-        .select([
-            col("Datum"),
-            col("Typ"),
-            col("Transaktionsnummer"),
-            col("Zahlungsmethode"),
-            lit(1).alias("Menge").cast(DataType::Int64),
-            lit("Trinkgeld").alias("Beschreibung"),
-            col("Kategorie"),
-            col("Artikelnummer"),
-            col("Währung"),
-            col("TG").alias("Preis vor Rabatt"),
-            lit(0.0).alias("Rabatt"),
-            col("TG").alias("Preis (brutto)"),
-            col("TG").alias("Preis (netto)"),
-            lit(0.0).alias("Steuer"),
-            lit(NULL).alias("Steuersatz"),
-            col("Konto"),
-        ])
-        .unique(None, UniqueKeepStrategy::First)
-        .collect()?;
-
-    let mut union_df = clean_sr_df.vstack(&additional_tip_df)?;
-    union_df.rechunk_mut();
-
-    let df = union_df
+    let df = clean_sr_df
         .lazy()
         .with_column(
             col("Datum")
